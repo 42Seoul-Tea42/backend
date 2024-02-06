@@ -1,9 +1,7 @@
 from app.db import conn
 from app.const import Key
 from app.smtp import sendSmtpEmail
-import os
-import re
-import hashlib
+import os, re, hashlib, random, string
 from psycopg2.extras import DictCursor
 
 
@@ -15,9 +13,7 @@ def createJwt(id):
 
 
 def createEmailKey(login_id):   
-    #TODO email key 생성 (random 값으로 key만들어서 링크 생성)
-    random_key = 'asdf' + login_id
-
+    random_key = login_id + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
     return random_key
 
 
