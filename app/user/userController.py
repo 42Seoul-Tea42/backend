@@ -36,8 +36,8 @@ class _Schema():
     })
 
     field_setProfile = ns.model('setProfile 필요 데이터', {
-        "gender": fields.String(description='유저 성별'),
-        "taste": fields.String(description='유저 취향'),
+        "gender": fields.Integer(description='유저 성별'),
+        "taste": fields.Integer(description='유저 취향'),
         "bio": fields.String(description='자기소개'),
         "tags": fields.List(fields.Integer, description='취미 태그'),
         "hate_tags": fields.List(fields.Integer, description='싫어하는 취미 태그'),
@@ -83,9 +83,9 @@ class _Schema():
         "similar": fields.Boolean(description='비슷한 사람 좋아요%s'),
     })
 
-    field_profile = ns.model('profile 필요 데이터', {
-        'target_id': fields.Integer(description='보고 싶은 유저'),
-    })
+    # field_profile = ns.model('profile 필요 데이터', {
+    #     'target_id': fields.Integer(description='보고 싶은 유저'),
+    # })
 
     field_profileDetail = ns.model('profileDetail 필요 데이터', {
         'target_id': fields.Integer(description='보고 싶은 유저'),
@@ -127,7 +127,7 @@ class Login(Resource):
             return serv.login(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 # @ns.route('/kakao')
@@ -153,25 +153,25 @@ class CheckId(Resource):
             return serv.checkId(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
         
 
-@ns.route('/profile')
-@ns.header('content-type', 'application/json')
-class Profile(Resource):
-    # @jwt_required()
-    @ns.expect(_Schema.field_profile)
-    @ns.response(200, 'api요청 성공', _Schema.response_fields)
-    @ns.response(400, 'api요청 실패', _Schema.response_fields)
-    def post(self):
-        """프로필 확인"""
-        try:
-            return serv.profile(request.json)
-        except Exception as e:
-            conn.rollback()
-            print(f'BE error: {e}')
-            return { 'message': 'failed' }, 400
+# @ns.route('/profile')
+# @ns.header('content-type', 'application/json')
+# class Profile(Resource):
+#     # @jwt_required()
+#     @ns.expect(_Schema.field_profile)
+#     @ns.response(200, 'api요청 성공', _Schema.response_fields)
+#     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+#     def post(self):
+#         """프로필 확인"""
+#         try:
+#             return serv.profile(request.json)
+#         except Exception as e:
+#             conn.rollback()
+#             print(f'BE error: {self} {e}')
+#             return { 'message': 'failed' }, 400
 
 
 @ns.route('/profileDetail')
@@ -187,7 +187,7 @@ class ProfileDetail(Resource):
             return serv.profileDetail(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -202,7 +202,7 @@ class Logout(Resource):
             return serv.logout()
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -219,7 +219,7 @@ class CheckEmail(Resource):
             return serv.checkEmail(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -234,7 +234,7 @@ class EmailStatus(Resource):
             return serv.emailStatus()
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -249,7 +249,7 @@ class GetEmail(Resource):
             return serv.getEmail()
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'error' }, 400
         
 
@@ -264,7 +264,7 @@ class SendEmail(Resource):
             return serv.sendEmail()
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
         
 
@@ -281,7 +281,7 @@ class ChangeEmail(Resource):
             return serv.changeEmail(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -296,7 +296,7 @@ class RegisterEmail(Resource):
             return serv.registerEmail(key)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -314,7 +314,7 @@ class Setting(Resource):
             return serv.setting(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -330,7 +330,7 @@ class Register(Resource):
             return serv.register(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -347,7 +347,7 @@ class SetProfile(Resource):
             return serv.setProfile(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -364,7 +364,7 @@ class SetPicture(Resource):
             return serv.setPicture(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -381,7 +381,7 @@ class SetLocation(Resource):
             return serv.setLocation(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -399,7 +399,7 @@ class ResetPw(Resource):
             return serv.resetPw(request.json, key)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -415,7 +415,7 @@ class RequestReset(Resource):
             return serv.requestReset(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 @ns.route('/unregister')
@@ -429,7 +429,7 @@ class Unregister(Resource):
             return serv.unregister()
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -447,7 +447,7 @@ class Emoji(Resource):
             return serv.emoji(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -465,7 +465,7 @@ class Search(Resource):
             return serv.search(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -483,7 +483,7 @@ class Report(Resource):
             return serv.report(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
@@ -500,5 +500,5 @@ class Block(Resource):
             return serv.block(request.json)
         except Exception as e:
             conn.rollback()
-            print(f'BE error: {e}')
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400

@@ -132,7 +132,7 @@ def profileDetail(data):
     cursor = conn.cursor(cursor_factory=DictCursor)
 
     #History.last_view update
-    sql = 'SELECT * FROM "HISTORY" WHERE "user_id" = %s AND "target_id" = %s;'
+    sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
     cursor.execute(sql, (id, target_id))
     db_data = cursor.fetchone()
 
@@ -284,28 +284,39 @@ def changeEmail(data):
             'message': 'fail: not valid email address',
         }, 400
 
-    #update
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "email" = %s, "email_check" = %s WHERE "id" = %s;'
-    cursor.execute(sql, (data['email'], False, id))
-    conn.commit()
+    #TODO with ~ as ~ 내용으로 모두 바꾸기
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
 
-    #check update
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-    user = cursor.fetchone()
+        #check email_check
+        sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+        cursor.execute(sql, (id, ))
+        user = cursor.fetchone()
+        if user['email_check']:
+            cursor.close()
+            return {
+                'message': 'error: cannot change verified email',
+            }, 400
 
-    result = {
-        'email_check': user['email_check'],
-        'profile_check': True if user['gender'] else False,
-        'emoji_check': True if user['emoji'] else False,
-    }
-    cursor.close()
-    
-    return {
-        'message': 'succeed',
-        'data': result
-    }, 200
+        #update
+        sql = 'UPDATE "User" SET "email" = %s WHERE "id" = %s;'
+        cursor.execute(sql, (data['email'], id))
+        conn.commit()
+
+        #send verify email
+        utils.sendEmail(data['email'], user['email_key'], Key.EMAIL)
+
+        result = {
+            'email_check': False,
+            'profile_check': True if user['gender'] else False,
+            'emoji_check': True if user['emoji'] else False,
+        }
+        
+        return {
+            'message': 'succeed',
+            'data': result
+        }, 200
+
+
 
     
 def registerEmail(key):
@@ -366,27 +377,31 @@ def register(data):
             'message': 'fail: not valid email address',
         }, 400
 
-    hashed_pw = utils.hashing(data['pw'])
-    email_key = utils.createEmailKey(data['login_id'])
+    try:
+        hashed_pw = utils.hashing(data['pw'])
+        email_key = utils.createEmailKey(data['login_id'])
 
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, name, last_name, birthday) \
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
-    cursor.execute(sql, (data['email'], 
-                         False,
-                         email_key,
-                         data['login_id'],
-                         hashed_pw,
-                         data['name'],
-                         data['last_name'], #TODO last name not null아니면 처리 필요
-                         data['birthday'])) #TODO date처리 확인 필요
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, name, last_name, birthday) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(sql, (data['email'], 
+                            False,
+                            email_key,
+                            data['login_id'],
+                            hashed_pw,
+                            data['name'],
+                            data['last_name'], #TODO last name not null아니면 처리 필요
+                            data['birthday'])) #TODO date처리 확인 필요
 
-    conn.commit()
-    cursor.close()
+        conn.commit()
+        cursor.close()
+    except Exception:
+        print('failed while create db')
+        raise e
 
     #TODO email 보내기
     utils.sendEmail(data['email'], email_key, Key.EMAIL)
-    
+
     return {
         'message': 'succeed',
     }, 200
@@ -399,15 +414,19 @@ def setProfile(data):
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
 
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "gender" = %s, "taste" = %s, "bio" = %s, "tags" = ", hate_tags = %s WHERE "id" = %s;'
-    cursor.execute(sql, (data['gender'], 
-                         data['taste'],
-                         data['bio'],
-                         tags,
-                         hate_tags))
-    conn.commit()
-    cursor.close()
+    try:
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        sql = 'UPDATE "User" SET "gender" = %s, "taste" = %s, "bio" = %s, "tags" = %s, "hate_tags" = %s WHERE "id" = %s;'
+        cursor.execute(sql, (data['gender'], 
+                            data['taste'],
+                            data['bio'],
+                            tags,
+                            hate_tags))
+        conn.commit()
+        cursor.close()
+    except Exception as e:
+        print('failed while update db')
+        raise e
 
     return {
         'message': 'succeed',
@@ -605,11 +624,11 @@ def block(data):
     sql = 'INSERT INTO "Block" (user_id, target_id) VALUES (%s, %s)'
     cursor.execute(sql, (id, data['target_id']))
 
-    sql = 'SELECT * FROM "HISTORY" WHERE "user_id" = %s AND "target_id" = %s;'
+    sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
     cursor.execute(sql, (id, data['target_id']))
     #TODO 하기 ["fancy"] 잘 되는지 확인 필요
     if cursor.fetchone()["fancy"]:
-        sql = 'UPDATE "HISTORY" SET "fancy" = False WHERE "user_id" = %s AND "target_id" = %s;'
+        sql = 'UPDATE "History" SET "fancy" = False WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (id, data['target_id']))
         sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
         cursor.execute(sql, (data['target_id'], ))

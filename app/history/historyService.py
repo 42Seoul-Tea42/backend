@@ -73,11 +73,13 @@ def fancy(data):
     #TODO jwt에서 유저 id 가져오기
     id = 1
     target_id = data['target_id']
+    if id == int(target_id):
+        raise Exception('cannot check self-fancy')
 
     now = datetime.now()
     
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "HISTORY" WHERE "user_id" = %s AND "target_id" = %s;'
+    sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
     cursor.execute(sql, (id, target_id))
     db_data = cursor.fetchone()
     cur_fancy = db_data['fancy']
