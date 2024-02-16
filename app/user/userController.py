@@ -28,7 +28,9 @@ class _Schema():
         "pw": fields.String(description='패스워드'),
         "last_name": fields.String(description='성'),
         "name": fields.String(description='이름'),
-        "birthday": fields.DateTime(description='생일')
+        "birthday": fields.DateTime(description='생일'),
+        'longitude': fields.Float(description='경도'),
+        'latitude': fields.Float(description='위도')
     })
 
     field_changeEmail = ns.model('changeEmail 필요 데이터', {
@@ -53,7 +55,7 @@ class _Schema():
     })
 
     field_emoji = ns.model('emoji 필요 데이터', {
-        "like_emoji": fields.List(fields.Integer, description='유저 취향 이모지'),
+        "emoji": fields.List(fields.Integer, description='유저 취향 이모지'),
         "hate_emoji": fields.List(fields.Integer, description='싫어하는 이모지'),
         "similar": fields.Boolean(description='비슷한 사람 좋아요%s'),
     })
@@ -64,7 +66,6 @@ class _Schema():
         "distance": fields.Float(description='거리'),
         "tags": fields.List(fields.Integer, description='찾고싶은 태그'),
         "fame": fields.Float(description='fame 지수 최소치'),
-        "page": fields.Integer(description='몇 번째 요청이에요%s'),
     })
 
     field_setting = ns.model('setting 필요 데이터', {

@@ -1,6 +1,6 @@
 from app.db import conn
 from datetime import datetime, timedelta
-from app.const import MAX_SUGGEST, AGE_GAP, Gender, AREA_DISTANCE
+from app.const import MAX_SUGGEST, AGE_GAP, Gender, AREA_DISTANCE, EARTH_RADIUS, DAYS
 import app.user.userUtils as userUtils
 import app.history.historyUtils as historyUtils
 from psycopg2.extras import DictCursor
@@ -25,35 +25,47 @@ def suggest():
     tags, hate_tags = user['tags'], user['hate_tags']
     emoji, hate_emoji = user['emoji'], user['hate_emoji']
     longitude, latitude = user['longitude'], user['latitude']
+    similar = '>' if user['similar'] else '='
 
     # 나이 차이 범위 AGE_GAP
-    today = datetime.today()
-    date_start = today - timedelta(user['birthday'] * AGE_GAP)
-    date_end = today - timedelta(user['birthday'] * AGE_GAP)
+    date_start = timedelta(user['birthday']) - timedelta(AGE_GAP * DAYS)
+    date_end = timedelta(user['birthday']) + timedelta(AGE_GAP * DAYS)
 
     find_taste = user['gender'] | Gender.OTHER
     find_gender = Gender.ALL if user['taste'] & Gender.OTHER else user['taste']
 
-    sql = 'SELECT * FROM "User" \
-            WHERE "id" != %s AND "id" NOT IN ( \
-                                        SELECT "target_id" \
-                                        FROM "Block" \
-                                        WHERE "user_id" = %s ) AND \
-                "taste" & %s > 0 AND "gender" & %s > 0 AND \
-                "hate_tags" & %s = 0 AND "tags" & %s = 0 AND \
-                "hate_emoji" & %s = 0 AND "emoji" & %s = 0 AND \
-                "tags" & %s > 0 AND "emoji" & %s > 0 AND \
-                earth_distance(ll_to_earth("latitude", "longitude"), ll_to_earth(%s, %s)) < %s \
-                "birthday" BETWEEN %s AND %s \
-            ORDER BY "count_fancy" / "count_view" DESC \
+    sql = 'SELECT * \
+            FROM "User" \
+            WHERE "id" != %s \
+                AND "User"."id" NOT IN ( \
+                        SELECT "target_id" \
+                        FROM "Block" \
+                        WHERE "user_id" = %s ) \
+                AND "taste" & %s > 0 \
+                AND "gender" & %s > 0 \
+                AND "hate_tags" & %s = 0 \
+                AND "tags" & %s = 0 \
+                AND "hate_emoji" & %s = 0 \
+                AND "emoji" & %s = 0 \
+                AND "tags" & %s > 0 \
+                AND "emoji" & %s %s 0 \
+                AND "birthday" BETWEEN %s AND %s \
+                AND ( %s * acos( \
+                            cos(radians("latitude")) * cos(radians(%s)) * \
+                            cos(radians("longitude" - %s)) + \
+                            sin(radians("latitude")) * sin(radians(%s)) \
+                        ) \
+                    ) < %s \
+            ORDER BY "count_fancy" / COALESCE("count_view", 1) DESC \
             LIMIT %s ;'
+    
     cursor.execute(sql, (id, id,
                         find_taste, find_gender,
                         tags, hate_tags,
                         emoji, hate_emoji,
-                        tags, emoji,
-                        latitude, longitude, AREA_DISTANCE,
+                        tags, emoji, similar,#similar 잘 작동하는 지 확인 ( > or = )
                         date_start, date_end,
+                        EARTH_RADIUS, latitude, longitude, latitude, AREA_DISTANCE,
                         MAX_SUGGEST))
     db_data = cursor.fetchall()
     result = []
@@ -73,18 +85,7 @@ def suggest():
         })
 
     cursor.close()
-
-    # d = object()
-    return json.dumps({
+    return {
         'message': 'succeed',
         'data': result,
-    })
-    return json.dump(
-        {
-        'message': 'succeed',
-        'data': result,
-    })
-    # return {
-    #     'message': 'succeed',
-    #     'data': result,
-    # }, 200
+    }, 200

@@ -29,7 +29,7 @@ def chatList():
             'name': user['name'],
             'status': Status.OFFLINE, #TODO socket으로 status 처리
             'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
-            'longitude': user['longitude'], #TODO 거리로 줄건지,,%s
+            'longitude': user['longitude'],
             'latitude': user['latitude'],
             'new': chat['msg_check']
         })

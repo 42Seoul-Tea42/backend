@@ -3,6 +3,7 @@ from enum import Enum
 # Search Result
 MAX_SEARCH = 16     #max result limit
 DAYS = 365          #age calculation
+EARTH_RADIUS = 6371000
 DISTANCE = 1_000    #distance(km)
 
 # History
@@ -11,10 +12,16 @@ class History(Enum):
     FANCY = 0
     HISTORY = 1
 
+    def __str__(self):
+        return str(self.value)
+
 # Key generate option
 class Key(Enum):
     EMAIL = 0
     PASSWORD = 1
+
+    def __str__(self):
+        return str(self.value)
 
 # Tea Suggestions
 MAX_SUGGEST = 5
@@ -31,15 +38,24 @@ class Gender(Enum):
     MALE = 4
     ALL = 7
 
+    def __str__(self):
+        return str(self.value)
+
 class Status(Enum):
     OFFLINE = 0
     ONLINE = 1
+
+    def __str__(self):
+        return str(self.value)
 
 class Fancy(Enum):
     NONE = 0
     SEND = 1
     RECV = 2
     CONN = 3
+
+    def __str__(self):
+        return str(self.value)
 
 class Tags(Enum):
     NONE = 0
@@ -56,6 +72,9 @@ class Tags(Enum):
     ART = 2 ** 10
     SMOKE = 2 ** 11
     DRINK = 2 ** 12
+
+    def __str__(self):
+        return str(self.value)
 
 
 class Emoji(Enum):
@@ -76,3 +95,6 @@ class Emoji(Enum):
     EMOJI14 = 2 ** 13 # 안아줘요
     EMOJI15 = 2 ** 14 # 망그러진곰
     EMOJI16 = 2 ** 15 # 카카오프렌즈
+
+    def __str__(self):
+        return str(self.value)

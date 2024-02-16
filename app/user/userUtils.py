@@ -12,8 +12,8 @@ def createJwt(id):
     return jwt
 
 
-def createEmailKey(login_id):   
-    random_key = login_id + ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+def createEmailKey(login_id, key):   
+    random_key = login_id + ''.join(random.choices(string.ascii_letters + string.digits, k=10)) + str(key)
     return random_key
 
 
@@ -27,7 +27,7 @@ def encodeBit(data) -> int:
     return result
 
 
-def decodeBit(n) -> list:
+def decodeBit(encoded_data) -> list:
     result = []
     bit_position = 1
     while encoded_data > 0:
@@ -50,17 +50,17 @@ def isValidEmail(email):
 
 
 
-def hashing(password):
+def hashing(password, login_id):
     #sha256방식
     m = hashlib.sha256()
-    m.update(password.encode('utf-8'))
+    m.update((password + login_id).encode('utf-8'))
     m.update(os.environ.get('SECRET_KEY').encode('utf-8'))
 
     return m.hexdigest()
 
 
-def isValidPassword(password, hashed):
-    if hashing(password) == hashed:
+def isValidPassword(password, login_id, hashed):
+    if hashing(password, login_id) == hashed:
         return True
     return False
 
@@ -74,4 +74,4 @@ def getFameRate(id) -> float:
     if not user:
         raise ValueError('no such user: getFameRate')
     
-    return user['count_fancy'] / user['count_view'] * 10
+    return user['count_fancy'] / user['count_view'] * 10 if user['count_view'] else 0
