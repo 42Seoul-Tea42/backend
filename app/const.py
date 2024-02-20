@@ -3,7 +3,7 @@
 # Search Result
 MAX_SEARCH = 16     #max result limit
 DAYS = 365          #age calculation
-EARTH_RADIUS = 6371000
+EARTH_RADIUS = 6_371_000
 DISTANCE = 1_000    #distance(km)
 
 # History
@@ -76,3 +76,15 @@ class Emoji():
     EMOJI14 = 2 ** 13 # 내시 이모티콘
     EMOJI15 = 2 ** 14 # 빵빵이
     EMOJI16 = 2 ** 15 # 이과티콘
+
+class Report():
+    NONE = 0
+    BULLY = 1
+    CONTENT = 2
+    FAKE = 3
+    SPAM = 4
+    MISINFORM = 5
+    VIOLATION = 6
+    PRIVACY = 7
+    SUSPICIOUS = 8
+    OTHER = 9

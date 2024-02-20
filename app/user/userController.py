@@ -94,6 +94,8 @@ class _Schema():
 
     field_report = ns.model('report 필요 데이터', {
         'target_id': fields.Integer(description='신고 대상 유저'),
+        'reason': fields.Integer(description='신고 이유'),
+        'reason_opt': fields.String(description='신고 이유 디테일')
     })
 
     field_block = ns.model('block 필요 데이터', {

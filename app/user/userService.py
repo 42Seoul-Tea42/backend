@@ -662,10 +662,11 @@ def block(data):
     sql = 'INSERT INTO "Block" (user_id, target_id) VALUES (%s, %s)'
     cursor.execute(sql, (id, data['target_id']))
 
-    sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+    sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s AND "fancy" = True;'
     cursor.execute(sql, (id, data['target_id']))
     #TODO 하기 ["fancy"] 잘 되는지 확인 필요
-    if cursor.fetchone()["fancy"]:
+    history = cursor.fetchone()
+    if history:
         sql = 'UPDATE "History" SET "fancy" = False WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (id, data['target_id']))
         sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
