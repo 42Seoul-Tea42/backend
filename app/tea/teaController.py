@@ -24,4 +24,5 @@ class Suggest(Resource):
             return serv.suggest()
         except Exception as e:
             conn.rollback()
+            print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
