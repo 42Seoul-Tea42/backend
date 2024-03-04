@@ -1,12 +1,14 @@
 from app.db import conn
 from flask import request
-from flask_restx import Namespace, Resource, fields
+from flask_restx import Namespace, Resource, fields, reqparse
+from werkzeug.datastructures import FileStorage
 from . import userService as serv
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
 ns = Namespace(name='user', description='유저 정보 관련 API', path='/user')
 
-class _Schema():             
+class _Schema():
     field_login = ns.model('로그인 시 필요 데이터', {
         'login_id': fields.String(description='유저 아이디'),
         'pw': fields.String(description='유저 비밀번호'),
@@ -45,8 +47,8 @@ class _Schema():
         "hate_tags": fields.List(fields.Integer, description='싫어하는 취미 태그'),
     })
 
-    field_setPicture = ns.model('setPicture 필요 데이터', {
-        "pictures": fields.List(fields.String, description='취미 태그'),        
+    field_getPicture = ns.model('getPicture 필요 데이터', {
+        'target_id': fields.Integer(description='보고 싶은 유저'),
     })
 
     field_setLocation = ns.model('setLocation 필요 데이터', {
@@ -143,7 +145,6 @@ class Login(Resource):
 
 
 # ##### identify
-        
 @ns.route('/checkId')
 @ns.header('content-type', 'application/json')
 class CheckId(Resource):
@@ -159,7 +160,7 @@ class CheckId(Resource):
             print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
         
-
+# 필요없으면 지우기
 # @ns.route('/profile')
 # @ns.header('content-type', 'application/json')
 # class Profile(Resource):
@@ -187,7 +188,9 @@ class ProfileDetail(Resource):
     def post(self):
         """상세 프로필 확인"""
         try:
-            return serv.profileDetail(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.profileDetail(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -202,7 +205,9 @@ class Logout(Resource):
     def get(self):
         """logout"""
         try:
-            return serv.logout()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.logout(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -234,7 +239,9 @@ class EmailStatus(Resource):
     def get(self):
         """이메일 인증 여부 확인"""
         try:
-            return serv.emailStatus()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.emailStatus(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -249,7 +256,9 @@ class GetEmail(Resource):
     def get(self):
         """이메일 주소 확인"""
         try:
-            return serv.getEmail()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.getEmail(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -264,7 +273,9 @@ class SendEmail(Resource):
     def get(self):
         """인증 메일 다시 보내기"""
         try:
-            return serv.sendEmail()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.sendEmail(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -281,7 +292,9 @@ class ChangeEmail(Resource):
     def post(self):
         """(기존 메일 인증 전) 신규 이메일 등록"""
         try:
-            return serv.changeEmail(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.changeEmail(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -314,7 +327,9 @@ class Setting(Resource):
     def post(self):
         """설정 업데이트 (프로필 사진은 별도로 진행)"""
         try:
-            return serv.setting(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.setting(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -347,24 +362,50 @@ class SetProfile(Resource):
     def post(self):
         """(최초 1회) 프로필 설정"""
         try:
-            return serv.setProfile(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.setProfile(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
 
+#TODO TEST필요: 한 번에 사진 다섯 개 받기
+upload_parser = reqparse.RequestParser()
+upload_parser.add_argument('images', location='files', type=FileStorage, required=True, action="append")
+
 @ns.route('/setPicture')
-@ns.header('content-type', 'application/json')
+# @ns.header('content-type', 'multipart/form-data')
 class SetPicture(Resource):
     # @jwt_required()
-    @ns.expect(_Schema.field_setPicture)
+    @ns.expect(upload_parser)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def post(self):
         """(최초 1회 및 설정페이지) 프로필 사진 설정"""
         try:
-            return serv.setPicture(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            args = upload_parser.parse_args()
+            return serv.setPicture(args, id)
+        except Exception as e:
+            conn.rollback()
+            print(f'BE error: {self} {e}')
+            return { 'message': 'failed' }, 400
+
+
+@ns.route('/getPicture')
+@ns.header('content-type', 'multipart/form-data')
+class GetPicture(Resource):
+    # @jwt_required()
+    @ns.expect(_Schema.field_getPicture)
+    @ns.response(200, 'api요청 성공', _Schema.response_fields)
+    @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    def post(self):
+        """유저 프로필 사진 주세요"""
+        try:
+            return serv.getPicture(request.json)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -381,7 +422,9 @@ class SetLocation(Resource):
     def post(self):
         """유저 위치 설정"""
         try:
-            return serv.setLocation(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.setLocation(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -421,6 +464,7 @@ class RequestReset(Resource):
             print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
+
 @ns.route('/unregister')
 class Unregister(Resource):
     # @jwt_required()
@@ -429,7 +473,9 @@ class Unregister(Resource):
     def get(self):
         """회원 탈퇴"""
         try:
-            return serv.unregister()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.unregister(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -447,7 +493,9 @@ class Emoji(Resource):
     def post(self):
         """이모지 취향 설정"""
         try:
-            return serv.emoji(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.emoji(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -465,7 +513,9 @@ class Search(Resource):
     def post(self):
         """유저 검색 기능"""
         try:
-            return serv.search(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.search(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -483,7 +533,9 @@ class Report(Resource):
     def post(self):
         """리포트 하기"""
         try:
-            return serv.report(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.report(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
@@ -500,7 +552,9 @@ class Block(Resource):
     def post(self):
         """블록하기"""
         try:
-            return serv.block(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.block(request.json, id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')

@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restx import Api
+from flask_cors import CORS
 # from .config import Config
 from .db import conn
 import os
@@ -7,13 +8,14 @@ import os
 api = Api(
     version='1.0',
     title='tea42',
-    prefix='/',
+    prefix='/sw',
     # contact_email='tea42fourtwo@gmail.com',
 )
 
 def create_app():
         
     app = Flask(__name__)
+    CORS(app)
     # app.config.from_object(Config)
     
     # app.config.from_mapping(
@@ -21,6 +23,12 @@ def create_app():
     #     BCRYPT_LOG_ROUNDS = 12,
     #     BCRYPT_LEVEL = int(os.environ.get('BCRYPT_LEVEL'))
     # )
+
+    # # Set upload directory
+    app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # 예시: 16MB 제한
+    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_KEY')
+    # app.config['PROFILE_FOLDER'] = './profile/'
+    # app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 
 ################ 하기 내용은 swagger 연결 확인 후 블록처리 해주세요 (스웨거 디버깅 모드여서 백엔드 내용 수정 시 db 계속 초기화됨)
     # Create a cursor
@@ -56,6 +64,3 @@ def create_app():
         return 'Hello there, welcome to Tea42'
     
     return app
-
-# if __name__ == '__main__':
-#     app.run(debug=True)

@@ -1,15 +1,31 @@
-from app.db import conn
-from app.const import Key
 from app.smtp import sendSmtpEmail
-import os, re, hashlib, random, string
-from psycopg2.extras import DictCursor
+import os, re, random, string
+import bcrypt
+from ...wsgi import jwt
+from datetime import datetime, timedelta
+import pytz
+from ..const import KST
 
 
 def createJwt(id):
-    jwt = 'temporaryJWT'
-    refresh = 'temporaryREFRESH'
-    #TODO jwt 발급 로직 필요
-    return jwt
+    now_kst = datetime.now(pytz.timezone(KST))    
+    jwt_time = now_kst + timedelta(minutes=int(os.environ.get('JWT_TIME')))
+    refresh_time = now_kst + timedelta(days=int(os.environ.get('REFRESH_TIME')))
+    
+    jwt_json = {
+        "id": id,
+        "exp": jwt_time
+    }
+    refresh_json = { "exp": refresh_time }
+    
+    token = jwt.encode(jwt_json, os.environ.get('JWT_KEY'))
+    refresh = jwt.encode(refresh_json, os.environ.get('REFRESH_KEY'))
+
+    #TODO refresh 토큰 확인 로직 필요
+    # jwt_decoded = jwt.decode(token, os.environ.get('JWT_KEY'))  # dict
+    # refresh_decoded = jwt.decode(refresh, os.environ.get('REFRESH_KEY'))  # dict
+
+    return token, refresh
 
 
 def createEmailKey(login_id, key):   
@@ -51,27 +67,22 @@ def isValidEmail(email):
 
 
 def hashing(password, login_id):
+    #TODO os.environ.get('SECRET_KEY') 추가할 수 있는지 확인 필요
+    #TODO bcrypt, sha256 등 해시 관련 내용 블로그 정리
+    encrypted = bcrypt.hashpw((password + login_id).encode("utf-8"), bcrypt.gensalt())  # str 객체, bytes로 인코드, salt를 이용하여 암호화
+    return encrypted.decode("uft-8")
+
     #sha256방식
-    m = hashlib.sha256()
-    m.update((password + login_id).encode('utf-8'))
-    m.update(os.environ.get('SECRET_KEY').encode('utf-8'))
-
-    return m.hexdigest()
-
-
-def isValidPassword(password, login_id, hashed):
-    if hashing(password, login_id) == hashed:
-        return True
-    return False
+    # m = hashlib.sha256()
+    # m.update((password + login_id).encode('utf-8'))
+    # m.update(os.environ.get('SECRET_KEY').encode('utf-8'))
+    # return m.hexdigest()
 
 
-def getFameRate(id) -> float:
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-    user = cursor.fetchone()
-    
-    if not user:
-        raise ValueError('no such user: getFameRate')
-    
-    return user['count_fancy'] / user['count_view'] * 10 if user['count_view'] else 0
+def isValidPassword(password, login_id, hashed_pw):
+    return bcrypt.checkpw((password + login_id).encode("utf-8"), hashed_pw)
+
+    #sha256방식
+    # if hashing(password, login_id) == hashed:
+    #     return True
+    # return False

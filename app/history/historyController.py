@@ -3,6 +3,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
 from app.const import History
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 ns = Namespace(name='history', description='fancy 및 히스토리 관련 API', path='/history')
 
@@ -31,7 +32,9 @@ class CheckFancy(Resource):
     def post(self):
         """나를 팬시한 사람 그 누구냐!"""
         try:
-            return serv.viewHistory(request.json, History.FANCY)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.viewHistory(request.json, id, History.FANCY)
         except Exception as e:
             conn.rollback()
             return { 'message': 'failed' }, 400
@@ -47,7 +50,9 @@ class ViewHistory(Resource):
     def post(self):
         """내가 본 사람들"""
         try:
-            return serv.viewHistory(request.json, History.HISTORY)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.viewHistory(request.json, id, History.HISTORY)
         except Exception as e:
             conn.rollback()
             return { 'message': 'failed' }, 400
@@ -63,7 +68,9 @@ class Fancy(Resource):
     def post(self):
         """fancy/unfancy 했음!"""
         try:
-            return serv.fancy(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.fancy(request.json, id)
         except Exception as e:
             conn.rollback()
             return { 'message': 'failed' }, 400

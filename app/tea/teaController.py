@@ -1,7 +1,7 @@
 from app.db import conn
 from flask_restx import Namespace, Resource, fields
 from . import teaService as serv
-from flask import jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 ns = Namespace(name='tea', description='추천 관련 API', path='/tea')
 
@@ -21,7 +21,9 @@ class Suggest(Resource):
     def get(self):
         """get tea suggestions for you!"""
         try:
-            return serv.suggest()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.suggest(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')

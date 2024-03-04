@@ -1,5 +1,9 @@
 # from enum import Enum
 
+# General
+KST = 'Asia/Seoul'
+PICTURE_DIR = '/usr/app/srcs/app/profile/'
+
 # Search Result
 MAX_SEARCH = 16     #max result limit
 DAYS = 365          #age calculation
@@ -23,7 +27,7 @@ AGE_GAP = 5
 AREA_DISTANCE = 500 #500m
 
 # Chat
-FIRST = 0
+FIRST_CHAT = 0
 MAX_CHAT = 20
 
 class Gender():

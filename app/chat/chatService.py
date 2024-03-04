@@ -1,15 +1,14 @@
 from app.db import conn
 from datetime import datetime
-from app.const import MAX_CHAT, Status, FIRST
+import pytz
+from app.const import MAX_CHAT, Status, FIRST_CHAT, KST
 from psycopg2.extras import DictCursor
+from ..history.historyUtils import getFancy
 
 
-def chatList():
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def chatList(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_check" \
+    sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_new" \
             FROM "Chat" \
             WHERE "target_id" = %s \
             ORDER BY "msg_time" DESC;'
@@ -25,13 +24,14 @@ def chatList():
         user = in_cursor.fetchone()
 
         result.append({
-            'target_id': chat['id'],
+            'target_id': user['id'],
             'name': user['name'],
             'status': Status.OFFLINE, #TODO socket으로 status 처리
             'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
             'longitude': user['longitude'],
             'latitude': user['latitude'],
-            'new': chat['msg_check']
+            'fancy': getFancy(id, user['id']),
+            'new': chat['msg_new']
         })
 
     in_cursor.close()
@@ -42,29 +42,30 @@ def chatList():
     }, 200
 
 
-def getMsg(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
+def getMsg(data, id):
     target_id = data['target_id']
     
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "Chat" SET "msg_new" = False WHERE "user_id" = %s AND "target_id" = %s;'
-    cursor.execute(sql, (target_id, id))
-    conn.commit()
 
-    if data['msg_id'] == FIRST: #방 클릭
+    if data['msg_id'] == FIRST_CHAT: #방 클릭
+        #msg_new 확인 처리
+        sql = 'UPDATE "Chat" SET "msg_new" = False WHERE "user_id" = %s AND "target_id" = %s;'
+        cursor.execute(sql, (target_id, id))
+        conn.commit()
+
         sql = 'SELECT * FROM "Chat" \
             WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
             ORDER BY "msg_time" DESC \
             LIMIT %s;'
         cursor.execute(sql, (id, target_id, id, target_id, MAX_CHAT))
+
     else: #방 내부에서 추가 로딩
         sql = 'SELECT * FROM "Chat" \
             WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
-                    AND "id" < %s \
+                    AND "msg_time" < %s \
             ORDER BY "msg_time" DESC \
             LIMIT %s;'
-        cursor.execute(sql, (id, target_id, id, target_id, data['msg_id'], MAX_CHAT))
+        cursor.execute(sql, (id, target_id, id, target_id, data['msg_time'], MAX_CHAT))
     
     chats = cursor.fetchall()
     result = []
@@ -89,12 +90,14 @@ def saveChat(data):
     ###############TODO 소켓에서 유저 id 가져오기
     id = 1
 
+    now_kst = datetime.now(pytz.timezone(KST))
+    
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'INSERT INTO "Chat" (user_id, target_id, msg, msg_time, msg_new) VALUES (%s, %s, %s, %s, %s)'
     cursor.execute(sql, (id,
                          data['target_id'],
                          data['msg'],
-                         datetime.today(),
+                         now_kst,
                          True))
     conn.commit()
     cursor.close()

@@ -7,10 +7,9 @@ from psycopg2.extras import DictCursor
 
 
 
-def suggest():
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def suggest(id):
+    
+    #TODO 모두 세팅된 유저만 나오게 처리 (회원가입, 사진, 태그, 이모지)
     # 자기자신, block user 안가져오기
     # 성적 취향이 서로 맞고
     # 싫은게 하나도 없고 (hate_tag, hate_emoji)

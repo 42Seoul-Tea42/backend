@@ -32,7 +32,7 @@ CREATE TABLE "User" (
 );
 
 CREATE TABLE "History" (
-	"user_id"	  INTEGER	NOT NULL,
+	"user_id"	INTEGER	NOT NULL,
 	"target_id"	INTEGER	NOT NULL,
 	"fancy"	    BOOLEAN NOT NULL,
 	"fancy_time"	TIMESTAMP,
@@ -49,7 +49,7 @@ CREATE TABLE "Chat" (
 	"target_id"	INTEGER	NOT NULL,
 	"msg"	      TEXT,
   	"msg_time"  TIMESTAMP	NOT NULL,
-	"msg_check"	BOOLEAN	NOT NULL,
+	"msg_new"	BOOLEAN	NOT NULL,
   FOREIGN KEY (user_id) REFERENCES "User" (id) ON DELETE CASCADE,
   FOREIGN KEY (target_id) REFERENCES "User" (id) ON DELETE CASCADE
 );

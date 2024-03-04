@@ -1,12 +1,14 @@
+# from app import app
+# from flask import send_from_directory
 from app.db import conn
 from . import userUtils as utils
-from app.const import MAX_SEARCH, DAYS, DISTANCE, Key, Status, EARTH_RADIUS
+from app.const import MAX_SEARCH, DAYS, DISTANCE, Key, Status, EARTH_RADIUS, KST, PICTURE_DIR
 from datetime import datetime, timedelta
+import pytz
 import app.history.historyUtils as historyUtils
 from psycopg2.extras import DictCursor
-
-# from flask import jsonify
-
+import os
+# from werkzeug.utils import secure_filename
 
 #TODO conn.commit()
 #TODO cursor.close() after using cursor result
@@ -37,11 +39,12 @@ def login(data):
     conn.commit()
     cursor.close()
 
-    token = utils.createJwt(user['id'])
+    token, refresh = utils.createJwt(user['id'])
     return {
         'message': 'succeed',
         'data': {
-            'token': f'{token}',
+            'token': token,
+            'refresh': refresh,
             'id': user['id'],
             'name': user['name'],
             'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
@@ -80,9 +83,6 @@ def checkId(data):
         
 
 # def profile(data):
-#     #TODO jwt에서 유저 id 가져오기
-#     id = 1
-
 #     cursor = conn.cursor(cursor_factory=DictCursor)
 #     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
 #     cursor.execute(sql, (data['id'], ))
@@ -122,16 +122,14 @@ def checkId(data):
 #     }, 200
 
 
-def profileDetail(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
+def profileDetail(data, id):
     target_id = data['target_id']
-
     if id == target_id:
         return {
             'message': 'cannot check self',
         }, 400
-    now = datetime.now()
+    
+    now_kst = datetime.now(pytz.timezone(KST))
     cursor = conn.cursor(cursor_factory=DictCursor)
 
     #check if target is available
@@ -152,11 +150,11 @@ def profileDetail(data):
     if db_data: #update
         sql = 'UPDATE "History" SET "last_view" = %s \
                 WHERE "user_id" = %s AND "target_id" = %s;'
-        cursor.execute(sql, (now, id, target_id))    
+        cursor.execute(sql, (now_kst, id, target_id))    
     else: #create History && update count_view
         sql = 'INSERT INTO "History" (user_id, target_id, fancy, last_view) \
                                 VALUES (%s, %s, %s, %s)'
-        cursor.execute(sql, (id, target_id, False, now))
+        cursor.execute(sql, (id, target_id, False, now_kst))
         sql = 'UPDATE "User" SET count_view = COALESCE("count_view", 0) + 1 \
                 WHERE "id" = %s'
         cursor.execute(sql, (id, ))
@@ -184,17 +182,14 @@ def profileDetail(data):
     }, 200
 
 
-def logout():
+def logout(id):
     #TODO jwt, refresh token 삭제
     #TODO cache, session 삭제
     #TODO socket 정리
 
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
-    cursor.execute(sql, (None, datetime.now(), id))
+    cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
     conn.commit()
     cursor.close()
     return {
@@ -225,10 +220,7 @@ def checkEmail(data):
     }, 200
 
 
-def emailStatus():
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def emailStatus(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
@@ -247,10 +239,7 @@ def emailStatus():
     }, 200
 
 
-def getEmail():
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def getEmail(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
@@ -265,10 +254,7 @@ def getEmail():
     }, 200
         
 
-def sendEmail():
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def sendEmail(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
@@ -295,10 +281,7 @@ def sendEmail():
     }, 200
         
 
-def changeEmail(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def changeEmail(data, id):
     if not utils.isValidEmail(data['email']):
         return {
             'message': 'fail: not valid email address',
@@ -363,15 +346,13 @@ def registerEmail(key):
 
 
 # ##### register && setting
-def setting(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def setting(data, id):
     if not utils.isValidEmail(data['email']):
         return {
             'message': 'fail: not valid email address',
         }, 400
 
+    hashed_pw = utils.hashing(data['pw'], data['login_id'])
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
     emoji = utils.encodeBit(data['emoji'])
@@ -384,9 +365,10 @@ def setting(data):
             WHERE "id" = %s;'
 
     #TODO 잘 들어가는 지 확인 필요 (birthday!)
-    cursor.execute(sql, (data['email'], data['pw'], data['last_name'], data['name'],
+    cursor.execute(sql, (data['email'], hashed_pw, data['last_name'], data['name'],
                          data['birthday'], data['gender'], data['taste'], data['bio'],
-                         tags, hate_tags, emoji, hate_emoji, data['similar']))
+                         tags, hate_tags, emoji, hate_emoji, data['similar'],
+                         id))
     conn.commit()
     cursor.close()
 
@@ -420,7 +402,6 @@ def register(data):
         print('failed while create db')
         raise e
 
-    #TODO email 보내기
     utils.sendEmail(data['email'], email_key, Key.EMAIL)
 
     return {
@@ -428,10 +409,7 @@ def register(data):
     }, 200
 
 
-def setProfile(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def setProfile(data, id):
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
     print('tag encodeing', tags, hate_tags)
@@ -452,15 +430,103 @@ def setProfile(data):
     }, 200
 
 
-def setPicture(data):
-    #TODO picture file 업로드
+def allowed_file(filename, id):
+    if '.' in filename:
+        name, extension = filename.rsplit('.', 1)
+        if 0 <= int(name) < 5 and extension.lower() in {'png', 'jpg', 'jpeg'}:
+            return str(id) + "_" + name + '.' + extension
+    return None
 
-    return
 
-def setLocation(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
+def setPicture(data, id):
+    if 'images' not in data:
+        return { 'message': 'no image part' }, 400
+    
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT "pictures" FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    
+    prev_pictures = set(user['pictures']) #기존 이미지 리스트
+    
+    # 새 이미지 저장
+    images = data['images']
+    new_pictures = list()
+    error = False
+    for image in images:
+        filename = None
+        if (image.filename == '') or ((filename := allowed_file(image.filename, id)) is None):
+            error = True
+            continue
+        image.save(f'/usr/app/srcs/app/profile/{filename}')
+        new_pictures.append(filename)
 
+    if new_pictures:
+        sql = f'UPDATE "User" SET "pictures" = ARRAY{tuple(new_pictures)} WHERE "id" = %s;'
+        cursor.execute(sql, (id,))
+
+        #필요없는 파일 지우기
+        pictures = prev_pictures - set(new_pictures) if prev_pictures else set()
+        for file_to_delete in pictures:
+            file_path = os.path.join(PICTURE_DIR, file_to_delete)
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"An error occurred(setPicture): {e}")
+
+    if error:
+        return {
+            'message': 'there was an unexpected error saving image(s)',
+        }, 400
+    
+    return {
+        'message': 'succeed',
+    }, 200
+
+
+def getPicture(data):
+    target = data['target_id']
+
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT "pictures" FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (target, ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    
+    pictures = user['pictures']
+    if not pictures:
+        cursor.close()
+        return {
+            'message': 'no pictures',
+        }, 400
+
+    images = []
+    for picture in pictures:
+        image_path = os.path.join(PICTURE_DIR, picture)
+        try:
+            if os.path.exists(image_path):
+                with open(image_path, 'rb') as img_file:
+                    images.append(img_file.read())
+        except Exception as e:
+            print(f"An error occurred(getPicture): {e}")
+    
+    #TODO images 잘 가는 지 확인 필요 (특히 형식)
+    return {
+        'message': 'succeed',
+        'data': images
+    }, 200
+
+
+def setLocation(data, id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
     cursor.execute(sql, (data['longitude'], data['latitude'], id))
@@ -508,18 +574,13 @@ def requestReset(data):
     
     if not user:
         return {
-            'message': 'failed',
-            'data': { 'id_check': False }
-        }, 200
+            'message': 'id_check failed'
+        }, 400
     
     if not user['email_check']:
         return {
-            'message': 'failed',
-            'data': {
-                'id_check': True,
-                'email_check': False
-            }
-        }, 200
+            'message': 'email_check failed',
+        }, 400
     
     email = user['email']
     email_key = utils.createEmailKey(user['login_id'], Key.PASSWORD)
@@ -540,14 +601,11 @@ def requestReset(data):
     }, 200
 
 
-def unregister():
+def unregister(id):
     # 유저 및 관련 내용 모두 삭제 => cascade로 진행
         # -> 이렇게 하면 채팅창이 이미 열려있는 경우 등에서 target이 없는 id여서 엄청난 에러폭풍이 예상된다...
         # -> #TODO 없는 유저인 경우 별도 처리 필요하겠다
     
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'DELETE FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
@@ -560,10 +618,7 @@ def unregister():
     
     
 # ##### taste
-def emoji(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
+def emoji(data, id):
     emoji = utils.encodeBit(data['emoji'])
     hate_emoji = utils.encodeBit(data['hate_emoji'])
 
@@ -579,13 +634,13 @@ def emoji(data):
 
 
 # ##### search
-def search(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
+def search(data, id):
+    
+    #TODO 모두 세팅된 유저만 나오게 처리 (회원가입, 사진, 태그, 이모지)
 
-    today = datetime.now()
-    date_start = today - timedelta(data['min_age'] * DAYS)
-    date_end = today - timedelta(data['max_age'] * DAYS)
+    now_kst = datetime.now(pytz.timezone(KST))
+    date_start = now_kst - timedelta(data['min_age'] * DAYS)
+    date_end = now_kst - timedelta(data['max_age'] * DAYS)
     tags = utils.encodeBit(data['tags'])
     distance = int(data['distance']) * DISTANCE
 
@@ -642,11 +697,31 @@ def search(data):
 
 
 # ##### report && block
-def block(data):
-    #TODO jwt에서 유저 id 가져오기
-    #TODO report에서 불리는 것도 id 잘 가져오는 지 확인 필요
-    id = 1
+def report(data, id):
+    
+    #report시 자동 block 처리
+    block(data, id)
 
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT * FROM "Report" WHERE "user_id" = %s AND "target_id" = %s'
+    cursor.execute(sql, (id, data['target_id']))
+    if cursor.fetchone():
+        cursor.close()
+        return {
+            'message': 'fail: cannot report again',
+        }, 400
+    
+    sql = 'INSERT INTO "Report" (user_id, target_id, reason, reason_opt) VALUES (%s, %s, %s, %s)'
+    cursor.execute(sql, (id, data['target_id'],
+                         data['reason'], data['reason_opt']))
+    conn.commit()
+    cursor.close()
+    return {
+        'message': 'succeed',
+    }, 200
+
+def block(data, id):
+    
     #TODO 블록유저와 관련된 history 삭제 필요한가%s(block하려면 상세 프로필 확인해야하니까)
     #   -> 그럴 경우 fame rate 재조정이 필요할 것인가%s
     #       -> fame rate는 계속 다시 계산하는거여서 재조정 노필요
@@ -677,30 +752,3 @@ def block(data):
     return {
         'message': 'succeed',
     }, 200
-
-
-def report(data):
-    #TODO jwt에서 유저 id 가져오기
-    id = 1
-
-    #report시 자동 block 처리
-    block(data)
-
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "Report" WHERE "user_id" = %s AND "target_id" = %s'
-    cursor.execute(sql, (id, data['target_id']))
-    if cursor.fetchone():
-        cursor.close()
-        return {
-            'message': 'fail: cannot report again',
-        }, 400
-    
-    sql = 'INSERT INTO "Report" (user_id, target_id, reason, reason_opt) VALUES (%s, %s, %s, %s)'
-    cursor.execute(sql, (id, data['target_id'],
-                         data['reason'], data['reason_opt']))
-    conn.commit()
-    cursor.close()
-    return {
-        'message': 'succeed',
-    }, 200
-

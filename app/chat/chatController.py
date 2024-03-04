@@ -2,6 +2,7 @@ from app.db import conn
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 ns = Namespace(name='chat', description='채팅창 관련 API', path='/chat')
 
@@ -31,7 +32,9 @@ class ChatList(Resource):
     def get(self):
         """채팅리스트를 드립니다!"""
         try:
-            return serv.chatList()
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.chatList(id)
         except Exception as e:
             conn.rollback()
             return { 'message': 'failed' }, 400
@@ -47,7 +50,9 @@ class GetMsg(Resource):
     def post(self):
         """채팅 했던 내용 보내드립니다!!"""
         try:
-            return serv.getMsg(request.json)
+            id = 1
+            # id = get_jwt_identity()['id']
+            return serv.getMsg(request.json, id)
         except Exception as e:
             conn.rollback()
             return { 'message': 'failed' }, 400
