@@ -27,6 +27,10 @@ def create_app():
     # # Set upload directory
     app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # 예시: 16MB 제한
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_KEY')
+
+    #TODO front에 알려주기 (소켓통신)
+    app.config['JWT_TOKEN_LOCATION'] = ['headers', 'query_string']
+
     # app.config['PROFILE_FOLDER'] = './profile/'
     # app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 

@@ -1,9 +1,10 @@
 from app.db import conn
 from datetime import datetime
-import pytz
-from app.const import MAX_CHAT, Status, FIRST_CHAT, KST
+from app.const import MAX_CHAT, Status, FIRST_CHAT
 from psycopg2.extras import DictCursor
 from ..history.historyUtils import getFancy
+from . import chatUtils
+from ..socket.events import check_status
 
 
 def chatList(id):
@@ -26,7 +27,7 @@ def chatList(id):
         result.append({
             'target_id': user['id'],
             'name': user['name'],
-            'status': Status.OFFLINE, #TODO socket으로 status 처리
+            'status': check_status(user['id']),
             'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
             'longitude': user['longitude'],
             'latitude': user['latitude'],
@@ -43,16 +44,17 @@ def chatList(id):
 
 
 def getMsg(data, id):
+
+    #TODO id, target_id가 connected인지 확인 필요
+    
     target_id = data['target_id']
     
     cursor = conn.cursor(cursor_factory=DictCursor)
 
     if data['msg_id'] == FIRST_CHAT: #방 클릭
-        #msg_new 확인 처리
-        sql = 'UPDATE "Chat" SET "msg_new" = False WHERE "user_id" = %s AND "target_id" = %s;'
-        cursor.execute(sql, (target_id, id))
-        conn.commit()
-
+        #채팅 읽음 처리
+        chatUtils.read_chat(id, target_id)
+        
         sql = 'SELECT * FROM "Chat" \
             WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
             ORDER BY "msg_time" DESC \
@@ -83,25 +85,4 @@ def getMsg(data, id):
     return {
         'message': 'succeed',
         'data': result,
-    }, 200
-
-
-def saveChat(data):
-    ###############TODO 소켓에서 유저 id 가져오기
-    id = 1
-
-    now_kst = datetime.now(pytz.timezone(KST))
-    
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'INSERT INTO "Chat" (user_id, target_id, msg, msg_time, msg_new) VALUES (%s, %s, %s, %s, %s)'
-    cursor.execute(sql, (id,
-                         data['target_id'],
-                         data['msg'],
-                         now_kst,
-                         True))
-    conn.commit()
-    cursor.close()
-
-    return {
-        'message': 'succeed',
     }, 200

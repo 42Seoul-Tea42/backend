@@ -8,6 +8,7 @@ import pytz
 import app.history.historyUtils as historyUtils
 from psycopg2.extras import DictCursor
 import os
+from ..socket.events import new_history, check_status
 # from werkzeug.utils import secure_filename
 
 #TODO conn.commit()
@@ -164,17 +165,17 @@ def profileDetail(data, id):
     cursor.execute(sql, (target_id, ))
     user = cursor.fetchone()
 
-    #TODO status socket 처리
-    target_socket = 1
-
     result = {
         'last_name': user['last_name'],
-        'status': str(Status.ONLINE if target_socket else Status.OFFLINE),
+        'status': check_status(target_id),
         'last_online': user['last_online'],
         'gender': user['gender'],
         'taste': user['taste']
     }
     cursor.close()
+
+    ## (socket) history update alarm
+    new_history(id)
     
     return {
         'message': 'succeed',
@@ -532,6 +533,8 @@ def setLocation(data, id):
     cursor.execute(sql, (data['longitude'], data['latitude'], id))
     conn.commit()
     cursor.close()
+
+    #TODO socket 처리
 
     return {
         'message': 'succeed',
