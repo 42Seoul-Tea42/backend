@@ -5,7 +5,7 @@ from app.const import MAX_HISTORY, History, KST
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
 from psycopg2.extras import DictCursor
-from ..socket.events import unmatch, new_fancy, new_match
+from ..socket.socket_service import unmatch, new_fancy, new_match
 
 
 def updateFancyCheck(time_limit, id):

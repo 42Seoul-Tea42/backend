@@ -1,13 +1,15 @@
 from app.smtp import sendSmtpEmail
 import os, re, random, string
 import bcrypt
-from ...wsgi import jwt
 from datetime import datetime, timedelta
 import pytz
 from ..const import KST
 
 
 def createJwt(id):
+    #상호참조 이슈로 하기에 배치
+    from ...wsgi import jwt
+
     now_kst = datetime.now(pytz.timezone(KST))    
     jwt_time = now_kst + timedelta(minutes=int(os.environ.get('JWT_TIME')))
     refresh_time = now_kst + timedelta(days=int(os.environ.get('REFRESH_TIME')))

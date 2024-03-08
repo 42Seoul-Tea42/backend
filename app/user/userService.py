@@ -8,7 +8,7 @@ import pytz
 import app.history.historyUtils as historyUtils
 from psycopg2.extras import DictCursor
 import os
-from ..socket.events import new_history, check_status
+from ..socket.socket_service import new_history, check_status
 # from werkzeug.utils import secure_filename
 
 #TODO conn.commit()

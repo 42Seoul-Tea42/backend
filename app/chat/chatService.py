@@ -4,7 +4,7 @@ from app.const import MAX_CHAT, Status, FIRST_CHAT
 from psycopg2.extras import DictCursor
 from ..history.historyUtils import getFancy
 from . import chatUtils
-from ..socket.events import check_status
+from ..socket.socket_service import check_status
 
 
 def chatList(id):

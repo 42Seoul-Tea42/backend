@@ -4,6 +4,10 @@ from flask_cors import CORS
 # from .config import Config
 from .db import conn
 import os
+from .user import userController
+from .tea import teaController
+from .history import historyController
+from .chat import chatController
 
 api = Api(
     version='1.0',
@@ -49,19 +53,10 @@ def create_app():
 ################################################################
 
     api.init_app(app)
-    
-    from .user import userController
     api.add_namespace(userController.ns)
-    
-    from .tea import teaController
     api.add_namespace(teaController.ns)
-
-    from .history import historyController
     api.add_namespace(historyController.ns)
-    
-    from .chat import chatController
     api.add_namespace(chatController.ns)
-    
 
     @app.route('/')
     def welcome():
