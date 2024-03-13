@@ -14,8 +14,10 @@ def new_match(id, target_id):
     target_sid = id_sid.get(target_id, None)
     
     if user_sid:
+        id_match[id].add(target_id)
         emit('new_match', {'target_id': target_id}, room=user_sid)
     if target_sid:
+        id_match[target_id].add(id)
         emit('new_match', {'target_id': id}, room=target_sid)
 
 
@@ -57,8 +59,13 @@ def update_status(id, target_id, status):
 
 
 def unmatch(id, target_id):
+    if target_id in id_match[id]:
+        id_match[id].remove(target_id)
+
     target_sid = id_sid.get(target_id, None)
     if target_sid:
+        if id in id_match[target_id]:
+            id_match[target_id].remove(id)
         emit('unmatch', { 'target_id': id }, room=target_sid)
 
 

@@ -5,16 +5,16 @@ import pytz
 from ..const import KST
 
 
-def get_match_user_list(id) -> list:
+def get_match_user_list(id) -> set:
     cursor = conn.cursor(cursor_factory=DictCursor)
     
     sql = 'SELECT DISTINCT "target_id" FROM "Chat" WHERE "user_id" = %s;'
     cursor.execute(sql, (id, ))
     db_data = cursor.fetchall()
     
-    user_list = []
+    user_list = set()
     for data in db_data:
-        user_list.append(data['target_id'])
+        user_list.add(data['target_id'])
     
     cursor.close()
     return user_list
