@@ -191,14 +191,18 @@ def profileDetail(data, id):
 
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (target_id, ))
-    user = cursor.fetchone()
+    target = cursor.fetchone()
 
     result = {
-        'last_name': user['last_name'],
+        'login_id': target['login_id'],
+        'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+        'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+        'tags': utils.decodeBit(target['tags']),
         'status': socketServ.check_status(target_id),
-        'last_online': user['last_online'],
-        'gender': user['gender'],
-        'taste': user['taste']
+        'last_online': target['last_online'],
+        'gender': target['gender'],
+        'taste': target['taste'],
+        'bio': target['bio']
     }
     cursor.close()
 
@@ -717,12 +721,9 @@ def search(data, id):
     for record in db_data:
         result.append({
             'id': record['id'],
-            'login_id': record['login_id'],
             'name': record['name'],
-            'birthday': datetime.strftime(record['birthday'], '%Y-%m-%d'),
+            'last_name': record['last_name'],
             'distance': utils.get_distance(lat, long, record['latitude'], record['longitude']),
-            'fame': record['count_fancy'] / record['count_view'] * 10 if record['count_view'] else 0,
-            'tags': utils.decodeBit(record['tags']),
             'fancy': historyUtils.getFancy(id, record['id']),
         })
 

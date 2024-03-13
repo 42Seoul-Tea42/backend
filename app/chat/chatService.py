@@ -35,10 +35,10 @@ def chatList(id):
         target = in_cursor.fetchone()
 
         result.append({
-            'target_id': target['id'],
+            'id': target['id'],
             'name': target['name'],
+            'last_name': target['last_name'],
             'status': check_status(target['id']),
-            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
             'distance': get_distance(lat, long, target['latitude'], target['longitude']),
             'fancy': getFancy(id, target['id']),
             'new': chat['msg_new']
