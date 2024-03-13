@@ -1,9 +1,12 @@
 from flask_socketio import emit
 from ..const import Status
+from app.db import conn
+from psycopg2.extras import DictCursor
+from ..user.userUtils import get_distance
 
 id_sid = dict()
 # sid_id = dict() #나중에 disconnect시 sid_id 필요하면 다시 추가하기
-id_friend = dict()
+id_match = dict()
 
 #### alarm ####
 def new_match(id, target_id):
@@ -29,12 +32,22 @@ def new_history(id):
     
 
 #### update ####
-def update_location(id, target_id, longitude, latitude):
-    target_sid = id_sid.get(target_id, None)
-    if target_sid:
-        emit('update_location', { 'target_id': id,
-                                 'longitude': longitude,
-                                 'latitude': latitude }, room=target_sid)
+def update_distance(id, long, lat):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    for target_id in id_match[id]:
+        target_sid = id_sid.get(target_id, None)
+        if target_sid:
+            
+            sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+            cursor.execute(sql, (target_id, ))
+            target = cursor.fetchone()
+            if not target:
+                continue
+            
+            emit('update_distance', { 'target_id': id,
+                                    'distance': get_distance(lat, long, target['latitude'], target['longitude']),
+                                    }, room=target_sid)
+    cursor.close()
         
 
 def update_status(id, target_id, status):

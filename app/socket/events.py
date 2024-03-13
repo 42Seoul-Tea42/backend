@@ -19,12 +19,12 @@ def handle_connect():
     user_sid = request.sid
 
     socketServ.id_sid[id] = user_sid
-    socketServ.sid_id[user_sid] = id
+    # socketServ.sid_id[user_sid] = id
     print(f'Client {id}:{user_sid} connected')
 
     # (socket) status 업데이트
-    socketServ.id_friend[id] = chatUtils.get_match_user_list(id)
-    for target_id in socketServ.id_friend[id]:
+    socketServ.id_match[id] = chatUtils.get_match_user_list(id)
+    for target_id in socketServ.id_match[id]:
         socketServ.update_status(id, target_id, Status.ONLINE)
 
 
@@ -45,7 +45,7 @@ def handle_disconnect():
     print(f'Client {id} disconnected')
 
     # (socket) status 업데이트
-    for target_id in socketServ.id_friend[id]:
+    for target_id in socketServ.id_match[id]:
         socketServ.update_status(id, target_id, Status.OFFLINE)
 
 

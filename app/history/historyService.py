@@ -1,11 +1,11 @@
 from app.db import conn
 from datetime import datetime
 import pytz
-from app.const import MAX_HISTORY, History, KST
+from app.const import MAX_HISTORY, History, KST, Fancy
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
 from psycopg2.extras import DictCursor
-from ..socket.socket_service import unmatch, new_fancy, new_match
+from ..socket import socket_service as socketServ
 
 
 def updateFancyCheck(time_limit, id):
@@ -110,16 +110,18 @@ def fancy(data, id):
         sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" + 1 WHERE "id" = %s;'
         cursor.execute(sql, (target_id, ))
 
-        #TODO new_fancy && new_match 처리
-        #it match:
-        new_match(id, target_id)
-        #else:
-        new_fancy(id, target_id)
+        if utils.getFancy(id, target_id) == Fancy.CONN:
+            socketServ.new_match(id, target_id)
+            socketServ.id_match[id].append(target_id)
+            if target_id in socketServ.id_match:
+                socketServ.id_match[target_id].append(id)
+        else:
+            socketServ.new_fancy(id, target_id)
 
     else: #unfancy
         sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
         cursor.execute(sql, (target_id, ))
-        unmatch(id, target_id)
+        socketServ.unmatch(id, target_id)
 
     conn.commit()
     cursor.close()
