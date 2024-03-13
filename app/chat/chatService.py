@@ -5,10 +5,21 @@ from psycopg2.extras import DictCursor
 from ..history.historyUtils import getFancy
 from . import chatUtils
 from ..socket.socket_service import check_status
+from ..user.userUtils import get_distance
 
 
 def chatList(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    long, lat = user['longitude'], user['latitude']
+
     sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_new" \
             FROM "Chat" \
             WHERE "target_id" = %s \
@@ -17,21 +28,19 @@ def chatList(id):
     chatrooms = cursor.fetchall()
 
     result = []
-
     in_cursor = conn.cursor(cursor_factory=DictCursor)
     for chat in chatrooms:
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         in_cursor.execute(sql, (chat['user_id'], ))
-        user = in_cursor.fetchone()
+        target = in_cursor.fetchone()
 
         result.append({
-            'target_id': user['id'],
-            'name': user['name'],
-            'status': check_status(user['id']),
-            'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
-            'longitude': user['longitude'],
-            'latitude': user['latitude'],
-            'fancy': getFancy(id, user['id']),
+            'target_id': target['id'],
+            'name': target['name'],
+            'status': check_status(target['id']),
+            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+            'distance': get_distance(lat, long, target['latitude'], target['longitude']),
+            'fancy': getFancy(id, target['id']),
             'new': chat['msg_new']
         })
 

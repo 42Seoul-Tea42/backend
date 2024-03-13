@@ -7,7 +7,7 @@ PICTURE_DIR = '/usr/app/srcs/app/profile/'
 # Search Result
 MAX_SEARCH = 16     #max result limit
 DAYS = 365          #age calculation
-EARTH_RADIUS = 6_371_000
+EARTH_RADIUS = 6_371_000    #(m)
 DISTANCE = 1_000    #distance(km)
 
 # History

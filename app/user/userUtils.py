@@ -3,7 +3,8 @@ import os, re, random, string
 import bcrypt
 from datetime import datetime, timedelta
 import pytz
-from ..const import KST
+from ..const import KST, EARTH_RADIUS
+import math
 
 
 def generate_jwt(id):
@@ -95,3 +96,18 @@ def isValidPassword(password, login_id, hashed_pw):
     # if hashing(password, login_id) == hashed:
     #     return True
     # return False
+
+
+def get_distance(lat1, long1, lat2, long2):
+
+    # 위도와 경도의 라디안 차이 계산
+    diff_long = math.radians(long2) - math.radians(long1)
+    diff_lat = math.radians(lat2) - math.radians(lat1)
+    
+    # Haversine 공식 계산
+    a = math.sin(diff_lat / 2) ** 2 \
+        + math.cos(lat1) * math.cos(lat2) * math.sin(diff_long / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    # 거리 계산 (m)
+    return EARTH_RADIUS * c / 1000

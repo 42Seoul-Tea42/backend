@@ -21,10 +21,18 @@ def updateFancyCheck(time_limit, id):
 
 
 def viewHistory(data, id, opt):
-    
     cursor = conn.cursor(cursor_factory=DictCursor)
-    time_limit = data['time']
+    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    long, lat = user['longitude'], user['latitude']
 
+    time_limit = data['time']
     if opt == History.FANCY:
         updateFancyCheck(time_limit, id)
         sql = 'SELECT * FROM "History" \
@@ -47,18 +55,17 @@ def viewHistory(data, id, opt):
 
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         in_cursor.execute(sql, (record['user_id'], ))
-        user = in_cursor.fetchone()
+        target = in_cursor.fetchone()
 
         result.append({
-            'id': user['id'],
-            'login_id': user['login_id'],
-            'name': user['name'],
-            'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
-            'longitude': user['longitude'],
-            'latitude': user['latitude'],
-            'fame': user['count_fancy'] / user['count_view'] * 10 if user['count_view'] else 0,
-            'tags': userUtils.decodeBit(user['tags']),
-            'fancy': utils.getFancy(id, user['id']),
+            'id': target['id'],
+            'login_id': target['login_id'],
+            'name': target['name'],
+            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+            'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
+            'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+            'tags': userUtils.decodeBit(target['tags']),
+            'fancy': utils.getFancy(id, target['id']),
         })
 
     in_cursor.close()

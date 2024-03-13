@@ -679,6 +679,12 @@ def search(data, id):
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
     user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    long, lat = user['longitude'], user['latitude']
 
     sql = 'SELECT * \
             FROM "User" \
@@ -713,8 +719,7 @@ def search(data, id):
             'login_id': record['login_id'],
             'name': record['name'],
             'birthday': datetime.strftime(record['birthday'], '%Y-%m-%d'),
-            'longitude': record['longitude'],
-            'latitude': record['latitude'],
+            'distance': utils.get_distance(lat, long, record['latitude'], record['longitude']),
             'fame': record['count_fancy'] / record['count_view'] * 10 if record['count_view'] else 0,
             'tags': utils.decodeBit(record['tags']),
             'fancy': historyUtils.getFancy(id, record['id']),
