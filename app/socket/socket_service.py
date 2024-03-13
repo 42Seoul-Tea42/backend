@@ -1,9 +1,8 @@
 from flask_socketio import emit
 from ..const import Status
 
-
 id_sid = dict()
-sid_id = dict()
+# sid_id = dict() #나중에 disconnect시 sid_id 필요하면 다시 추가하기
 id_friend = dict()
 
 #### alarm ####

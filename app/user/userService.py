@@ -40,7 +40,8 @@ def login(data):
     conn.commit()
     cursor.close()
 
-    token, refresh = utils.createJwt(user['id'])
+    token = utils.generate_jwt(user['id'])
+    refresh = utils.generate_refresh(user['id'])
     return {
         'message': 'succeed',
         'data': {
@@ -64,6 +65,33 @@ def login(data):
 
 
 # ##### identify
+def resetToken(data):
+    refresh = data['refresh']
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT "refresh" FROM "User" WHERE "refresh" = %s;'
+    cursor.execute(sql, (refresh, ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'Unauthorized refresh token',
+        }, 401
+
+    cursor.close()
+    if utils.check_refresh(refresh):
+        token = utils.generate_jwt(id)
+        return {
+            'message': 'succeed',
+            'data': {
+                'token': token
+            }
+        }, 200
+    
+    return {
+        'message': 'Unauthorized refresh token',
+    }, 401
+
+
 def checkId(data):
     login_id = data['login_id']
     cursor = conn.cursor(cursor_factory=DictCursor)

@@ -1,44 +1,27 @@
 from flask import Flask
 from flask_restx import Api
 from flask_cors import CORS
-# from .config import Config
 from .db import conn
 import os
-from .user import userController
-from .tea import teaController
-from .history import historyController
-from .chat import chatController
 
 api = Api(
     version='1.0',
     title='tea42',
     prefix='/sw',
-    # contact_email='tea42fourtwo@gmail.com',
+    contact_email='tea42fourtwo@gmail.com',
+    doc=False #swagger 표시 안하겠당!
 )
 
 def create_app():
         
     app = Flask(__name__)
     CORS(app)
-    # app.config.from_object(Config)
-    
-    # app.config.from_mapping(
-    #     SECRET_KEY = os.environ.get('SECRET_KEY'),
-    #     BCRYPT_LOG_ROUNDS = 12,
-    #     BCRYPT_LEVEL = int(os.environ.get('BCRYPT_LEVEL'))
-    # )
 
-    # # Set upload directory
-    app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # 예시: 16MB 제한
+    app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # Set upload directory: 32MB 제한
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_KEY')
+    app.config['JWT_TOKEN_LOCATION'] = ['headers', 'query_string'] #소켓통신 시 JWT 토큰 위치
 
-    #TODO front에 알려주기 (소켓통신)
-    app.config['JWT_TOKEN_LOCATION'] = ['headers', 'query_string']
-
-    # app.config['PROFILE_FOLDER'] = './profile/'
-    # app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
-
-################ 하기 내용은 swagger 연결 확인 후 블록처리 해주세요 (스웨거 디버깅 모드여서 백엔드 내용 수정 시 db 계속 초기화됨)
+################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
     # Create a cursor
     cursor = conn.cursor()
     # Read the content of db_schema.sql
@@ -53,13 +36,21 @@ def create_app():
 ################################################################
 
     api.init_app(app)
-    api.add_namespace(userController.ns)
-    api.add_namespace(teaController.ns)
-    api.add_namespace(historyController.ns)
-    api.add_namespace(chatController.ns)
 
+    from .user import userController
+    api.add_namespace(userController.ns)
+    
+    from .tea import teaController
+    api.add_namespace(teaController.ns)
+    
+    from .history import historyController
+    api.add_namespace(historyController.ns)
+    
+    from .chat import chatController
+    api.add_namespace(chatController.ns)
+    
     @app.route('/')
     def welcome():
         return 'Hello there, welcome to Tea42'
-    
+
     return app

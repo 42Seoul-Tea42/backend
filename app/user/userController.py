@@ -112,6 +112,10 @@ class _Schema():
         'pw': fields.String(description='변경할 비밀번호')
     })
 
+    field_refresh = ns.model('resetToken 필요 데이터', {
+        'refresh': fields.String(description='refresh token')
+    })
+
     response_fields = ns.model('응답 내용', {
         'message': fields.String(description='응답 별 참고 메시지'),
         'data': fields.Raw(description='API별 필요한 응답 내용')
@@ -145,6 +149,23 @@ class Login(Resource):
 
 
 # ##### identify
+@ns.route('/resetToken')
+@ns.header('content-type', 'application/json')
+class ResetToken(Resource):
+    @ns.expect(_Schema.field_refresh)
+    @ns.response(200, 'api요청 성공', _Schema.response_fields)
+    @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    def post(self):
+        """refresh 토큰으로 jwt token 재 요청"""
+        try:
+            return serv.resetToken(request.json)
+        except Exception as e:
+            conn.rollback()
+            print(f'BE error: {self} {e}')
+            return { 'message': 'failed' }, 400
+
+
+
 @ns.route('/checkId')
 @ns.header('content-type', 'application/json')
 class CheckId(Resource):
