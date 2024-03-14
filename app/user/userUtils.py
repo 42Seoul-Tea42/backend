@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import pytz
 from ..const import KST, EARTH_RADIUS
 import math
+from app.db import conn
+from psycopg2.extras import DictCursor
 
 
 def generate_jwt(id):
@@ -37,6 +39,14 @@ def check_refresh(refresh):
         return True
 
     return False
+
+
+def update_last_online(id):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
+    cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
+    conn.commit()
+    cursor.close()
 
 
 def createEmailKey(login_id, key):   

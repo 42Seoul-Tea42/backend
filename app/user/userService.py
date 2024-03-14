@@ -1,12 +1,12 @@
 # from app import app
 # from flask import send_from_directory
 from app.db import conn
+from psycopg2.extras import DictCursor
 from . import userUtils as utils
 from app.const import MAX_SEARCH, DAYS, DISTANCE, Key, Status, EARTH_RADIUS, KST, PICTURE_DIR
 from datetime import datetime, timedelta
 import pytz
 import app.history.historyUtils as historyUtils
-from psycopg2.extras import DictCursor
 import os
 from ..socket import socket_service as socketServ
 # from werkzeug.utils import secure_filename
@@ -195,9 +195,6 @@ def profileDetail(data, id):
 
     result = {
         'login_id': target['login_id'],
-        'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
-        'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
-        'tags': utils.decodeBit(target['tags']),
         'status': socketServ.check_status(target_id),
         'last_online': target['last_online'],
         'gender': target['gender'],
@@ -220,11 +217,7 @@ def logout(id):
     #TODO cache, session 삭제
     #TODO socket 정리
 
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
-    cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
-    conn.commit()
-    cursor.close()
+    utils.update_last_online(id)
     return {
         'message': 'succeed',
     }, 200

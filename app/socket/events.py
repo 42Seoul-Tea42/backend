@@ -5,6 +5,7 @@ from flask_jwt_extended import get_jwt_identity
 from ..chat import chatUtils as chatUtils
 from ..const import Status
 from . import socket_service as socketServ
+from ..user import userUtils
 
 
 
@@ -36,17 +37,17 @@ def handle_disconnect():
     # id = get_jwt_identity()['id']
 
     user_sid = request.sid
-    if user_sid == socketServ.id_sid[id]:
-        socketServ.pop(socketServ.id_sid.pop(id))
-    else:
+    if id in socketServ.id_sid:
         socketServ.id_sid.pop(id)
-        socketServ.pop(user_sid)
 
+    userUtils.update_last_online(id)
     print(f'Client {id} disconnected')
 
     # (socket) status 업데이트
-    for target_id in socketServ.id_match[id]:
-        socketServ.update_status(id, target_id, Status.OFFLINE)
+    if id in socketServ.id_match:
+        for target_id in socketServ.id_match[id]:
+            socketServ.update_status(id, target_id, Status.OFFLINE)
+        socketServ.id_match.pop(id)
 
 
 #### chat ####
