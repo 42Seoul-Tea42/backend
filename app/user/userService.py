@@ -213,11 +213,11 @@ def profileDetail(data, id):
 
 
 def logout(id):
-    #TODO jwt, refresh token 삭제
-    #TODO cache, session 삭제
-    #TODO socket 정리
+    #socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
 
-    utils.update_last_online(id)
+    #refresh token 삭제
+    utils.delete_refresh(id)
+    
     return {
         'message': 'succeed',
     }, 200

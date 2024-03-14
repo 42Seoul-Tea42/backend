@@ -37,8 +37,16 @@ def check_refresh(refresh):
     #TODO refresh_decoded['exp'] 로 바로 날짜 비교 할 수 있는지 체크 필요
     if refresh_decoded['exp'] <= datetime.now(pytz.timezone(KST)):
         return True
-
+    
     return False
+
+
+def delete_refresh(id):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'UPDATE "User" SET "refresh" = NULL WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    conn.commit()
+    cursor.close()
 
 
 def update_last_online(id):
