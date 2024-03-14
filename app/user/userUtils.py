@@ -51,9 +51,13 @@ def delete_refresh(id):
 
 def update_last_online(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
-    cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
-    conn.commit()
+    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    user = cursor.fetchone()
+    if user:
+        sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
+        cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
+        conn.commit()
     cursor.close()
 
 

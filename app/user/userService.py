@@ -631,12 +631,13 @@ def requestReset(data):
 
 
 def unregister(id):
-    # 유저 및 관련 내용 모두 삭제 => cascade로 진행
-        # -> 이렇게 하면 채팅창이 이미 열려있는 경우 등에서 target이 없는 id여서 엄청난 에러폭풍이 예상된다...
-        # -> #TODO 없는 유저인 경우 별도 처리 필요하겠다
     
+    logout(id)
+    socketServ.unregister(id)
+
+    #TODO 모두 잘 삭제되는지 및 채팅창 에러 안뜨는지 확인 필요
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'DELETE FROM "User" WHERE "id" = %s;'
+    sql = 'DELETE FROM "User" WHERE "id" = %s CASCADE;'
     cursor.execute(sql, (id, ))
     conn.commit()
     cursor.close()
