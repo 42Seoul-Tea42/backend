@@ -86,10 +86,6 @@ class _Schema():
         "similar": fields.Boolean(description='비슷한 사람 좋아요%s'),
     })
 
-    # field_profile = ns.model('profile 필요 데이터', {
-    #     'target_id': fields.Integer(description='보고 싶은 유저'),
-    # })
-
     field_profileDetail = ns.model('profileDetail 필요 데이터', {
         'target_id': fields.Integer(description='보고 싶은 유저'),
     })
@@ -113,6 +109,7 @@ class _Schema():
     })
 
     field_refresh = ns.model('resetToken 필요 데이터', {
+        'id': fields.Integer(description='유저 id'),
         'refresh': fields.String(description='refresh token')
     })
 
@@ -181,23 +178,6 @@ class CheckId(Resource):
             print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
         
-# 필요없으면 지우기
-# @ns.route('/profile')
-# @ns.header('content-type', 'application/json')
-# class Profile(Resource):
-#     # @jwt_required()
-#     @ns.expect(_Schema.field_profile)
-#     @ns.response(200, 'api요청 성공', _Schema.response_fields)
-#     @ns.response(400, 'api요청 실패', _Schema.response_fields)
-#     def post(self):
-#         """프로필 확인"""
-#         try:
-#             return serv.profile(request.json)
-#         except Exception as e:
-#             conn.rollback()
-#             print(f'BE error: {self} {e}')
-#             return { 'message': 'failed' }, 400
-
 
 @ns.route('/profileDetail')
 @ns.header('content-type', 'application/json')

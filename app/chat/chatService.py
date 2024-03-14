@@ -1,6 +1,6 @@
 from app.db import conn
 from datetime import datetime
-from app.const import MAX_CHAT, Status, FIRST_CHAT
+from app.const import MAX_CHAT, FIRST_CHAT, Fancy
 from psycopg2.extras import DictCursor
 from ..history.historyUtils import getFancy
 from . import chatUtils
@@ -12,12 +12,14 @@ def chatList(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
+
     user = cursor.fetchone()
     if not user:
         cursor.close()
         return {
             'message': 'no such user',
         }, 400
+    
     long, lat = user['longitude'], user['latitude']
 
     sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_new" \
@@ -54,10 +56,12 @@ def chatList(id):
 
 def getMsg(data, id):
 
-    #TODO id, target_id가 connected인지 확인 필요
-    
     target_id = data['target_id']
-    
+    if getFancy(id, target_id) < Fancy.CONN:
+        return {
+            'message': 'cannot msg to unmatched user',
+        }, 400
+
     cursor = conn.cursor(cursor_factory=DictCursor)
 
     if data['msg_id'] == FIRST_CHAT: #방 클릭

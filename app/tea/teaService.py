@@ -21,7 +21,13 @@ def suggest(id):
         cursor = conn.cursor(cursor_factory=DictCursor)
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         cursor.execute(sql, (id, ))
+
         user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            return {
+                'message': 'no such user',
+            }, 400
 
         tags, hate_tags = user['tags'], user['hate_tags']
         emoji, hate_emoji = user['emoji'], user['hate_emoji']
@@ -75,17 +81,17 @@ def suggest(id):
         db_data = cursor.fetchall()
 
         result = []
-        for record in db_data:
+        for target in db_data:
 
             result.append({
-                'id': record['id'],
-                'name': record['name'],
-                'last_name': record['last_name'],
-                'birthday': datetime.strftime(record['birthday'], '%Y-%m-%d'),
-                'distance': userUtils.get_distance(lat, long, record['latitude'], record['longitude']),
-                'fame': record['count_fancy'] / record['count_view'] * 10 if record['count_view'] else 0,
-                'tags': userUtils.decodeBit(record['tags']),
-                'fancy': historyUtils.getFancy(id, record['id']),
+                'id': target['id'],
+                'name': target['name'],
+                'last_name': target['last_name'],
+                'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+                'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
+                'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+                'tags': userUtils.decodeBit(target['tags']),
+                'fancy': historyUtils.getFancy(id, target['id']),
             })
 
         cursor.close()

@@ -133,3 +133,11 @@ def get_distance(lat1, long1, lat2, long2):
     
     # 거리 계산 (m)
     return EARTH_RADIUS * c / 1000
+
+
+def allowed_file(filename, id):
+    if '.' in filename:
+        name, extension = filename.rsplit('.', 1)
+        if 0 <= int(name) < 5 and extension.lower() in {'png', 'jpg', 'jpeg'}:
+            return str(id) + "_" + name + '.' + extension
+    return None

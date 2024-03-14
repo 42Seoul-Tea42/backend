@@ -24,12 +24,14 @@ def viewHistory(data, id, opt):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
+
     user = cursor.fetchone()
     if not user:
         cursor.close()
         return {
             'message': 'no such user',
         }, 400
+    
     long, lat = user['longitude'], user['latitude']
 
     time_limit = data['time']
@@ -57,16 +59,17 @@ def viewHistory(data, id, opt):
         in_cursor.execute(sql, (record['user_id'], ))
         target = in_cursor.fetchone()
 
-        result.append({
-            'id': target['id'],
-            'name': target['name'],
-            'last_name': target['last_name'],
-            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
-            'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
-            'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
-            'tags': userUtils.decodeBit(target['tags']),
-            'fancy': utils.getFancy(id, target['id']),
-        })
+        if target:
+            result.append({
+                'id': target['id'],
+                'name': target['name'],
+                'last_name': target['last_name'],
+                'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+                'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
+                'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+                'tags': userUtils.decodeBit(target['tags']),
+                'fancy': utils.getFancy(id, target['id']),
+            })
 
     in_cursor.close()
     cursor.close()
@@ -106,7 +109,7 @@ def fancy(data, id):
         db_data = cursor.fetchone()
 
     #TODO unfancy 잘 돌아가는지 확인 필요
-    if db_data['fancy']: #fancy
+    if db_data and db_data['fancy']: #fancy
         sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" + 1 WHERE "id" = %s;'
         cursor.execute(sql, (target_id, ))
 

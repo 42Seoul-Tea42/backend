@@ -35,25 +35,28 @@ def login(data):
             'message': 'wrong password',
         }, 400
 
-    sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "login_id" = %s;'
-    cursor.execute(sql, (data['longitude'], data['latitude'], data['login_id']))
+    token = utils.generate_jwt(user['id'])
+    refresh = utils.generate_refresh(user['id'])
+
+    login_data = {
+        'token': token,
+        'refresh': refresh,
+        'id': user['id'],
+        'name': user['name'],
+        'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
+        'email_check': user['email_check'],
+        'profile_check': True if user['gender'] else False,
+        'emoji_check': True if user['emoji'] else False,
+    }
+
+    sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s, "refresh" = %s WHERE "login_id" = %s;'
+    cursor.execute(sql, (data['longitude'], data['latitude'], refresh, data['login_id']))
     conn.commit()
     cursor.close()
 
-    token = utils.generate_jwt(user['id'])
-    refresh = utils.generate_refresh(user['id'])
     return {
         'message': 'succeed',
-        'data': {
-            'token': token,
-            'refresh': refresh,
-            'id': user['id'],
-            'name': user['name'],
-            'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
-            'email_check': user['email_check'],
-            'profile_check': True if user['gender'] else False,
-            'emoji_check': True if user['emoji'] else False,
-        }
+        'data': login_data
     }, 200
 
 
@@ -66,10 +69,11 @@ def login(data):
 
 # ##### identify
 def resetToken(data):
+    id = data['id']
     refresh = data['refresh']
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT "refresh" FROM "User" WHERE "refresh" = %s;'
-    cursor.execute(sql, (refresh, ))
+    sql = 'SELECT "refresh" FROM "User" WHERE "refresh" = %s AND "id" = %s;'
+    cursor.execute(sql, (refresh, id))
     user = cursor.fetchone()
     if not user:
         cursor.close()
@@ -99,7 +103,6 @@ def checkId(data):
     cursor.execute(sql, (login_id, ))
     user = cursor.fetchone()
     
-    #TODO True, false 확인 필요
     occupied = True if user else False
     cursor.close()
     
@@ -109,46 +112,6 @@ def checkId(data):
             'occupied': occupied
         }
     }, 200
-        
-
-# def profile(data):
-#     cursor = conn.cursor(cursor_factory=DictCursor)
-#     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-#     cursor.execute(sql, (data['id'], ))
-#     user = cursor.fetchone()
-
-#     fancy = 0
-#     in_cursor = conn.cursor(cursor_factory=DictCursor)
-#     sql = 'SELECT "fancy" FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-#     in_cursor.execute(sql, (id, data['id']))
-#     send = in_cursor.fetchone()
-#     if send:
-#         fancy |= send['fancy']
-
-#     sql = 'SELECT "fancy" FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-#     in_cursor.execute(sql, (data['id'], id))
-#     recv = in_cursor.fetchone()
-#     if recv:
-#         fancy |= recv['fancy']
-
-#     result = {
-#         'id': user['id'],
-#         'login_id': user['login_id'],
-#         'name': user['name'],
-#         'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
-#         'longitude': user['longitude'],
-#         'latitude': user['latitude'],
-#         'fame': user['count_fancy'] / user['count_view'] * 10,
-#         'tags': utils.decodeBit(user['tags']),
-#         'fancy': fancy,
-#     },
-
-#     in_cursor.close()
-#     cursor.close()
-#     return {
-#         'message': 'succeed',
-#         'data': result #TODO 잘 가는 지 확인 필요
-#     }, 200
 
 
 def profileDetail(data, id):
@@ -234,13 +197,12 @@ def checkEmail(data):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "email" = %s;'
     cursor.execute(sql, (data['email'], ))
-    occupied = True if cursor.fetchone() else False #TODO 잘 되는지 체크 필요
+    occupied = True if cursor.fetchone() else False
     cursor.close()
     
     return {
         'message': 'succeed',
         'data': {
-            #TEST True, false 확인 필요
             'occupied': occupied,
         }
     }, 200
@@ -251,6 +213,11 @@ def emailStatus(id):
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
     user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
 
     result = {
         'email_check': user['email_check'],
@@ -269,6 +236,14 @@ def getEmail(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
+
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    
     email = cursor.fetchone()['email']
     cursor.close()
 
@@ -284,8 +259,14 @@ def sendEmail(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
-    user = cursor.fetchone()
 
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    
     email = user['email']
     if user['email_check']:
         cursor.close()
@@ -318,7 +299,14 @@ def changeEmail(data, id):
         #check email_check
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         cursor.execute(sql, (id, ))
+        
         user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            return {
+                'message': 'no such user',
+            }, 400
+        
         if user['email_check']:
             cursor.close()
             return {
@@ -425,7 +413,7 @@ def register(data):
         cursor.close()
 
     except Exception as e:
-        print('failed while create db')
+        print('/user/register: failed while create db')
         raise e
 
     utils.sendEmail(data['email'], email_key, Key.EMAIL)
@@ -438,7 +426,6 @@ def register(data):
 def setProfile(data, id):
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
-    print('tag encodeing', tags, hate_tags)
 
     try:
         cursor = conn.cursor(cursor_factory=DictCursor)
@@ -448,20 +435,12 @@ def setProfile(data, id):
         conn.commit()
         cursor.close()
     except Exception as e:
-        print('failed while update db')
+        print('user/setProfile: failed while update db')
         raise e
 
     return {
         'message': 'succeed',
     }, 200
-
-
-def allowed_file(filename, id):
-    if '.' in filename:
-        name, extension = filename.rsplit('.', 1)
-        if 0 <= int(name) < 5 and extension.lower() in {'png', 'jpg', 'jpeg'}:
-            return str(id) + "_" + name + '.' + extension
-    return None
 
 
 def setPicture(data, id):
@@ -486,7 +465,7 @@ def setPicture(data, id):
     error = False
     for image in images:
         filename = None
-        if (image.filename == '') or ((filename := allowed_file(image.filename, id)) is None):
+        if (image.filename == '') or ((filename := utils.allowed_file(image.filename, id)) is None):
             error = True
             continue
         image.save(f'/usr/app/srcs/app/profile/{filename}')
@@ -576,8 +555,8 @@ def resetPw(data, key):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
     cursor.execute(sql, (key, ))
+
     user = cursor.fetchone()
-    
     if not user:
         cursor.close()
         return {
@@ -599,8 +578,8 @@ def requestReset(data):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
     cursor.execute(sql, (data['login_id'], ))
+
     user = cursor.fetchone()
-    
     if not user:
         return {
             'message': 'id_check failed'
@@ -631,7 +610,7 @@ def requestReset(data):
 
 
 def unregister(id):
-    
+
     logout(id)
     socketServ.unregister(id)
 
@@ -677,12 +656,14 @@ def search(data, id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
+
     user = cursor.fetchone()
     if not user:
         cursor.close()
         return {
             'message': 'no such user',
         }, 400
+    
     long, lat = user['longitude'], user['latitude']
 
     sql = 'SELECT * \
@@ -707,21 +688,21 @@ def search(data, id):
     cursor.execute(sql, (id, id,
                          date_end, date_start,
                          data['fame'], tags if tags else -1,
-                         EARTH_RADIUS, user['latitude'], user['longitude'], user['latitude'], distance,
+                         EARTH_RADIUS, lat, long, lat, distance,
                          MAX_SEARCH))
     db_data = cursor.fetchall()
     
     result = []
-    for record in db_data:
+    for target in db_data:
         result.append({
-            'id': record['id'],
-            'name': record['name'],
-            'last_name': record['last_name'],
-            'birthday': datetime.strftime(record['birthday'], '%Y-%m-%d'),
-            'distance': utils.get_distance(lat, long, record['latitude'], record['longitude']),
-            'fame': record['count_fancy'] / record['count_view'] * 10 if record['count_view'] else 0,
-            'tags': utils.decodeBit(record['tags']),
-            'fancy': historyUtils.getFancy(id, record['id']),
+            'id': target['id'],
+            'name': target['name'],
+            'last_name': target['last_name'],
+            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
+            'distance': utils.get_distance(lat, long, target['latitude'], target['longitude']),
+            'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+            'tags': utils.decodeBit(target['tags']),
+            'fancy': historyUtils.getFancy(id, target['id']),
         })
 
     cursor.close()
@@ -774,6 +755,7 @@ def block(data, id):
 
     sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s AND "fancy" = True;'
     cursor.execute(sql, (id, data['target_id']))
+    
     #TODO 하기 ["fancy"] 잘 되는지 확인 필요
     history = cursor.fetchone()
     if history:
