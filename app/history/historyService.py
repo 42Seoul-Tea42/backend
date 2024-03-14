@@ -61,7 +61,10 @@ def viewHistory(data, id, opt):
             'id': target['id'],
             'name': target['name'],
             'last_name': target['last_name'],
+            'birthday': datetime.strftime(target['birthday'], '%Y-%m-%d'),
             'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
+            'fame': target['count_fancy'] / target['count_view'] * 10 if target['count_view'] else 0,
+            'tags': userUtils.decodeBit(target['tags']),
             'fancy': utils.getFancy(id, target['id']),
         })
 

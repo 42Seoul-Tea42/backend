@@ -25,7 +25,7 @@ def suggest(id):
 
         tags, hate_tags = user['tags'], user['hate_tags']
         emoji, hate_emoji = user['emoji'], user['hate_emoji']
-        longitude, latitude = user['longitude'], user['latitude']
+        long, lat = user['longitude'], user['latitude']
         similar = user['similar']
 
         # 나이 차이 범위 AGE_GAP
@@ -70,7 +70,7 @@ def suggest(id):
                             emoji, hate_emoji,
                             tags, similar, emoji, emoji,
                             date_start, date_end,
-                            EARTH_RADIUS, latitude, longitude, latitude, AREA_DISTANCE,
+                            EARTH_RADIUS, lat, long, lat, AREA_DISTANCE,
                             similar, emoji, MAX_SUGGEST))
         db_data = cursor.fetchall()
 
@@ -79,11 +79,10 @@ def suggest(id):
 
             result.append({
                 'id': record['id'],
-                'login_id': record['login_id'],
                 'name': record['name'],
+                'last_name': record['last_name'],
                 'birthday': datetime.strftime(record['birthday'], '%Y-%m-%d'),
-                'longitude': record['longitude'],
-                'latitude': record['latitude'],
+                'distance': userUtils.get_distance(lat, long, record['latitude'], record['longitude']),
                 'fame': record['count_fancy'] / record['count_view'] * 10 if record['count_view'] else 0,
                 'tags': userUtils.decodeBit(record['tags']),
                 'fancy': historyUtils.getFancy(id, record['id']),
