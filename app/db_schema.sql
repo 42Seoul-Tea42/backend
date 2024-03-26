@@ -8,6 +8,7 @@ CREATE TABLE "User" (
   	"id"        SERIAL PRIMARY KEY,
 	"login_id"	TEXT	UNIQUE,-- NOT NULL 필요? oauth 유저와 원만한 합의 필요
 	"password"	TEXT,
+	"oauth"		INTEGER NOT NULL,
   	"email"	    TEXT	UNIQUE NOT NULL,
 	"email_check"	BOOLEAN	NOT NULL,
 	"email_key"	TEXT,
@@ -16,8 +17,8 @@ CREATE TABLE "User" (
 	"last_name"	TEXT,
 	"birthday"	DATE,
 	"last_online"	TIMESTAMP,
-	"longitude"	FLOAT	NOT NULL,
-	"latitude"	FLOAT	NOT NULL,
+	"longitude"	FLOAT,
+	"latitude"	FLOAT,
 	"count_view" INTEGER,
 	"count_fancy" INTEGER,
 	"gender"	  INTEGER,

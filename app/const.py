@@ -10,6 +10,12 @@ DAYS = 365          #age calculation
 EARTH_RADIUS = 6_371_000    #(m)
 DISTANCE = 1_000    #distance(km)
 
+# User
+class Oauth():
+    NONE = 0
+    KAKAO = 1
+    GOOGLE = 2
+
 # History
 MAX_HISTORY = 16
 class History():

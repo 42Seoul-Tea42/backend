@@ -3,7 +3,7 @@
 from app.db import conn
 from psycopg2.extras import DictCursor
 from . import userUtils as utils
-from app.const import MAX_SEARCH, DAYS, DISTANCE, Key, Status, EARTH_RADIUS, KST, PICTURE_DIR
+from app.const import MAX_SEARCH, DAYS, DISTANCE, Key, EARTH_RADIUS, KST, PICTURE_DIR, Oauth, Gender, Tags, Emoji
 from datetime import datetime, timedelta
 import pytz
 import app.history.historyUtils as historyUtils
@@ -47,10 +47,11 @@ def login(data):
         'email_check': user['email_check'],
         'profile_check': True if user['gender'] else False,
         'emoji_check': True if user['emoji'] else False,
+        'oauth': user['oauth']
     }
 
-    sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s, "refresh" = %s WHERE "login_id" = %s;'
-    cursor.execute(sql, (data['longitude'], data['latitude'], refresh, data['login_id']))
+    sql = 'UPDATE "User" SET "refresh" = %s WHERE "login_id" = %s;'
+    cursor.execute(sql, (refresh, data['login_id']))
     conn.commit()
     cursor.close()
 
@@ -366,20 +367,21 @@ def setting(data, id):
             'message': 'fail: not valid email address',
         }, 400
 
-    hashed_pw = utils.hashing(data['pw'], data['login_id'])
+    #oauth 유저는 pw, login_id 없어서 None으로 처리
+    hashed_pw = utils.hashing(data['pw'], data['login_id']) if 'pw' in data else None
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
     emoji = utils.encodeBit(data['emoji'])
     hate_emoji = utils.encodeBit(data['hate_emoji'])
 
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "email" = %s, "pw" = %s, "last_name" = %s, "name" = %s, \
+    sql = 'UPDATE "User" SET "email" = %s, "pw" = %s, "oauth" = %s, s"last_name" = %s, "name" = %s, \
                             "birthday" = %s, "gender" = %s, "taste" = %s, "bio" = %s,\
                             "tags" = ", "hate_tags" = %s, "emoji" = %s, "hate_emoji" = %s, similar = %s \
             WHERE "id" = %s;'
 
     #TODO 잘 들어가는 지 확인 필요 (birthday!)
-    cursor.execute(sql, (data['email'], hashed_pw, data['last_name'], data['name'],
+    cursor.execute(sql, (data['email'], hashed_pw, 0, data['last_name'], data['name'],
                          data['birthday'], data['gender'], data['taste'], data['bio'],
                          tags, hate_tags, emoji, hate_emoji, data['similar'],
                          id))
@@ -390,6 +392,36 @@ def setting(data, id):
         'message': 'succeed',
     }, 200
 
+#TODO [TEST] dummy data
+def register_dummy(data):
+    try:
+        hashed_pw = utils.hashing(data['pw'], data['login_id'])
+        now_kst = datetime.now(pytz.timezone(KST))
+        pictures = ['1_0.png']
+
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        sql = 'INSERT INTO "User" (login_id, password, oauth, \
+                                    email, email_check, name, last_name, pictures, \
+                                    birthday, last_online, longitude, latitude, \
+                                    gender, taste, bio, tags, hate_tags, emoji, hate_emoji, "similar") \
+                            VALUES (%s, %s, %s, \
+                                    %s, %s, %s, %s, %s, \
+                                    %s, %s, %s, %s, \
+                                    %s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(sql, (data['login_id'], hashed_pw, Oauth.NONE, \
+                             data['email'], True, data['name'], data['last_name'], pictures, \
+                             data['birthday'], now_kst, data['longitude'], data['latitude'], \
+                             Gender.FEMALE, Gender.ALL, '자기소개입니다', 98, 2024, 33296, 16384, True))
+        conn.commit()
+        cursor.close()
+
+    except Exception as e:
+        print('/user/register: failed while create db')
+        raise e
+
+    return {
+        'message': 'succeed',
+    }, 200
 
 def register(data):
 
@@ -404,11 +436,10 @@ def register(data):
 
         cursor = conn.cursor(cursor_factory=DictCursor)
         sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
-                                    name, last_name, birthday, longitude, latitude) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
-        #TODO last name not null아니면 처리 필요
-        cursor.execute(sql, (data['email'], False, email_key,data['login_id'], hashed_pw,
-                             data['name'], data['last_name'], data['birthday'], data['longitude'], data['latitude']))
+                                    name, last_name, birthday, oauth) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(sql, (data['email'], False, email_key, data['login_id'], hashed_pw,
+                             data['name'], data['last_name'], data['birthday'], Oauth.NONE))
         conn.commit()
         cursor.close()
 
@@ -546,6 +577,25 @@ def setLocation(data, id):
     }, 200
 
 
+def findLoginId(data):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT * FROM "User" WHERE "email" = %s;'
+    cursor.execute(sql, (data['email'], ))
+    user = cursor.fetchone()
+    if not user:
+        cursor.close()
+        return {
+            'message': 'no such user',
+        }, 400
+    
+    cursor.close()
+    return {
+        'message': 'succeed',
+        'data': { 'email': user['email'] }
+    }, 200
+
+
+
 def resetPw(data, key):
     if key[-1] != str(Key.PASSWORD):
         return {
@@ -664,8 +714,14 @@ def search(data, id):
             'message': 'no such user',
         }, 400
     
+    if 'longitude' not in user or 'latitude' not in user:
+        cursor.close()
+        return {
+            'message': 'user has no location info',
+        }, 400
     long, lat = user['longitude'], user['latitude']
 
+    #TODO location info 없는 유저 (null) 인 경우 에러 안 뜨는지 확인 필요
     sql = 'SELECT * \
             FROM "User" \
             WHERE "id" != %s \

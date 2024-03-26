@@ -2,6 +2,7 @@ from flask import Flask
 from flask_restx import Api
 from flask_cors import CORS
 from .db import conn
+from .user.userService import register_dummy
 import os
 
 api = Api(
@@ -9,7 +10,7 @@ api = Api(
     title='tea42',
     prefix='/sw',
     contact_email='tea42fourtwo@gmail.com',
-    doc=False #swagger 표시 안하겠당!
+    # doc=False #swagger 표시 안하겠당!
 )
 
 def create_app():
@@ -19,7 +20,6 @@ def create_app():
 
     app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # Set upload directory: 32MB 제한
     app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_KEY')
-    app.config['JWT_TOKEN_LOCATION'] = ['headers', 'query_string'] #소켓통신 시 JWT 토큰 위치
 
 ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
     # Create a cursor
@@ -31,6 +31,20 @@ def create_app():
     cursor.execute(db_setup_sql)
     # Commit the changes
     conn.commit()
+
+    #TODO [TEST] dummy data delete
+    data = {
+        'login_id': os.environ.get('DUM_ID'),
+        'pw': os.environ.get('DUM_PW'),
+        'email': os.environ.get('DUM_EMAIL'),
+        'name': os.environ.get('DUM_NAME'),
+        'last_name': os.environ.get('DUM_LAST_NAME'),
+        'birthday': os.environ.get('DUM_BIRTHDAY'),
+        'longitude': os.environ.get('DUM_LONG'),
+        'latitude': os.environ.get('DUM_LAT'),
+    }
+    register_dummy(data)
+
     # Close the cursor
     cursor.close()
 ################################################################

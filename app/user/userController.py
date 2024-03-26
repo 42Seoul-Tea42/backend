@@ -56,6 +56,10 @@ class _Schema():
         'latitude': fields.Float(description='위도')
     })
 
+    field_LoginId = ns.model('loginId 필요 데이터', {
+        'email': fields.String(description='ID를 확인할 email')
+    })
+
     field_emoji = ns.model('emoji 필요 데이터', {
         "emoji": fields.List(fields.Integer, description='유저 취향 이모지'),
         "hate_emoji": fields.List(fields.Integer, description='싫어하는 이모지'),
@@ -431,6 +435,21 @@ class SetLocation(Resource):
             print(f'BE error: {self} {e}')
             return { 'message': 'failed' }, 400
 
+
+@ns.route('/loginId')
+@ns.header('content-type', 'application/json')
+class LoginId(Resource):
+    @ns.expect(_Schema.field_LoginId)
+    @ns.response(200, 'api요청 성공', _Schema.response_fields)
+    @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    def post(self):
+        """유저 email로 ID 찾기"""
+        try:
+            return serv.findLoginId(request.json)
+        except Exception as e:
+            conn.rollback()
+            print(f'BE error: {self} {e}')
+            return { 'message': 'failed' }, 400
 
 
 @ns.route('/resetPw/<string:key>')

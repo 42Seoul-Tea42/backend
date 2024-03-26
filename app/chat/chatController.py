@@ -12,11 +12,6 @@ class _Schema():
         'msg_id': fields.Integer(description='무한로딩용 기준 점(초기값 -1: 오버플로우임ㅋㅋ)'),
     })
 
-    # field_send = ns.model('(추후 소켓으로 대체 가능성 유)메시지 보낼 때 필요 데이터', {
-    #     'target_id': fields.Integer(description='채팅 대상 아이디'),
-    #     'msg': fields.String(description='보내는 메시지 내용')
-    # })
-
     response_fields = ns.model('응답 내용', {
         'message': fields.String(description='응답 별 참고 메시지'),
         'data': fields.Raw(description='API별 필요한 응답 내용')

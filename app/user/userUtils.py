@@ -30,8 +30,10 @@ def generate_refresh(id):
     return jwt.encode(refresh_json, os.environ.get('REFRESH_KEY'))
 
 
-def check_refresh(refresh):
+def check_refresh(refresh) -> bool:
     from ...wsgi import jwt
+
+    #TODO 잘못된 refresh decode 하려고 하면 어떻게 되는지 확인 필요
     refresh_decoded = jwt.decode(refresh, os.environ.get('REFRESH_KEY'))
 
     #TODO refresh_decoded['exp'] 로 바로 날짜 비교 할 수 있는지 체크 필요
@@ -39,6 +41,19 @@ def check_refresh(refresh):
         return True
     
     return False
+
+
+def decode_jwt(jwt):
+    from ...wsgi import jwt
+
+    #TODO 잘못된 jwt decode 하려고 하면 어떻게 되는지 확인 필요
+    jwt_decoded = jwt.decode(jwt, os.environ.get('JWT_KEY'))
+
+    #TODO refresh_decoded['exp'] 로 바로 날짜 비교 할 수 있는지 체크 필요
+    if jwt_decoded['exp'] <= datetime.now(pytz.timezone(KST)):
+        return jwt_decoded['id']
+    
+    return None
 
 
 def delete_refresh(id):
@@ -102,7 +117,7 @@ def isValidEmail(email):
 def hashing(password, login_id):
     #TODO bcrypt, sha256 등 해시 관련 내용 블로그 정리
     encrypted = bcrypt.hashpw((password + login_id).encode("utf-8"), bcrypt.gensalt())  # str 객체, bytes로 인코드, salt를 이용하여 암호화
-    return encrypted.decode("uft-8")
+    return encrypted.decode("utf-8")
 
     #sha256방식
     # m = hashlib.sha256()
