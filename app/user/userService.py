@@ -256,7 +256,7 @@ def getEmail(id):
     }, 200
         
 
-def sendEmail(id):
+def resendEmail(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))

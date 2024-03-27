@@ -12,10 +12,21 @@ DISTANCE = 1_000    #distance(km)
 
 # User
 IGNORE_MOVE = 1000    #1km 이하의 움직임 무시
+EXPIRED_TOKEN = 0
 class Oauth():
     NONE = 0
     KAKAO = 1
     GOOGLE = 2
+
+class Status():
+    OFFLINE = 0
+    ONLINE = 1
+
+# User_Email option
+class Key():
+    NONE = 0
+    EMAIL = 1
+    PASSWORD = 2
 
 # History
 MAX_HISTORY = 16
@@ -23,36 +34,34 @@ class History():
     FANCY = 0
     HISTORY = 1
 
-# Key generate option
-class Key():
+class Fancy():
     NONE = 0
-    EMAIL = 1
-    PASSWORD = 2
+    SEND = 1
+    RECV = 2
+    CONN = 3
 
 # Tea Suggestions
 MAX_SUGGEST = 5
 AGE_GAP = 5
 AREA_DISTANCE = 500 #500m
 
-# Chat
+# Chat / Socket
 FIRST_CHAT = 0
 MAX_CHAT = 20
 
+class SocketErr():
+    NONE = 0
+    NO_TOKEN = 1
+    BAD_TOKEN = 2
+    EXPIRED_TOKEN = 3
+    NO_USER = 4
+
+# Taste
 class Gender():
     OTHER = 1
     FEMALE = 2
     MALE = 4
     ALL = 7
-
-class Status():
-    OFFLINE = 0
-    ONLINE = 1
-
-class Fancy():
-    NONE = 0
-    SEND = 1
-    RECV = 2
-    CONN = 3
 
 class Tags():
     NONE = 0
@@ -89,6 +98,7 @@ class Emoji():
     EMOJI15 = 2 ** 14 # 빵빵이
     EMOJI16 = 2 ** 15 # 이과티콘
 
+# Report
 class Report():
     NONE = 0
     BULLY = 1

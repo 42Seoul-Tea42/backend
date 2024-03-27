@@ -5,7 +5,7 @@ from psycopg2.extras import DictCursor
 from ..user.userUtils import get_distance
 
 id_sid = dict()
-# sid_id = dict() #나중에 disconnect시 sid_id 필요하면 다시 추가하기
+sid_id = dict()
 id_match = dict()
 
 #### alarm ####

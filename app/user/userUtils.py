@@ -3,7 +3,7 @@ import os, re, random, string
 import bcrypt
 from datetime import datetime, timedelta
 import pytz
-from ..const import KST, EARTH_RADIUS, IGNORE_MOVE
+from ..const import KST, EARTH_RADIUS, IGNORE_MOVE, EXPIRED_TOKEN
 import math
 from app.db import conn
 from psycopg2.extras import DictCursor
@@ -95,8 +95,10 @@ def generate_refresh(id):
 def check_refresh(refresh) -> bool:
     from ...wsgi import jwt
 
-    #TODO 잘못된 refresh decode 하려고 하면 어떻게 되는지 확인 필요
-    refresh_decoded = jwt.decode(refresh, os.environ.get('REFRESH_KEY'))
+    try:
+        refresh_decoded = jwt.decode(refresh, os.environ.get('REFRESH_KEY'))
+    except Exception:
+        return False
 
     #TODO refresh_decoded['exp'] 로 바로 날짜 비교 할 수 있는지 체크 필요
     if refresh_decoded['exp'] <= datetime.now(pytz.timezone(KST)):
@@ -108,14 +110,16 @@ def check_refresh(refresh) -> bool:
 def decode_jwt(jwt):
     from ...wsgi import jwt
 
-    #TODO 잘못된 jwt decode 하려고 하면 어떻게 되는지 확인 필요
-    jwt_decoded = jwt.decode(jwt, os.environ.get('JWT_KEY'))
+    try:
+        jwt_decoded = jwt.decode(jwt, os.environ.get('JWT_KEY'))
+    except Exception:
+        return None
 
     #TODO refresh_decoded['exp'] 로 바로 날짜 비교 할 수 있는지 체크 필요
     if jwt_decoded['exp'] <= datetime.now(pytz.timezone(KST)):
         return jwt_decoded['id']
     
-    return None
+    return EXPIRED_TOKEN
 
 
 def delete_refresh(id):
@@ -218,3 +222,14 @@ def allowed_file(filename, id):
         if 0 <= int(name) < 5 and extension.lower() in {'png', 'jpg', 'jpeg'}:
             return str(id) + "_" + name + '.' + extension
     return None
+
+
+def get_user_data(id):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
+    cursor.execute(sql, (id, ))
+    
+    user = cursor.fetchone()
+    cursor.close()
+
+    return user

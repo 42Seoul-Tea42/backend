@@ -286,7 +286,7 @@ class SendEmail(Resource):
         try:
             id = 1
             # id = get_jwt_identity()['id']
-            return serv.sendEmail(id)
+            return serv.resendEmail(id)
         except Exception as e:
             conn.rollback()
             print(f'BE error: {self} {e}')
