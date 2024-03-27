@@ -1,8 +1,9 @@
 from app.db import conn
 from flask import request
 from flask_restx import Namespace, Resource, fields
-from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from . import chatService as serv
+from ..user.userUtils import update_location
 
 ns = Namespace(name='chat', description='채팅창 관련 API', path='/chat')
 
@@ -24,6 +25,7 @@ class ChatList(Resource):
     # @jwt_required()
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def get(self):
         """채팅리스트를 드립니다!"""
         try:
@@ -42,6 +44,7 @@ class GetMsg(Resource):
     @ns.expect(_Schema.field_msg)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """채팅 했던 내용 보내드립니다!!"""
         try:
@@ -61,6 +64,7 @@ class GetMsg(Resource):
 #     @ns.expect(_Schema.field_send) #안필요할듯!
 #     @ns.response(200, 'api요청 성공', _Schema.response_fields)
 #     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+#     @update_location
 #     def post(self):
 #         """저쪽 신사/숙녀분께 메시지 보내드리겠습니다"""
 #         try:

@@ -2,6 +2,7 @@ from app.db import conn
 from flask_restx import Namespace, Resource, fields
 from . import teaService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from ..user.userUtils import update_location
 
 ns = Namespace(name='tea', description='추천 관련 API', path='/tea')
 
@@ -18,6 +19,7 @@ class Suggest(Resource):
     # @jwt_required()
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def get(self):
         """get tea suggestions for you!"""
         try:

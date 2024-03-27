@@ -562,19 +562,19 @@ def getPicture(data):
     }, 200
 
 
-def setLocation(data, id):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
-    cursor.execute(sql, (data['longitude'], data['latitude'], id))
-    conn.commit()
-    cursor.close()
+# def setLocation(data, id):
+#     cursor = conn.cursor(cursor_factory=DictCursor)
+#     sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
+#     cursor.execute(sql, (data['longitude'], data['latitude'], id))
+#     conn.commit()
+#     cursor.close()
 
-    #(socket) 거리 업데이트
-    socketServ.update_distance(id, data['longitude'], data['latitude'])
+#     #(socket) 거리 업데이트
+#     socketServ.update_distance(id, data['longitude'], data['latitude'])
     
-    return {
-        'message': 'succeed',
-    }, 200
+#     return {
+#         'message': 'succeed',
+#     }, 200
 
 
 def findLoginId(data):

@@ -30,7 +30,7 @@ def sendSmtpEmail(addr_to, key, opt) -> str:
         content = f'''안녕하세요.\n\n
                     Tea For Two를 이용해주셔서 감사합니다.\n
                     아래 링크를 통해 인증을 완료해주세요.\n
-                    {domain + '/user/registerEmail/' + key}\n\n
+                    {domain}/user?page={opt}&key={key}\n\n
                     만일 본 이메일이 의도치 않게 수신되었거나 인증을 요청하지 않았다면, 이 이메일을 무시해주시기 바랍니다.\n\n
                     감사합니다.\n'''
         msg.attach(MIMEText(content, "plain"))
@@ -42,7 +42,7 @@ def sendSmtpEmail(addr_to, key, opt) -> str:
                     Tea For Two를 이용해주셔서 감사합니다.\n
                     비밀번호를 재설정하실 수 있도록 안내드립니다.\n
                     아래 링크를 클릭하시면 비밀번호 재설정 페이지로 이동하실 수 있습니다.\n
-                    {domain + '/user/resetPw/' + key}\n\n
+                    {domain}/user?page={opt}&key={key}\n\n
                     비밀번호를 안전하게 유지하기 위해 주기적으로 변경하시는 것이 좋습니다.\n
                     만일 본 이메일이 의도치 않게 수신되었다면, 이 이메일을 무시해주시기 바랍니다.\n\n
                     감사합니다.\n'''

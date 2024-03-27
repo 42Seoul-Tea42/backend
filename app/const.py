@@ -11,6 +11,7 @@ EARTH_RADIUS = 6_371_000    #(m)
 DISTANCE = 1_000    #distance(km)
 
 # User
+IGNORE_MOVE = 1000    #1km 이하의 움직임 무시
 class Oauth():
     NONE = 0
     KAKAO = 1
@@ -24,8 +25,9 @@ class History():
 
 # Key generate option
 class Key():
-    EMAIL = 0
-    PASSWORD = 1
+    NONE = 0
+    EMAIL = 1
+    PASSWORD = 2
 
 # Tea Suggestions
 MAX_SUGGEST = 5

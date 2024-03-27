@@ -4,6 +4,7 @@ from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
 from app.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from ..user.userUtils import update_location
 
 ns = Namespace(name='history', description='fancy 및 히스토리 관련 API', path='/history')
 
@@ -29,6 +30,7 @@ class CheckFancy(Resource):
     @ns.expect(_Schema.field_history)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """나를 팬시한 사람 그 누구냐!"""
         try:
@@ -47,6 +49,7 @@ class ViewHistory(Resource):
     @ns.expect(_Schema.field_history)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """내가 본 사람들"""
         try:
@@ -65,6 +68,7 @@ class Fancy(Resource):
     @ns.expect(_Schema.field_fancy)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """fancy/unfancy 했음!"""
         try:

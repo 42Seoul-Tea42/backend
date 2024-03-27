@@ -3,6 +3,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields, reqparse
 from werkzeug.datastructures import FileStorage
 from . import userService as serv
+from .userUtils import update_location
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
@@ -51,10 +52,10 @@ class _Schema():
         'target_id': fields.Integer(description='보고 싶은 유저'),
     })
 
-    field_setLocation = ns.model('setLocation 필요 데이터', {
-        'longitude': fields.Float(description='경도'),
-        'latitude': fields.Float(description='위도')
-    })
+    # field_setLocation = ns.model('setLocation 필요 데이터', {
+    #     'longitude': fields.Float(description='경도'),
+    #     'latitude': fields.Float(description='위도')
+    # })
 
     field_LoginId = ns.model('loginId 필요 데이터', {
         'email': fields.String(description='ID를 확인할 email')
@@ -190,6 +191,7 @@ class ProfileDetail(Resource):
     @ns.expect(_Schema.field_profileDetail)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """상세 프로필 확인"""
         try:
@@ -208,6 +210,7 @@ class Logout(Resource):
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def get(self):
+        # @update_location
         """logout"""
         try:
             id = 1
@@ -242,6 +245,7 @@ class EmailStatus(Resource):
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def get(self):
+        # @update_location
         """이메일 인증 여부 확인"""
         try:
             id = 1
@@ -259,6 +263,7 @@ class GetEmail(Resource):
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def get(self):
+        # @update_location
         """이메일 주소 확인"""
         try:
             id = 1
@@ -276,6 +281,7 @@ class SendEmail(Resource):
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def get(self):
+        # @update_location
         """인증 메일 다시 보내기"""
         try:
             id = 1
@@ -294,6 +300,7 @@ class ChangeEmail(Resource):
     @ns.expect(_Schema.field_changeEmail)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """(기존 메일 인증 전) 신규 이메일 등록"""
         try:
@@ -329,6 +336,7 @@ class Setting(Resource):
     @ns.expect(_Schema.field_setting)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """설정 업데이트 (프로필 사진은 별도로 진행)"""
         try:
@@ -364,6 +372,7 @@ class SetProfile(Resource):
     @ns.expect(_Schema.field_setProfile)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """(최초 1회) 프로필 설정"""
         try:
@@ -387,6 +396,7 @@ class SetPicture(Resource):
     @ns.expect(upload_parser)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """(최초 1회 및 설정페이지) 프로필 사진 설정"""
         try:
@@ -407,6 +417,7 @@ class GetPicture(Resource):
     @ns.expect(_Schema.field_getPicture)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """유저 프로필 사진 주세요"""
         try:
@@ -417,23 +428,24 @@ class GetPicture(Resource):
             return { 'message': 'failed' }, 400
 
 
-@ns.route('/setLocation')
-@ns.header('content-type', 'application/json')
-class SetLocation(Resource):
-    # @jwt_required()
-    @ns.expect(_Schema.field_setLocation)
-    @ns.response(200, 'api요청 성공', _Schema.response_fields)
-    @ns.response(400, 'api요청 실패', _Schema.response_fields)
-    def post(self):
-        """유저 위치 설정"""
-        try:
-            id = 1
-            # id = get_jwt_identity()['id']
-            return serv.setLocation(request.json, id)
-        except Exception as e:
-            conn.rollback()
-            print(f'BE error: {self} {e}')
-            return { 'message': 'failed' }, 400
+# @ns.route('/setLocation')
+# @ns.header('content-type', 'application/json')
+# class SetLocation(Resource):
+#     # @jwt_required()
+#     @ns.expect(_Schema.field_setLocation)
+#     @ns.response(200, 'api요청 성공', _Schema.response_fields)
+#     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+# @update_location
+#     def post(self):
+#         """유저 위치 설정"""
+#         try:
+#             id = 1
+#             # id = get_jwt_identity()['id']
+#             return serv.setLocation(request.json, id)
+#         except Exception as e:
+#             conn.rollback()
+#             print(f'BE error: {self} {e}')
+#             return { 'message': 'failed' }, 400
 
 
 @ns.route('/loginId')
@@ -491,6 +503,7 @@ class Unregister(Resource):
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
     def get(self):
+        # @update_location
         """회원 탈퇴"""
         try:
             id = 1
@@ -510,6 +523,7 @@ class Emoji(Resource):
     @ns.expect(_Schema.field_emoji)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """이모지 취향 설정"""
         try:
@@ -530,6 +544,7 @@ class Search(Resource):
     @ns.expect(_Schema.field_search)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """유저 검색 기능"""
         try:
@@ -550,6 +565,7 @@ class Report(Resource):
     @ns.expect(_Schema.field_report)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """리포트 하기"""
         try:
@@ -569,6 +585,7 @@ class Block(Resource):
     @ns.expect(_Schema.field_block)
     @ns.response(200, 'api요청 성공', _Schema.response_fields)
     @ns.response(400, 'api요청 실패', _Schema.response_fields)
+    # @update_location
     def post(self):
         """블록하기"""
         try:
