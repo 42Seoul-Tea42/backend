@@ -15,26 +15,23 @@ from ..socket import socket_service as socketServ
 #TODO cursor.close() after using cursor result
 #TODO update, insert, delete count확인 후 리턴 처리
 #TODO with ~ as ~ 내용으로 모두 바꾸기
+#with conn.cursor(cursor_factory=DictCursor) as cursor:
 # db result 접근 전 에러 처리 (user 없을 경우 등)
 
 def login(data):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
-    cursor.execute(sql, (data['login_id'], ))
-    user = cursor.fetchone()
-
+    login_id = data['login_id'].lower()
+    user = utils.get_user_by_login_id(login_id)
     if not user:
-        cursor.close()
         return {
             'message': 'no such user',
         }, 400
     
-    if not utils.isValidPassword(data['pw'], data['login_id'], user['password']):
-        cursor.close()
+    if not utils.isValidPassword(data['pw'], login_id, user['password']):
         return {
             'message': 'wrong password',
         }, 400
 
+    cursor = conn.cursor(cursor_factory=DictCursor)
     token = utils.generate_jwt(user['id'])
     refresh = utils.generate_refresh(user['id'])
 
@@ -43,7 +40,7 @@ def login(data):
         'refresh': refresh,
         'id': user['id'],
         'name': user['name'],
-        'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d'),
+        'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d') if user['birthday'] else None, #TODO birthday 제외?
         'email_check': user['email_check'],
         'profile_check': True if user['gender'] else False,
         'emoji_check': True if user['emoji'] else False,
@@ -61,8 +58,35 @@ def login(data):
     }, 200
 
 
-# def kakao():
-# return
+def login_kakao(login_id):
+    user = utils.get_user(login_id)
+    if not user:
+        return {
+            'message': 'no such user',
+        }, 400
+    
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    token = utils.generate_jwt(user['id'])
+    refresh = utils.generate_refresh(user['id'])
+
+    login_data = {
+        'token': token,
+        'refresh': refresh,
+        'id': user['id'],
+        'name': user['name'],
+        'birthday': datetime.strftime(user['birthday'], '%Y-%m-%d') if user['birthday'] else None, #TODO birthday 제외?
+        'email_check': user['email_check'],
+        'profile_check': True if user['gender'] else False,
+        'emoji_check': True if user['emoji'] else False,
+        'oauth': user['oauth']
+    }
+
+    sql = 'UPDATE "User" SET "refresh" = %s WHERE "login_id" = %s;'
+    cursor.execute(sql, (refresh, login_id))
+    conn.commit()
+    cursor.close()
+
+    return login_data
 
 # def google():
 # return
@@ -100,6 +124,13 @@ def resetToken(data):
 def checkId(data):
     login_id = data['login_id']
     cursor = conn.cursor(cursor_factory=DictCursor)
+
+    if not utils.is_valid_login_id(login_id):
+        return {
+            'message': 'succeed',
+            'data': { 'occupied': True }
+        }, 200
+    
     sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
     cursor.execute(sql, (login_id, ))
     user = cursor.fetchone()
@@ -179,9 +210,11 @@ def profileDetail(data, id):
 def logout(id):
     #socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
 
+    #jwt token 만료시키기
+
     #refresh token 삭제
     utils.delete_refresh(id)
-    
+
     return {
         'message': 'succeed',
     }, 200
@@ -210,12 +243,8 @@ def checkEmail(data):
 
 
 def emailStatus(id):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-    user = cursor.fetchone()
+    user = utils.get_user(id)
     if not user:
-        cursor.close()
         return {
             'message': 'no such user',
         }, 400
@@ -225,7 +254,6 @@ def emailStatus(id):
         'profile_check': True if user['gender'] else False,
         'emoji_check': True if user['emoji'] else False,
     }
-    cursor.close()
 
     return {
         'message': 'succeed',
@@ -234,43 +262,35 @@ def emailStatus(id):
 
 
 def getEmail(id):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-
-    user = cursor.fetchone()
-    if not user:
-        cursor.close()
+    user = utils.get_user(id)
+    if not user:    
         return {
             'message': 'no such user',
         }, 400
     
-    email = cursor.fetchone()['email']
-    cursor.close()
-
+    #TODO email 가리기
     return {
         'message': 'succeed',
         'data': {
-            'email': email
+            'email': user['email']
         }
     }, 200
         
 
 def resendEmail(id):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-
-    user = cursor.fetchone()
-    if not user:
-        cursor.close()
+    if not utils.is_valid_login_id(id):
+        return {
+            'message': 'invalid id',
+        }, 400
+    
+    user = utils.get_user(id)
+    if not user:    
         return {
             'message': 'no such user',
         }, 400
     
     email = user['email']
     if user['email_check']:
-        cursor.close()
         return {
             'message': 'email already verified',
         }, 400
@@ -280,7 +300,6 @@ def resendEmail(id):
         'profile_check': True if user['gender'] else False,
         'emoji_check': True if user['emoji'] else False,
     }
-    cursor.close()
 
     utils.sendEmail(email, user['email_key'], Key.EMAIL)
     return {
@@ -294,26 +313,19 @@ def changeEmail(data, id):
         return {
             'message': 'fail: not valid email address',
         }, 400
+        
+    user = utils.get_user(id)
+    if not user:    
+        return {
+            'message': 'no such user',
+        }, 400
 
+    if user['email_check']:
+        return {
+            'message': 'error: email already verified',
+        }, 400
+    
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-
-        #check email_check
-        sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-        cursor.execute(sql, (id, ))
-        
-        user = cursor.fetchone()
-        if not user:
-            cursor.close()
-            return {
-                'message': 'no such user',
-            }, 400
-        
-        if user['email_check']:
-            cursor.close()
-            return {
-                'message': 'error: cannot change verified email',
-            }, 400
-
         #update
         email_key = utils.createEmailKey(user['login_id'], Key.EMAIL)
         sql = 'UPDATE "User" SET "email" = %s, "email_key" = %s WHERE "id" = %s;'
@@ -329,19 +341,17 @@ def changeEmail(data, id):
             'emoji_check': True if user['emoji'] else False,
         }
         
-        return {
-            'message': 'succeed',
-            'data': result
-        }, 200
-
-
+    return {
+        'message': 'succeed',
+        'data': result
+    }, 200
 
     
 def registerEmail(key):
     if key[-1] != str(Key.EMAIL):
         return {
             'message': 'wrong email check key',
-        }, 200
+        }, 400
     
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'UPDATE "User" SET "email_check" = %s, "email_key" = %s WHERE "email_key" = %s;'
@@ -366,6 +376,12 @@ def setting(data, id):
         return {
             'message': 'fail: not valid email address',
         }, 400
+    
+    user = utils.get_user(id)
+    if not user:
+        return {
+            'message': 'no such user',
+        }, 400
 
     #oauth 유저는 pw, login_id 없어서 None으로 처리
     hashed_pw = utils.hashing(data['pw'], data['login_id']) if 'pw' in data else None
@@ -375,13 +391,25 @@ def setting(data, id):
     hate_emoji = utils.encodeBit(data['hate_emoji'])
 
     cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'UPDATE "User" SET "email" = %s, "pw" = %s, "oauth" = %s, s"last_name" = %s, "name" = %s, \
-                            "birthday" = %s, "gender" = %s, "taste" = %s, "bio" = %s,\
-                            "tags" = ", "hate_tags" = %s, "emoji" = %s, "hate_emoji" = %s, similar = %s \
+    #TODO 카카오 회원 email 기존 값 유지하는지 확인 필요
+    sql = 'UPDATE "User" \
+            SET "email" = CASE WHEN "oauth" != 1 THEN %s ELSE "email" END, \
+                "pw" = CASE WHEN "oauth" != 1 THEN %s ELSE "pw" END, \
+                "last_name" = %s, \
+                "name" = %s, \
+                "birthday" = %s, \
+                "gender" = %s, \
+                "taste" = %s, \
+                "bio" = %s,\
+                "tags" = %s, \
+                "hate_tags" = %s, \
+                "emoji" = %s, \
+                "hate_emoji" = %s, \
+                similar = %s \
             WHERE "id" = %s;'
 
     #TODO 잘 들어가는 지 확인 필요 (birthday!)
-    cursor.execute(sql, (data['email'], hashed_pw, 0, data['last_name'], data['name'],
+    cursor.execute(sql, (data['email'], hashed_pw, data['last_name'], data['name'],
                          data['birthday'], data['gender'], data['taste'], data['bio'],
                          tags, hate_tags, emoji, hate_emoji, data['similar'],
                          id))
@@ -429,17 +457,23 @@ def register(data):
         return {
             'message': 'fail: not valid email address',
         }, 400
+    
+    if not utils.is_valid_login_id(data['login_id']):
+        return {
+            'message': 'fail: invalid login_id',
+        }, 400
 
     try:
-        hashed_pw = utils.hashing(data['pw'], data['login_id'])
-        email_key = utils.createEmailKey(data['login_id'], Key.EMAIL)
+        login_id = data['login_id'].lower()
+        hashed_pw = utils.hashing(data['pw'], login_id)
+        email_key = utils.createEmailKey(login_id, Key.EMAIL)
 
         cursor = conn.cursor(cursor_factory=DictCursor)
         sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
-                                    name, last_name, birthday, oauth) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
-        cursor.execute(sql, (data['email'], False, email_key, data['login_id'], hashed_pw,
-                             data['name'], data['last_name'], data['birthday'], Oauth.NONE))
+                                    name, last_name, oauth) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(sql, (data['email'], False, email_key, login_id, hashed_pw,
+                             data['name'], data['last_name'], Oauth.NONE))
         conn.commit()
         cursor.close()
 
@@ -454,15 +488,29 @@ def register(data):
     }, 200
 
 
+def register_kakao(data):
+    try:
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        sql = 'INSERT INTO "User" (email, email_check, login_id, name, oauth) \
+                            VALUES (%s, %s, %s, %s, %s)'
+        cursor.execute(sql, (data['email'], True, data['login_id'], data['name'], Oauth.KAKAO))
+        conn.commit()
+        cursor.close()
+
+    except Exception as e:
+        print('/user/register_kakao: failed while create db')
+        raise e
+
+
 def setProfile(data, id):
     tags = utils.encodeBit(data['tags'])
     hate_tags = utils.encodeBit(data['hate_tags'])
 
     try:
         cursor = conn.cursor(cursor_factory=DictCursor)
-        sql = 'UPDATE "User" SET "gender" = %s, "taste" = %s, "bio" = %s, "tags" = %s, "hate_tags" = %s \
+        sql = 'UPDATE "User" SET "gender" = %s, "taste" = %s, "bio" = %s, "tags" = %s, "hate_tags" = %s, "birthday" = %s \
                 WHERE "id" = %s;'
-        cursor.execute(sql, (data['gender'], data['taste'], data['bio'], tags, hate_tags, id))
+        cursor.execute(sql, (data['gender'], data['taste'], data['bio'], tags, hate_tags, data['birthday'], id))
         conn.commit()
         cursor.close()
     except Exception as e:
@@ -578,21 +626,21 @@ def getPicture(data):
 
 
 def findLoginId(data):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "email" = %s;'
-    cursor.execute(sql, (data['email'], ))
-    user = cursor.fetchone()
-    if not user:
-        cursor.close()
-        return {
-            'message': 'no such user',
-        }, 400
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        
+        sql = 'SELECT * FROM "User" WHERE "email" = %s;'
+        cursor.execute(sql, (data['email'], ))
+        user = cursor.fetchone()
+        if not user or user['oauth'] != Oauth.NONE:
+            return {
+                'message': 'no such user',
+            }, 400
     
-    cursor.close()
-    return {
-        'message': 'succeed',
-        'data': { 'email': user['email'] }
-    }, 200
+        #TODO email 보안 처리 **
+        return {
+            'message': 'succeed',
+            'data': { 'email': user['email'] }
+        }, 200
 
 
 
@@ -602,22 +650,20 @@ def resetPw(data, key):
             'message': 'wrong password reset key',
         }, 200
 
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
-    cursor.execute(sql, (key, ))
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
+        cursor.execute(sql, (key, ))
 
-    user = cursor.fetchone()
-    if not user:
-        cursor.close()
-        return {
-            'message': 'no such reset key',
-        }, 400
+        user = cursor.fetchone()
+        if not user:
+            return {
+                'message': 'no such reset key',
+            }, 400
 
-    hashed_pw = utils.hashing(data['pw'], user['login_id'])
-    sql = 'UPDATE "User" SET "password" = %s, "email_key" = %s WHERE "email_key" = %s;'
-    cursor.execute(sql, (hashed_pw, None, key))
-    conn.commit()
-    cursor.close()
+        hashed_pw = utils.hashing(data['pw'], user['login_id'])
+        sql = 'UPDATE "User" SET "password" = %s, "email_key" = %s WHERE "email_key" = %s;'
+        cursor.execute(sql, (hashed_pw, None, key))
+        conn.commit()
 
     return {
         'message': 'succeed',
@@ -625,21 +671,23 @@ def resetPw(data, key):
 
 
 def requestReset(data):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
-    cursor.execute(sql, (data['login_id'], ))
+    if not utils.is_valid_login_id(data['login_id'].lower()):
+        return {
+            'message': 'invalid id'
+        }, 400
 
-    user = cursor.fetchone()
+    user = utils.get_user_by_login_id(data['login_id'].lower())
     if not user:
         return {
-            'message': 'id_check failed'
+            'message': 'no such user'
         }, 400
     
     if not user['email_check']:
         return {
-            'message': 'email_check failed',
+            'message': 'unverified email',
         }, 400
     
+    cursor = conn.cursor(cursor_factory=DictCursor)
     email = user['email']
     email_key = utils.createEmailKey(user['login_id'], Key.PASSWORD)
 

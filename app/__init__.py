@@ -62,6 +62,9 @@ def create_app():
     
     from .chat import chatController
     api.add_namespace(chatController.ns)
+
+    from .oauth import kakaoController
+    api.add_namespace(kakaoController.ns)
     
     @app.route('/')
     def welcome():

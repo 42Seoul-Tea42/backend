@@ -21,9 +21,7 @@ def sendSmtpEmail(addr_to, key, opt) -> str:
     msg["From"] = email_account
     msg["To"] = addr_to
 
-    #TODO 도메인주소 변경
-    # domain = os.environ.get('DOMAIN')
-    domain = 'http://localhost:8080'
+    domain = os.environ.get('DOMAIN')
 
     if opt == Key.EMAIL:
         msg["Subject"] = f"[Tea For Two] 이메일 인증 요청"  # 메일 제목

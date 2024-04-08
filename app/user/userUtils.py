@@ -193,6 +193,8 @@ def hashing(password, login_id):
 
 
 def isValidPassword(password, login_id, hashed_pw):
+    if hashed_pw is None:
+        return False
     return bcrypt.checkpw((password + login_id).encode("utf-8"), hashed_pw)
 
     #sha256방식
@@ -224,12 +226,30 @@ def allowed_file(filename, id):
     return None
 
 
-def get_user_data(id):
+def get_user(id):
     cursor = conn.cursor(cursor_factory=DictCursor)
     sql = 'SELECT * FROM "User" WHERE "id" = %s;'
     cursor.execute(sql, (id, ))
-    
     user = cursor.fetchone()
     cursor.close()
 
     return user
+
+def get_user_by_login_id(login_id):
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
+    cursor.execute(sql, (login_id, ))
+    user = cursor.fetchone()
+    cursor.close()
+
+    return user
+
+def is_valid_login_id(id):
+    if id.lower().startswith('kakao') \
+        or id.lower().startswith('google') \
+        or id.lower().startswith('default') \
+        or id.lower().startswith('tea') \
+        or id.lower().startswith('admin') \
+        or id.lower().startswith('root'):
+        return False
+    return True

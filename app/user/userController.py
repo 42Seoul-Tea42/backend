@@ -31,7 +31,6 @@ class _Schema():
         "pw": fields.String(description='패스워드'),
         "last_name": fields.String(description='성'),
         "name": fields.String(description='이름'),
-        "birthday": fields.DateTime(description='생일'),
         'longitude': fields.Float(description='경도'),
         'latitude': fields.Float(description='위도')
     })
@@ -46,6 +45,7 @@ class _Schema():
         "bio": fields.String(description='자기소개'),
         "tags": fields.List(fields.Integer, description='취미 태그'),
         "hate_tags": fields.List(fields.Integer, description='싫어하는 취미 태그'),
+        "birthday": fields.DateTime(description='생일'),
     })
 
     field_getPicture = ns.model('getPicture 필요 데이터', {

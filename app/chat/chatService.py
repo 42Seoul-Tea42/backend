@@ -2,10 +2,10 @@ from app.db import conn
 from datetime import datetime
 from app.const import MAX_CHAT, FIRST_CHAT, Fancy
 from psycopg2.extras import DictCursor
-from ..history.historyUtils import getFancy
 from . import chatUtils
-from ..socket.socket_service import check_status
-from ..user.userUtils import get_distance
+from ..history import historyUtils as hisUtils
+from ..socket import socket_service as socketServ
+from ..user import userUtils
 
 
 def chatList(id):
@@ -40,9 +40,9 @@ def chatList(id):
             'id': target['id'],
             'name': target['name'],
             'last_name': target['last_name'],
-            'status': check_status(target['id']),
-            'distance': get_distance(lat, long, target['latitude'], target['longitude']),
-            'fancy': getFancy(id, target['id']),
+            'status': socketServ.check_status(target['id']),
+            'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
+            'fancy': hisUtils.getFancy(id, target['id']),
             'new': chat['msg_new']
         })
 
@@ -57,7 +57,7 @@ def chatList(id):
 def getMsg(data, id):
 
     target_id = data['target_id']
-    if getFancy(id, target_id) < Fancy.CONN:
+    if hisUtils.getFancy(id, target_id) < Fancy.CONN:
         return {
             'message': 'cannot msg to unmatched user',
         }, 400
