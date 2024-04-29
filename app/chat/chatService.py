@@ -1,6 +1,5 @@
 from app.db import conn
-from datetime import datetime
-from app.const import MAX_CHAT, FIRST_CHAT, Fancy
+from app.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
 from psycopg2.extras import DictCursor
 from . import chatUtils
 from ..history import historyUtils as hisUtils
@@ -8,94 +7,92 @@ from ..socket import socket_service as socketServ
 from ..user import userUtils
 
 
-def chatList(id):
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-    cursor.execute(sql, (id, ))
-
-    user = cursor.fetchone()
+def chat_list(id):
+    user = userUtils.get_user(id)
     if not user:
-        cursor.close()
         return {
-            'message': 'no such user',
-        }, 400
-    
-    long, lat = user['longitude'], user['latitude']
+            "message": "유저 정보를 찾을 수 없습니다.",
+        }, StatusCode.UNAUTHORIZED
+    long, lat = user["longitude"], user["latitude"]
 
-    sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_new" \
-            FROM "Chat" \
-            WHERE "target_id" = %s \
-            ORDER BY "msg_time" DESC;'
-    cursor.execute(sql, (id, ))
-    chatrooms = cursor.fetchall()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
 
-    result = []
-    in_cursor = conn.cursor(cursor_factory=DictCursor)
-    for chat in chatrooms:
-        sql = 'SELECT * FROM "User" WHERE "id" = %s;'
-        in_cursor.execute(sql, (chat['user_id'], ))
-        target = in_cursor.fetchone()
+        sql = 'SELECT DISTINCT ON ("user_id") "user_id", "msg", "msg_time", "msg_new" \
+                FROM "Chat" \
+                WHERE "target_id" = %s \
+                ORDER BY "msg_time" DESC;'
+        cursor.execute(sql, (id,))
+        chatrooms = cursor.fetchall()
 
-        result.append({
-            'id': target['id'],
-            'name': target['name'],
-            'last_name': target['last_name'],
-            'status': socketServ.check_status(target['id']),
-            'distance': userUtils.get_distance(lat, long, target['latitude'], target['longitude']),
-            'fancy': hisUtils.getFancy(id, target['id']),
-            'new': chat['msg_new']
-        })
+        result = []
+        for chat in chatrooms:
+            target = userUtils.get_user(chat["user_id"])
+            picture = userUtils.get_picture(target["picture"][0])
+            result.append(
+                {
+                    "id": target["id"],
+                    "name": target["name"],
+                    "last_name": target["last_name"],
+                    "status": socketServ.check_status(target["id"]),
+                    "distance": userUtils.get_distance(
+                        lat, long, target["latitude"], target["longitude"]
+                    ),
+                    "fancy": hisUtils.get_fancy(id, target["id"]),
+                    "new": chat["msg_new"],
+                    "picture": picture,
+                }
+            )
 
-    in_cursor.close()
-    cursor.close()
     return {
-        'message': 'succeed',
-        'data': result,
-    }, 200
+        "chat_list": result,
+    }, StatusCode.OK
 
 
-def getMsg(data, id):
-
-    target_id = data['target_id']
-    if hisUtils.getFancy(id, target_id) < Fancy.CONN:
+def get_msg(id, target_id, msg_id):
+    if not userUtils.get_user(target_id):
         return {
-            'message': 'cannot msg to unmatched user',
-        }, 400
+            "message": "유저 정보를 찾을 수 없습니다.",
+        }, StatusCode.BAD_REQUEST
 
-    cursor = conn.cursor(cursor_factory=DictCursor)
+    if hisUtils.get_fancy(id, target_id) < Fancy.CONN:
+        return {
+            "message": "연결된 상대가 아닙니다.",
+        }, StatusCode.FORBIDDEN
 
-    if data['msg_id'] == FIRST_CHAT: #방 클릭
-        #채팅 읽음 처리
-        chatUtils.read_chat(id, target_id)
-        
-        sql = 'SELECT * FROM "Chat" \
-            WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
-            ORDER BY "msg_time" DESC \
-            LIMIT %s;'
-        cursor.execute(sql, (id, target_id, id, target_id, MAX_CHAT))
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
 
-    else: #방 내부에서 추가 로딩
-        sql = 'SELECT * FROM "Chat" \
-            WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
-                    AND "msg_time" < %s \
-            ORDER BY "msg_time" DESC \
-            LIMIT %s;'
-        cursor.execute(sql, (id, target_id, id, target_id, data['msg_time'], MAX_CHAT))
-    
-    chats = cursor.fetchall()
-    result = []
+        if msg_id == FIRST_CHAT:  # 방 클릭
+            # 채팅 읽음 처리
+            chatUtils.read_chat(id, target_id)
 
-    for chat in chats:
-        result.append({
-            'msg_id': chat['id'],
-            'sender': chat['user_id'],
-            'msg': chat['msg'],
-            'msg_time': chat['msg_time'],
-            'checked': chat['msg_new'] if chat['user_id'] == id else True
-        })
+            sql = 'SELECT * FROM "Chat" \
+                WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
+                ORDER BY "msg_time" DESC \
+                LIMIT %s;'
+            cursor.execute(sql, (id, target_id, id, target_id, MAX_CHAT))
 
-    cursor.close()
+        else:  # 방 내부에서 추가 로딩
+            sql = 'SELECT * FROM "Chat" \
+                WHERE ("target_id" = %s AND "user_id" = %s) OR ("user_id" = %s AND "target_id" = %s) \
+                        AND "msg_id" < %s \
+                ORDER BY "msg_time" DESC \
+                LIMIT %s;'
+            cursor.execute(sql, (id, target_id, id, target_id, msg_id, MAX_CHAT))
+
+        chats = cursor.fetchall()
+        result = []
+
+        for chat in chats:
+            result.append(
+                {
+                    "msg_id": chat["id"],
+                    "sender": chat["user_id"],
+                    "msg": chat["msg"],
+                    "msg_time": chat["msg_time"],
+                    "checked": chat["msg_new"] if chat["user_id"] == id else True,
+                }
+            )
+
     return {
-        'message': 'succeed',
-        'data': result,
-    }, 200
+        "msg_list": result,
+    }, StatusCode.OK

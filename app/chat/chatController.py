@@ -1,74 +1,101 @@
-from app.db import conn
 from flask import request
 from flask_restx import Namespace, Resource, fields
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import chatService as serv
-from ..user.userUtils import update_location
+from ..wrapper.token import custom_jwt_required
+from ..wrapper.location import update_location
+from ..const import StatusCode
 
-ns = Namespace(name='chat', description='채팅창 관련 API', path='/chat')
-
-class _Schema():             
-    field_msg = ns.model('기존 채팅방 채팅 요청 시 필요 데이터', {
-        'target_id': fields.Integer(description='채팅 대상 아이디'),
-        'msg_id': fields.Integer(description='무한로딩용 기준 점(초기값 -1: 오버플로우임ㅋㅋ)'),
-    })
-
-    response_fields = ns.model('응답 내용', {
-        'message': fields.String(description='응답 별 참고 메시지'),
-        'data': fields.Raw(description='API별 필요한 응답 내용')
-    })
+ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
 
 
-@ns.route('/list')
-@ns.header('content-type', 'application/json')
+class _ResponseSchema:
+    field_json_chat = ns.model(
+        "채팅 대상 응답 데이터",
+        {
+            "id": fields.Integer(description="유저 id"),
+            "name": fields.String(description="유저 이름"),
+            "last_name": fields.String(description="유저 성"),
+            "status": fields.Integer(description="유저 온라인 여부"),
+            "distance": fields.Float(description="거리"),
+            "fancy": fields.Integer(description="유저와의 fancy 관계"),
+            "new": fields.Boolean(description="새 메시지 여부"),
+            "picture": fields.String(description="유저 프로필 사진 데이터"),
+        },
+    )
+
+    field_get_list = ns.model(
+        "채팅 목록 데이터",
+        {
+            "chat_list": fields.List(
+                fields.Nested(field_json_chat), description="채팅 목록"
+            ),
+        },
+    )
+
+    field_json_msg = ns.model(
+        "채팅 하나에 대한 정보",
+        {
+            "msg_id": fields.Integer(description="메시지 id"),
+            "sender": fields.Integer(description="메시지 보낸 사람 id"),
+            "msg": fields.String(description="메시지 내용"),
+            "msg_time": fields.DateTime(description="메시지 보낸 시간"),
+            "checked": fields.Boolean(description="상대방이 확인했는지 여부"),
+        },
+    )
+
+    field_get_msg = ns.model(
+        "채팅 히스토리",
+        {
+            "msg_list": fields.List(
+                fields.Nested(field_json_msg), description="메시지 히스토리"
+            ),
+        },
+    )
+
+    field_failed = ns.model(
+        "API 요청 실패",
+        {
+            "message": fields.String(description="실패 이유"),
+        },
+    )
+
+
+@ns.route("/list")
 class ChatList(Resource):
-    # @jwt_required()
-    @ns.response(200, 'api요청 성공', _Schema.response_fields)
-    @ns.response(400, 'api요청 실패', _Schema.response_fields)
-    # @update_location
-    def get(self):
+    # @custom_jwt_required()
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    # @update_location()
+    def get(self, id=1):
         """채팅리스트를 드립니다!"""
-        try:
-            id = 1
-            # id = get_jwt_identity()['id']
-            return serv.chatList(id)
-        except Exception as e:
-            conn.rollback()
-            return { 'message': 'failed' }, 400
+        # [JWT] delete below
+        id = 1
+        return serv.chat_list(id)
 
 
-@ns.route('/msg')
-@ns.header('content-type', 'application/json')
+@ns.route("/msg")
 class GetMsg(Resource):
-    # @jwt_required()
-    @ns.expect(_Schema.field_msg)
-    @ns.response(200, 'api요청 성공', _Schema.response_fields)
-    @ns.response(400, 'api요청 실패', _Schema.response_fields)
-    # @update_location
-    def post(self):
+    # @custom_jwt_required()
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.doc(params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 시간"})
+    # @update_location()
+    def get(self, id=1):
         """채팅 했던 내용 보내드립니다!!"""
-        try:
-            id = 1
-            # id = get_jwt_identity()['id']
-            return serv.getMsg(request.json, id)
-        except Exception as e:
-            conn.rollback()
-            return { 'message': 'failed' }, 400
+        # [JWT] delete below
+        id = 1
+        target_id = request.args.get("target_id")
+        if not target_id:
+            return {
+                "message": "메시지를 확인할 유저 id를 제공해야 합니다."
+            }, StatusCode.BAD_REQUEST
 
+        msg_id = request.args.get("msg_id")
+        if not msg_id:
+            return {
+                "message": "중복 검사할 id를 제공해야 합니다."
+            }, StatusCode.BAD_REQUEST
 
-# 웹소켓으로 처리
-# @ns.route('/send')
-# @ns.header('content-type', 'application/json')
-# class SendChat(Resource):
-#     # @jwt_required()
-#     @ns.expect(_Schema.field_send) #안필요할듯!
-#     @ns.response(200, 'api요청 성공', _Schema.response_fields)
-#     @ns.response(400, 'api요청 실패', _Schema.response_fields)
-#     @update_location
-#     def post(self):
-#         """저쪽 신사/숙녀분께 메시지 보내드리겠습니다"""
-#         try:
-#             return serv.sendChat(request.json)
-#         except Exception as e:
-            # conn.rollback()
-#             return { 'message': 'failed' }, 400
+        return serv.get_msg(id, target_id, msg_id)
