@@ -15,7 +15,7 @@ CREATE TABLE "User" (
 	"refresh" TEXT,
 	"name"	    TEXT	NOT NULL,
 	"last_name"	TEXT,
-	"birthday"	DATE,
+	"age"		INTEGER,
 	"last_online"	TIMESTAMP,
 	"longitude"	FLOAT,
 	"latitude"	FLOAT,
@@ -45,7 +45,7 @@ CREATE TABLE "History" (
 );
 
 CREATE TABLE "Chat" (
-	"id"        SERIAL PRIMARY KEY,
+	"msg_id"        SERIAL PRIMARY KEY,
 	"user_id"	  INTEGER	NOT NULL,
 	"target_id"	INTEGER	NOT NULL,
 	"msg"	      TEXT,
