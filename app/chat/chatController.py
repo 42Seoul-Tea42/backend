@@ -1,8 +1,8 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
-from ..wrapper.token import custom_jwt_required
-from ..wrapper.location import update_location
+from flask_jwt_extended import jwt_required, get_jwt_identity
+#from ..wrapper.location import update_location
 from ..const import StatusCode
 
 ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
@@ -62,13 +62,14 @@ class _ResponseSchema:
 
 @ns.route("/list")
 class ChatList(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     # @update_location()
-    def get(self, id=1):
+    def get(self):
         """채팅리스트를 드립니다!"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.chat_list(id)
@@ -76,14 +77,15 @@ class ChatList(Resource):
 
 @ns.route("/msg")
 class GetMsg(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.doc(params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 시간"})
     # @update_location()
-    def get(self, id=1):
+    def get(self):
         """채팅 했던 내용 보내드립니다!!"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         target_id = request.args.get("target_id")

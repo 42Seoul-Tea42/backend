@@ -1,7 +1,7 @@
 from flask import make_response, jsonify
 from app.db import conn
 from psycopg2.extras import DictCursor
-from psycopg2 import errors
+import psycopg2
 from . import userUtils as utils
 from app.const import (
     MAX_SEARCH,
@@ -25,6 +25,7 @@ import pytz
 import app.history.historyUtils as historyUtils
 import os
 from ..socket import socket_service as socketServ
+from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
 
 # TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
@@ -39,17 +40,17 @@ def login(data):
     user = utils.get_user_by_login_id(login_id)
     if not user:
         return {
-            "message": "no such user",
+            "message": "존재하지 않는 유저입니다.",
         }, StatusCode.BAD_REQUEST
 
     # [TEST] login-pw
-    if not utils.isValidPassword(data["pw"], login_id, user["password"]):
+    if not utils.is_valid_password(data["pw"], login_id, user["password"]):
         return {
             "message": "wrong password",
         }, StatusCode.FORBIDDEN
 
-    access_token = utils.generate_jwt(user["id"])
-    refresh_token = utils.generate_refresh(user["id"])
+    access_token = create_access_token(identity=user["id"])
+    refresh_token = create_refresh_token(identity=user["id"])
 
     response = make_response(
         jsonify(
@@ -67,8 +68,10 @@ def login(data):
         StatusCode.OK,
     )
     response.headers["Content-Type"] = "application/json"
-    response.set_cookie("access_token", access_token, httponly=True)
-    response.set_cookie("refresh_token", refresh_token, httponly=True)
+    set_access_cookies(response=response, encoded_access_token=access_token)
+    set_refresh_cookies(response=response, encoded_refresh_token=refresh_token)
+
+    # jwt_redis.set(refresh_token, user_id, ex=timedelta(days=14))
     return response
 
 
@@ -97,11 +100,11 @@ def login_kakao(login_id):
     user = utils.get_user_by_login_id(login_id)
     if not user:
         return {
-            "message": "no such user",
+            "message": "존재하지 않는 유저입니다.",
         }, StatusCode.BAD_REQUEST
 
-    access_token = utils.generate_jwt(user["id"])
-    refresh_token = utils.generate_refresh(user["id"])
+    access_token = create_access_token(identity=user["id"])
+    refresh_token = create_refresh_token(identity=user["id"])
 
     response = make_response(
         jsonify(
@@ -120,8 +123,8 @@ def login_kakao(login_id):
         StatusCode.REDIRECTION,
     )
     response.headers["Content-Type"] = "application/json"  # JSON 형식 응답
-    response.set_cookie("access_token", access_token, httponly=True)
-    response.set_cookie("refresh_token", refresh_token, httponly=True)
+    set_access_cookies(response=response, encoded_access_token=access_token)
+    set_refresh_cookies(response=response, encoded_refresh_token=refresh_token)
 
     return response
 
@@ -162,7 +165,7 @@ def login_kakao(login_id):
 def check_id(login_id):
     login_id = login_id.lower()
     if not utils.is_valid_login_id(login_id):
-        return {"occupied": True}, StatusCode.OK
+        return {"occupied": True}, StatusCode.BAD_REQUEST
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
@@ -363,7 +366,8 @@ def setting(data, id, images):
             conn.commit()
 
     except psycopg2.Error as e:
-        if isinstance(e, errors.UniqueViolation):
+        conn.rollback()
+        if isinstance(e, psycopg2.errors.UniqueViolation):
             return {"message": "이미 등록된 이메일입니다."}, StatusCode.BAD_REQUEST
         else:
             raise e
@@ -418,6 +422,7 @@ def register_dummy(data):
             conn.commit()
 
     except Exception as e:
+        conn.rollback()
         print("/user/register: failed while create db")
         raise e
 
@@ -425,7 +430,7 @@ def register_dummy(data):
 def save_pictures(files):
     images = []
     for i in range(MAX_PICTURE_AMOUNT):
-        image = files.get(f"{i}")
+        image = files.get(f"{i}", None)
         if image:
             images.append(utils.save_uploaded_file(image))
         else:
@@ -501,7 +506,8 @@ def register(data):
             conn.commit()
 
     except psycopg2.Error as e:
-        if isinstance(e, errors.UniqueViolation):
+        conn.rollback()
+        if isinstance(e, psycopg2.errors.UniqueViolation):
             return {"message": "이미 등록된 이메일입니다."}, StatusCode.BAD_REQUEST
         else:
             raise e
@@ -543,16 +549,16 @@ def profile_detail(id, target_id):
 
 def logout(id):
     # socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
-
-    # refresh token 삭제
-    utils.delete_refresh(id)
+    
+    # redis에서 refresh token 삭제
+    # utils.delete_refresh(id)
+    # jwt_redis.delete(request.cookies.get('refresh_token_cookie'))
 
     # jwt token 캐시에서 삭제
     response = make_response("", StatusCode.OK)
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
-
+    unset_jwt_cookies(response)
     return response
+
 
 
 # # def setLocation(data, id):

@@ -1,8 +1,8 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import userService as serv
-from ..wrapper.location import update_location
-from ..wrapper.token import custom_jwt_required
+#from ..wrapper.location import update_location
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..const import StatusCode
 
 ns = Namespace(name="user", description="유저 정보 관련 API", path="/user")
@@ -236,13 +236,14 @@ class _ResponseSchema:
 ##### login
 @ns.route("/login")
 class Login(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_login)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def get(self, id=1):
+    # @update_location()
+    def get(self):
         """login 확인"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.login_check(id)
@@ -290,13 +291,14 @@ class CheckEmail(Resource):
 
 @ns.route("/email-status")
 class EmailStatus(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_emailStatus)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def get(self, id=1):
+    # @update_location()
+    def get(self):
         """이메일 인증 여부 확인"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.email_status(id)
@@ -304,25 +306,27 @@ class EmailStatus(Resource):
 
 @ns.route("/email")
 class GetEmail(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_email)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def get(self, id=1):
+    # @update_location()
+    def get(self):
         """이메일 주소 확인"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.get_email(id)
 
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_email, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_email)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def patch(self, id=1):
+    # @update_location()
+    def patch(self):
         """(기존 메일 인증 전) 신규 이메일 등록"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.change_email(request.json, id)
@@ -330,13 +334,14 @@ class GetEmail(Resource):
 
 @ns.route("/send-email")
 class SendEmail(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_sendEmail)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def get(self, id=1):
+    # @update_location()
+    def get(self):
         """인증 메일 다시 보내기"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.resend_email(id)
@@ -358,15 +363,16 @@ class VerifyEmail(Resource):
 # ##### register && setting
 @ns.route("/setting")
 class Setting(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_setting)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "multipart/form-data")
-    # @update_location()()
-    def patch(self, id=1):
+    # @update_location()
+    def patch(self):
         """설정 업데이트"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         try:
@@ -389,13 +395,13 @@ class Profile(Resource):
         return serv.register(request.json)
 
     # 프로필 하나 요청하는 상황은 없음 ################################
-    # # @custom_jwt_required()
+    # # @jwt_required(refresh=True)
     # @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
     # @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     # @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     # @ns.doc(params={"id": "프로필 확인할 id"})
-    # # @update_location()()
-    # def get(self, id=1):
+    # # @update_location()
+    # def get(self):
     #     """프로필 확인"""
     #     target_id = request.args.get("id")
     #     if not target_id:
@@ -403,15 +409,16 @@ class Profile(Resource):
     #     return serv.get_profile(id, target_id), 200
     ############################################################
 
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_profile, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "multipart/form-data")
-    # @update_location()()
-    def patch(self, id=1):
+    # @update_location()
+    def patch(self):
         """(최초 1회) 프로필 설정"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         try:
@@ -427,13 +434,13 @@ class Profile(Resource):
 
 @ns.route("/profile-detail")
 class ProfileDetail(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profileDetail)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.doc(params={"id": "프로필 확인할 id"})
-    # @update_location()()
-    def get(self, id=1):
+    # @update_location()
+    def get(self):
         """상세 프로필 확인"""
         target_id = request.args.get("id")
         if not target_id:
@@ -445,12 +452,13 @@ class ProfileDetail(Resource):
 
 @ns.route("/logout")
 class Logout(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()()
-    def post(self, id=1):
+    # @update_location()
+    def post(self):
         """logout"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.logout(id)
@@ -498,13 +506,14 @@ class ResetPw(Resource):
 # soft delete 없을때까지는 사용 안하는걸로 하자
 # @ns.route("/unregister")
 # class Unregister(Resource):
-#     # @custom_jwt_required()
+#     # @jwt_required(refresh=True)
 #     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
 #     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-#     # @update_location()()
-#     def delete(self, id=1):
+#     # @update_location()
+#     def delete(self):
 #         """회원 탈퇴"""
-#         # [JWT] delete below
+#         #id = get_jwt_identity()
+        # [JWT] delete below
 #         id = 1
 #         return serv.unregister(id)
 
@@ -512,14 +521,15 @@ class ResetPw(Resource):
 # ##### taste
 @ns.route("/emoji")
 class Emoji(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_emoji, validate=True)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
-    # @update_location()()
-    def patch(self, id=1):
+    # @update_location()
+    def patch(self):
         """이모지 취향 설정"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.set_emoji(request.json, id)
@@ -528,15 +538,16 @@ class Emoji(Resource):
 # ##### search
 @ns.route("/search")
 class Search(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_post_search)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_post_search)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
-    # @update_location()()
-    def post(self, id=1):
+    # @update_location()
+    def post(self):
         """유저 검색 기능"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.search(request.json, id)
@@ -545,14 +556,15 @@ class Search(Resource):
 # ##### report && block
 @ns.route("/report")
 class Report(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_post_report)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
-    # @update_location()()
-    def post(self, id=1):
+    # @update_location()
+    def post(self):
         """리포트 하기"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.report(request.json, id)
@@ -560,14 +572,15 @@ class Report(Resource):
 
 @ns.route("/block")
 class Block(Resource):
-    # @custom_jwt_required()
+    # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_post_block, validate=True)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
-    # @update_location()()
-    def post(self, id=1):
+    # @update_location()
+    def post(self):
         """블록하기"""
+        #id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.block(request.json, id)

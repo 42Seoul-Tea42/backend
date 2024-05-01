@@ -3,7 +3,7 @@ import requests, os
 from flask_restx import Namespace, Resource
 from ..user import userService as userServ, userUtils
 from ..const import Kakao, StatusCode
-from psycopg2 import errors
+import psycopg2
 
 ns = Namespace(name='kakao', description='카카오 회원가입/로그인 관련 API', path='/kakao')
 
@@ -56,7 +56,7 @@ class redirect_page(Resource):
                 userServ.register_kakao(data)
         
         except psycopg2.Error as e:
-            if isinstance(e, errors.UniqueViolation):
+            if isinstance(e, psycopg2.errors.UniqueViolation):
                 return {
                     "message": "이미 사용 중인 이메일입니다. 다른 계정으로 시도해주세요.",
                     'Location': domain,

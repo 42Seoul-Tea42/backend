@@ -1,10 +1,11 @@
 from flask import request
-from ...wsgi import socket_io
+from ...app import socket_io
 from flask_socketio import emit
 from ..chat import chatUtils as chatUtils
 from ..const import UserStatus, SocketErr, BAD_TOKEN, JWT
 from . import socket_service as socketServ
 from ..user import userUtils
+from flask_jwt_extended import decode_token
 
 
 #### connect && disconnect ####
@@ -14,11 +15,11 @@ from ..user import userUtils
 def handle_connect():
     user_sid = request.sid
 
-    token = request.args.get("token")
-    if not token:
+    access_token = request.args.get("access_token")
+    if not access_token:
         emit("conn_fail", {"error": SocketErr.NO_TOKEN}, room=user_sid)
 
-    id = userUtils.decode_jwt(token, JWT.ACCESS)
+    id = decode_token(access_token).get("identity")
 
     if id is BAD_TOKEN:
         emit("conn_fail", {"error": SocketErr.BAD_TOKEN}, room=user_sid)

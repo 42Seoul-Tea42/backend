@@ -1,13 +1,11 @@
 import app.smtp as smtp
 import os, re, random, string
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 from ..const import (
     KST,
     EARTH_RADIUS,
-    BAD_TOKEN,
-    JWT,
     MIN_PASSWORD_SIZE,
     ALLOWED_EXTENSIONS,
     PICTURE_DIR,
@@ -18,60 +16,9 @@ from ..const import (
 import math
 from app.db import conn
 from psycopg2.extras import DictCursor
-from flask_jwt_extended import create_access_token, decode_token
 from werkzeug.utils import secure_filename
 import base64
 from ..history import historyUtils
-
-
-def generate_jwt(id):
-    jwt_time = datetime.now(pytz.timezone(KST)) + timedelta(
-        minutes=int(os.environ.get("JWT_TIME"))
-    )
-    jwt_json = {"id": id, "exp": jwt_time}
-    return create_access_token(jwt_json, os.environ.get("ACCESS_KEY"))
-
-
-def generate_refresh(id):
-    refresh_time = datetime.now(pytz.timezone(KST)) + timedelta(
-        minutes=int(os.environ.get("REFRESH_TIME"))
-    )
-    refresh_json = {"id": id, "exp": refresh_time}
-
-    refresh_token = create_access_token(refresh_json, os.environ.get("REFRESH_KEY"))
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'UPDATE "User" SET "refresh" = %s WHERE "id" = %s;'
-        cursor.execute(sql, (refresh_token, id))
-        conn.commit()
-
-    return refresh_token
-
-
-def decode_jwt(token, opt):
-    try:
-        if token is None:
-            return BAD_TOKEN
-
-        if opt == JWT.ACCESS:
-            jwt_decoded = decode_token(token, key=os.environ.get("ACCESS_KEY"))
-        elif opt == JWT.REFRESH:
-            jwt_decoded = decode_token(token, key=os.environ.get("REFRESH_KEY"))
-
-        exp_datetime = datetime.fromtimestamp(jwt_decoded["exp"])
-        if exp_datetime <= datetime.now(pytz.timezone(KST)):
-            return jwt_decoded["id"]
-
-    except Exception:
-        pass
-
-    return BAD_TOKEN
-
-
-def delete_refresh(id):
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'UPDATE "User" SET "refresh" = NULL WHERE "id" = %s;'
-        cursor.execute(sql, (id,))
-        conn.commit()
 
 
 def create_email_key(login_id, key):
@@ -144,7 +91,8 @@ def hashing(password, login_id):
 def is_valid_password(password, login_id, hashed_pw):
     if hashed_pw is None:
         return False
-    return bcrypt.checkpw((password + login_id).encode("utf-8"), hashed_pw)
+    
+    return bcrypt.checkpw((password + login_id).encode("utf-8"), bytes(hashed_pw))
 
     # sha256방식
     # if hashing(password, login_id) == hashed:
