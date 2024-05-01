@@ -6,8 +6,8 @@ DROP TABLE IF EXISTS "User";
 
 CREATE TABLE "User" (
   	"id"        SERIAL PRIMARY KEY,
-	"login_id"	TEXT	UNIQUE,-- NOT NULL 필요? oauth 유저와 원만한 합의 필요
-	"password"	TEXT,
+	"login_id"	TEXT	UNIQUE NOT NULL,
+	"password"	BYTEA,
 	"oauth"		INTEGER NOT NULL,
   	"email"	    TEXT	UNIQUE NOT NULL,
 	"email_check"	BOOLEAN	NOT NULL,
