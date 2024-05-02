@@ -32,7 +32,7 @@ from flask_jwt_extended import (
     set_refresh_cookies,
     unset_jwt_cookies,
 )
-from app import redis_client
+# from app import redis_client
 import base64
 
 # TODO conn.commit()
@@ -335,13 +335,13 @@ def setting(data, id, images):
     if data.get("bio", None):
         update_fields["bio"] = data["bio"]
     if data.get("tags", None):
-        update_fields["tags"] = utils.encodeBit(data["tags"])
+        update_fields["tags"] = utils.encode_bit(data["tags"])
     if data.get("hate_tags", None):
-        update_fields["hate_tags"] = utils.encodeBit(data["hate_tags"])
+        update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"])
     if data.get("prefer_emoji", None):
-        update_fields["prefer_emoji"] = utils.encodeBit(data["prefer_emoji"])
+        update_fields["emoji"] = utils.encode_bit(data["prefer_emoji"])
     if data.get("hate_emoji", None):
-        update_fields["hate_emoji"] = utils.encodeBit(data["hate_emoji"])
+        update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"])
     if data.get("similar", None):
         update_fields["similar"] = data["similar"]
     if images:
@@ -436,32 +436,25 @@ def register_dummy(data):
 
 
 def save_pictures(id, files):
-    if files is None: return []
-    
     images = []
     try:
         for idx, image_data in enumerate(files):
             image_info, encoded_data = image_data.split(",", 1)
 
-            extension = utils.get_extention(image_info)
+            extension = utils.get_extension(image_info)
             decoded_data = base64.b64decode(encoded_data)
 
             filename = f"{id}_{idx}_{datetime.now().strftime("%Y%m%d%H%M%S")}.{extension}"
             
             # 파일 저장
             file_path = os.path.join(PICTURE_DIR, filename)
+
             with open(file_path, 'wb') as f:
                 f.write(decoded_data)
 
             # 저장된 파일명 리스트에 추가
             images.append(filename)
 
-        # for i in range(MAX_PICTURE_AMOUNT):
-        #     image = files.get(f"{i}", None)
-        #     if image:
-        #         images.append(utils.save_uploaded_file(image))
-        #     else:
-        #         break
     except Exception as e:
         #저장된 사진 삭제하기
         for image_to_delete in images:
@@ -493,8 +486,8 @@ def set_profile(data, id, images):
         "gender": data["gender"],
         "taste": data["taste"],
         "bio": data["bio"],
-        "tags": utils.encodeBit(data["tags"]),
-        "hate_tags": utils.encodeBit(data["hate_tags"]),
+        "tags": utils.encode_bit(data["tags"]),
+        "hate_tags": utils.encode_bit(data["hate_tags"]),
         "pictures": images,
     }
 
@@ -711,8 +704,8 @@ def set_emoji(data, id):
             "message": "이미 설정된 이모지입니다.",
         }, StatusCode.BAD_REQUEST
 
-    emoji = utils.encodeBit(data["emoji"])
-    hate_emoji = utils.encodeBit(data["hate_emoji"])
+    emoji = utils.encode_bit(data["emoji"])
+    hate_emoji = utils.encode_bit(data["hate_emoji"])
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" \
@@ -726,7 +719,7 @@ def set_emoji(data, id):
 
 # ##### search
 def search(data, id):
-    tags = utils.encodeBit(data["tags"]) if data.get("tags", None) else Tags.ALL
+    tags = utils.encode_bit(data["tags"]) if data.get("tags", None) else Tags.ALL
     distance = (
         int(data["distance"]) * DISTANCE if data.get("distance", None) else MAX_DISTANCE
     )

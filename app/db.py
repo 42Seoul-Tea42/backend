@@ -4,7 +4,7 @@ import os
 # Database setup logic here...
 # Database connection parameters
 db_params = {
-    'dbname': os.environ.get('POSTGRES_NAME'),
+    'dbname': os.environ.get('POSTGRES_DB'),
     'user': os.environ.get('POSTGRES_USER'),
     'password': os.environ.get('POSTGRES_PASSWORD'),
     'host': os.environ.get('POSTGRES_HOST'),
