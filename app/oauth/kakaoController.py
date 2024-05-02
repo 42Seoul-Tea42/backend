@@ -23,6 +23,7 @@ class authorize(Resource):
 class redirect_page(Resource):
     def get(self):
 
+        #TODO error 맞는지 확인 (request.json)
         if request.args.get("error"):
             abort(StatusCode.BAD_REQUEST)
 

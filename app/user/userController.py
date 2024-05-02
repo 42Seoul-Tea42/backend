@@ -362,8 +362,42 @@ class VerifyEmail(Resource):
 
 
 # ##### register && setting
-@ns.route("/setting")
-class Setting(Resource):
+# @ns.route("/setting")
+# class Setting(Resource):
+#     # @jwt_required(refresh=True)
+#     @ns.expect(_RequestSchema.field_patch_setting)
+#     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
+#     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+#     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+#     @ns.header("content-type", "application/json")
+#     # @update_location()
+#     def patch(self):
+#         """설정 업데이트"""
+#         # id = get_jwt_identity()
+#         # [JWT] delete below
+#         id = 1
+#         try:
+#             images = serv.save_pictures(id, request.args.get("pictures"))
+#             # images = serv.save_pictures(request.files)
+#         except ValueError:
+#             return {"message": "업로드 불가능한 사진입니다"}, StatusCode.BAD_REQUEST
+#         except Exception as e:
+#             print(e)
+#             return {"message": "사진 저장 실패"}, StatusCode.INTERNAL_ERROR
+
+#         return serv.setting(request.json, id, images)
+
+
+@ns.route("/profile")
+class Profile(Resource):
+    @ns.expect(_RequestSchema.field_post_profile, validate=True)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.header("content-type", "application/json")
+    def post(self):
+        """회원 가입"""
+        return serv.register(request.json)
+    
     # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_setting)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
@@ -377,7 +411,9 @@ class Setting(Resource):
         # [JWT] delete below
         id = 1
         try:
-            images = serv.save_pictures(id, request.args.get("pictures"))
+            images = serv.save_pictures(id, request.json["pictures"]) \
+                    if 'pictures' in request.json \
+                    else []
             # images = serv.save_pictures(request.files)
         except ValueError:
             return {"message": "업로드 불가능한 사진입니다"}, StatusCode.BAD_REQUEST
@@ -386,17 +422,6 @@ class Setting(Resource):
             return {"message": "사진 저장 실패"}, StatusCode.INTERNAL_ERROR
 
         return serv.setting(request.json, id, images)
-
-
-@ns.route("/profile")
-class Profile(Resource):
-    @ns.expect(_RequestSchema.field_post_profile, validate=True)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    @ns.header("content-type", "application/json")
-    def post(self):
-        """회원 가입"""
-        return serv.register(request.json)
 
     # 프로필 하나 요청하는 상황은 없음 ################################
     # # @jwt_required(refresh=True)
