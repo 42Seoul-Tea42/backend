@@ -1,7 +1,8 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import userService as serv
-#from ..wrapper.location import update_location
+
+# from ..wrapper.location import update_location
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..const import StatusCode
 
@@ -243,7 +244,7 @@ class Login(Resource):
     # @update_location()
     def get(self):
         """login 확인"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.login_check(id)
@@ -298,7 +299,7 @@ class EmailStatus(Resource):
     # @update_location()
     def get(self):
         """이메일 인증 여부 확인"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.email_status(id)
@@ -313,7 +314,7 @@ class GetEmail(Resource):
     # @update_location()
     def get(self):
         """이메일 주소 확인"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.get_email(id)
@@ -326,7 +327,7 @@ class GetEmail(Resource):
     # @update_location()
     def patch(self):
         """(기존 메일 인증 전) 신규 이메일 등록"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.change_email(request.json, id)
@@ -341,7 +342,7 @@ class SendEmail(Resource):
     # @update_location()
     def get(self):
         """인증 메일 다시 보내기"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.resend_email(id)
@@ -368,15 +369,18 @@ class Setting(Resource):
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    @ns.header("content-type", "multipart/form-data")
+    @ns.header("content-type", "application/json")
     # @update_location()
     def patch(self):
         """설정 업데이트"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         try:
-            images = serv.save_pictures(request.files)
+            images = serv.save_pictures(id, request.args.get("pictures"))
+            # images = serv.save_pictures(request.files)
+        except ValueError:
+            return {"message": "업로드 불가능한 사진입니다"}, StatusCode.BAD_REQUEST
         except Exception as e:
             print(e)
             return {"message": "사진 저장 실패"}, StatusCode.INTERNAL_ERROR
@@ -409,27 +413,27 @@ class Profile(Resource):
     #     return serv.get_profile(id, target_id), 200
     ############################################################
 
-    # @jwt_required(refresh=True)
-    @ns.expect(_RequestSchema.field_patch_profile, validate=True)
-    @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    @ns.header("content-type", "multipart/form-data")
-    # @update_location()
-    def patch(self):
-        """(최초 1회) 프로필 설정"""
-        #id = get_jwt_identity()
-        # [JWT] delete below
-        id = 1
-        try:
-            images = serv.save_pictures(request.files)
-            if not images:
-                raise Exception("사진 저장 실패")
-        except Exception as e:
-            print(e)
-            return {"message": "사진 저장 실패"}, StatusCode.INTERNAL_ERROR
+    # # @jwt_required(refresh=True)
+    # @ns.expect(_RequestSchema.field_patch_profile, validate=True)
+    # @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
+    # @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+    # @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    # @ns.header("content-type", "multipart/form-data")
+    # # @update_location()
+    # def patch(self):
+    #     """(최초 1회) 프로필 설정"""
+    #     # id = get_jwt_identity()
+    #     # [JWT] delete below
+    #     id = 1
+    #     try:
+    #         images = serv.save_pictures(request.files)
+    #         if not images:
+    #             raise Exception("사진 저장 실패")
+    #     except Exception as e:
+    #         print(e)
+    #         return {"message": "사진 저장 실패"}, StatusCode.INTERNAL_ERROR
 
-        return serv.set_profile(request.json, id, images)
+    #     return serv.set_profile(request.json, id, images)
 
 
 @ns.route("/profile-detail")
@@ -458,7 +462,7 @@ class Logout(Resource):
     # @update_location()
     def post(self):
         """logout"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.logout(id)
@@ -513,26 +517,26 @@ class ResetPw(Resource):
 #     def delete(self):
 #         """회원 탈퇴"""
 #         #id = get_jwt_identity()
-        # [JWT] delete below
+# [JWT] delete below
 #         id = 1
 #         return serv.unregister(id)
 
 
 # ##### taste
-@ns.route("/emoji")
-class Emoji(Resource):
-    # @jwt_required(refresh=True)
-    @ns.expect(_RequestSchema.field_patch_emoji, validate=True)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    @ns.header("content-type", "application/json")
-    # @update_location()
-    def patch(self):
-        """이모지 취향 설정"""
-        #id = get_jwt_identity()
-        # [JWT] delete below
-        id = 1
-        return serv.set_emoji(request.json, id)
+# @ns.route("/emoji")
+# class Emoji(Resource):
+#     # @jwt_required(refresh=True)
+#     @ns.expect(_RequestSchema.field_patch_emoji, validate=True)
+#     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+#     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+#     @ns.header("content-type", "application/json")
+#     # @update_location()
+#     def patch(self):
+#         """이모지 취향 설정"""
+#         # id = get_jwt_identity()
+#         # [JWT] delete below
+#         id = 1
+#         return serv.set_emoji(request.json, id)
 
 
 # ##### search
@@ -547,7 +551,7 @@ class Search(Resource):
     # @update_location()
     def post(self):
         """유저 검색 기능"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.search(request.json, id)
@@ -564,7 +568,7 @@ class Report(Resource):
     # @update_location()
     def post(self):
         """리포트 하기"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.report(request.json, id)
@@ -580,7 +584,7 @@ class Block(Resource):
     # @update_location()
     def post(self):
         """블록하기"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.block(request.json, id)

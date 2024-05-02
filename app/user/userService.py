@@ -25,7 +25,15 @@ import pytz
 import app.history.historyUtils as historyUtils
 import os
 from ..socket import socket_service as socketServ
-from flask_jwt_extended import create_access_token, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies,
+)
+from app import redis_client
+import base64
 
 # TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
@@ -427,14 +435,43 @@ def register_dummy(data):
         raise e
 
 
-def save_pictures(files):
+def save_pictures(id, files):
+    if files is None: return []
+    
     images = []
-    for i in range(MAX_PICTURE_AMOUNT):
-        image = files.get(f"{i}", None)
-        if image:
-            images.append(utils.save_uploaded_file(image))
-        else:
-            break
+    try:
+        for idx, image_data in enumerate(files):
+            image_info, encoded_data = image_data.split(",", 1)
+
+            extension = utils.get_extention(image_info)
+            decoded_data = base64.b64decode(encoded_data)
+
+            filename = f"{id}_{idx}_{datetime.now().strftime("%Y%m%d%H%M%S")}.{extension}"
+            
+            # 파일 저장
+            file_path = os.path.join(PICTURE_DIR, filename)
+            with open(file_path, 'wb') as f:
+                f.write(decoded_data)
+
+            # 저장된 파일명 리스트에 추가
+            images.append(filename)
+
+        # for i in range(MAX_PICTURE_AMOUNT):
+        #     image = files.get(f"{i}", None)
+        #     if image:
+        #         images.append(utils.save_uploaded_file(image))
+        #     else:
+        #         break
+    except Exception as e:
+        #저장된 사진 삭제하기
+        for image_to_delete in images:
+            file_path = os.path.join(PICTURE_DIR, image_to_delete)
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                print(f"An error occurred(setPicture): {e}")
+                pass
+        raise e
 
     return images
 
@@ -549,7 +586,7 @@ def profile_detail(id, target_id):
 
 def logout(id):
     # socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
-    
+
     # redis에서 refresh token 삭제
     # utils.delete_refresh(id)
     # jwt_redis.delete(request.cookies.get('refresh_token_cookie'))
@@ -558,7 +595,6 @@ def logout(id):
     response = make_response("", StatusCode.OK)
     unset_jwt_cookies(response)
     return response
-
 
 
 # # def setLocation(data, id):

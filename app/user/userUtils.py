@@ -91,7 +91,7 @@ def hashing(password, login_id):
 def is_valid_password(password, login_id, hashed_pw):
     if hashed_pw is None:
         return False
-    
+
     return bcrypt.checkpw((password + login_id).encode("utf-8"), bytes(hashed_pw))
 
     # sha256방식
@@ -161,18 +161,32 @@ def blur_login_id(login_id):
     return login_id[:3] + "*" * (len(login_id) - 3)
 
 
-def _allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def save_uploaded_file(file):
-    if file and _allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(PICTURE_DIR, filename)
-        file.save(file_path)
-        return filename
+def get_extension(image_info):
+    match = re.match(r"data:image/(?P<extension>[\w]+);base64", image_info)
+    if match:
+        extension = match.group("extension")
     else:
-        raise Exception
+        raise ValueError("Invalid image data format")
+
+    if extension not in ALLOWED_EXTENSIONS:
+        raise ValueError("Invalid image extension")
+
+    return extension
+
+
+# def _allowed_file(filename):
+#     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# def save_uploaded_file(file):
+#     if file and _allowed_file(file.filename):
+#         filename = secure_filename(file.filename)
+#         file_path = os.path.join(PICTURE_DIR, filename)
+#         file.save(file_path)
+#         return filename
+#     else:
+#         # TODO: 저장된 사진 삭제하기
+#         raise Exception
 
 
 def get_picture(filename):
