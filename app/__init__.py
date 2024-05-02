@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_restx import Api
 from flask_cors import CORS
 from .db import conn
 from .user.userService import register_dummy
@@ -7,18 +6,16 @@ import os
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from .config import DevelopmentConfig
+import redis
+from routes import add_routes
 
-
-api = Api(
-    version="1.0",
-    title="tea42",
-    # prefix="/sw",
-    contact_email="tea42fourtwo@gmail.com",
-    # doc=False #swagger 표시 안하겠당!
-)
 
 jwt = JWTManager()
 socket_io = SocketIO()
+
+# redis 클라이언트 생성
+redis_client = redis.Redis(host="be_cache", port=6379, decode_responses=True)
+
 
 def create_app():
 
@@ -26,8 +23,10 @@ def create_app():
     CORS(app)
 
     # config
-    
+
     app.config.from_object(DevelopmentConfig)
+    add_routes(app)
+
     # config = app.config.get('ENV')
     # if config == 'production':
     #     app.config.from_object('config.ProductionConfig')
@@ -35,10 +34,10 @@ def create_app():
     #     app.config.from_object('config.TestingConfig')
     # else:
     #     app.config.from_object('config.DevelopmentConfig')
-    
+
     jwt.init_app(app)
     socket_io.init_app(app)
-    
+
     ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
     # # Create a cursor
     # cursor = conn.cursor()
@@ -67,28 +66,6 @@ def create_app():
     # cursor.close()
     ################################################################
 
-    api.init_app(app)
-
-    from .user import userController
-
-    api.add_namespace(userController.ns)
-
-    from .tea import teaController
-
-    api.add_namespace(teaController.ns)
-
-    from .history import historyController
-
-    api.add_namespace(historyController.ns)
-
-    from .chat import chatController
-
-    api.add_namespace(chatController.ns)
-
-    from .oauth import kakaoController
-
-    api.add_namespace(kakaoController.ns)
-    
     # # general error handler
     # from .common.errors import error_handle
     # error_handle(app)
