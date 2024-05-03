@@ -33,6 +33,13 @@ MIN_PASSWORD_SIZE = 8
 MAX_PICTURE_AMOUNT = 5
 
 
+# Redis
+class RedisOpt:
+    LOCATION = 0
+    SOCKET = 1
+    LOGIN = 2
+
+
 # Oauth
 class Oauth:
     NONE = 0

@@ -1,20 +1,19 @@
 from flask import Flask
 from flask_cors import CORS
 from .db import conn
-from .user.userService import register_dummy
 import os
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from .config import DevelopmentConfig
 import redis
-from routes import add_routes
+from .routes import add_routes
 
 
 jwt = JWTManager()
 socket_io = SocketIO()
 
 # redis 클라이언트 생성
-redis_client = redis.Redis(host="be_cache", port=6379, decode_responses=True)
+redis_client = redis.StrictRedis(host="redis", port=6379, decode_responses=True)
 
 
 def create_app():
@@ -50,6 +49,7 @@ def create_app():
     # conn.commit()
 
     # # TODO [TEST] dummy data delete
+    # from .user.userService import register_dummy
     # data = {
     #     "login_id": os.environ.get("DUM_ID"),
     #     "pw": os.environ.get("DUM_PW"),
