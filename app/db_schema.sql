@@ -12,7 +12,6 @@ CREATE TABLE "User" (
   	"email"	    TEXT	UNIQUE NOT NULL,
 	"email_check"	BOOLEAN	NOT NULL,
 	"email_key"	TEXT,
-	"refresh" TEXT,
 	"name"	    TEXT	NOT NULL,
 	"last_name"	TEXT,
 	"age"		INTEGER,
@@ -29,7 +28,7 @@ CREATE TABLE "User" (
 	"hate_tags"	INTEGER,
 	"emoji"	    INTEGER,
 	"hate_emoji"	INTEGER,
-	"similar"	  BOOLEAN
+	"similar"	  BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE "History" (
