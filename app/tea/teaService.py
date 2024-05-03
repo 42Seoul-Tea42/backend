@@ -44,10 +44,7 @@ def suggest(id):
         with conn.cursor(cursor_factory=DictCursor) as cursor:
             sql = 'SELECT * FROM ( \
                                 SELECT *, \
-                                    ST_Distance( \
-                                        ST_MakePoint(longitude, latitude), \
-                                        ST_MakePoint(%s, %s) \
-                                    ) AS distance \
+                                    sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
                                 FROM "User" \
                             ) AS user_distance \
                     WHERE "id" != %s \
@@ -100,13 +97,12 @@ def suggest(id):
                 ),
             )
             db_data = cursor.fetchall()
+
+            result = [userUtils.get_profile(id, target["id"]) for target in db_data]
+            return {
+                "profiles": result,
+            }, StatusCode.OK
+
     except Exception as e:
         print(e)
         conn.rollback()
-    
-    
-    result = [userUtils.get_profile(id, target["id"]) for target in db_data]
-        
-    return {
-        "profiles": result,
-    }, StatusCode.OK

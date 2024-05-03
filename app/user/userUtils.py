@@ -76,9 +76,9 @@ def is_valid_new_password(pw):
     return True
 
 
-def hashing(password, login_id):
+def hashing(password):
     # TODO bcrypt, sha256 등 해시 관련 내용 블로그 정리
-    encrypted = bcrypt.hashpw((password + login_id).encode("utf-8"), bcrypt.gensalt())
+    encrypted = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     return encrypted
 
     # sha256방식
@@ -88,11 +88,11 @@ def hashing(password, login_id):
     # return m.hexdigest()
 
 
-def is_valid_password(password, login_id, hashed_pw):
+def is_valid_password(password, hashed_pw):
     if hashed_pw is None:
         return False
 
-    return bcrypt.checkpw((password + login_id).encode("utf-8"), bytes(hashed_pw))
+    return bcrypt.checkpw(password.encode("utf-8"), bytes(hashed_pw))
 
     # sha256방식
     # if hashing(password, login_id) == hashed:
@@ -196,6 +196,32 @@ def get_picture(filename):
         image_data = base64.b64encode(image_file.read()).decode("utf-8")
 
     return image_data
+
+
+def get_my_profile(id):
+    user = get_user(id)
+    if not user:
+        return {"message": "존재하지 않는 유저입니다."}, StatusCode.UNAUTHORIZED
+
+    # 이미지 파일 생성
+    images = []
+    for filename in id["pictures"]:
+        images.append(get_picture(filename))
+
+    # 유저 정보 및 이미지 파일을 포함한 응답 생성
+    return {
+        "id": id["id"],
+        "name": id["name"],
+        "last_name": id["last_name"],
+        "age": id["age"],
+        "tags": decode_bit(id["tags"]),
+        "hate_tags": decode_bit(id["hate_tags"]),
+        "emoji": decode_bit(id["emoji"]),
+        "hate_emoji": decode_bit(id["hate_emoji"]),
+        "gender": id["gender"],
+        "taste": id["taste"],
+        "pictures": images,
+    }
 
 
 def get_profile(id, target_id):

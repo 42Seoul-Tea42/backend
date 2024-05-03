@@ -36,9 +36,19 @@ def view_history(id, time_limit, opt):
 
 def fancy(data, id):
     target_id = data["target_id"]
+    try:
+        target_id = int(target_id)
+    except ValueError:
+        return {"message": "id는 숫자로 제공되어야 합니다."}, StatusCode.BAD_REQUEST
+
     if id == int(target_id):
         return {
             "message": "스스로를 fancy할 수 없습니다.",
+        }, StatusCode.BAD_REQUEST
+
+    if userUtils.get_user(target_id) is None:
+        return {
+            "message": "존재하지 않는 유저입니다.",
         }, StatusCode.BAD_REQUEST
 
     now_kst = datetime.now(pytz.timezone(KST))

@@ -2,7 +2,8 @@ from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
-#from ..wrapper.location import update_location
+
+# from ..wrapper.location import update_location
 from ..const import StatusCode
 
 ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
@@ -69,7 +70,7 @@ class ChatList(Resource):
     # @update_location()
     def get(self):
         """채팅리스트를 드립니다!"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.chat_list(id)
@@ -85,7 +86,7 @@ class GetMsg(Resource):
     # @update_location()
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         target_id = request.args.get("target_id")
@@ -93,6 +94,11 @@ class GetMsg(Resource):
             return {
                 "message": "메시지를 확인할 유저 id를 제공해야 합니다."
             }, StatusCode.BAD_REQUEST
+
+        try:
+            target_id = int(target_id)
+        except ValueError:
+            return {"message": "id는 숫자로 제공되어야 합니다."}, StatusCode.BAD_REQUEST
 
         msg_id = request.args.get("msg_id")
         if not msg_id:

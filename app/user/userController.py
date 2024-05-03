@@ -290,19 +290,19 @@ class CheckEmail(Resource):
         return serv.check_email(email)
 
 
-@ns.route("/email-status")
-class EmailStatus(Resource):
-    # @jwt_required(refresh=True)
-    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_emailStatus)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()
-    def get(self):
-        """이메일 인증 여부 확인"""
-        # id = get_jwt_identity()
-        # [JWT] delete below
-        id = 1
-        return serv.email_status(id)
+# @ns.route("/email-status")
+# class EmailStatus(Resource):
+#     # @jwt_required(refresh=True)
+#     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_emailStatus)
+#     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+#     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+#     # @update_location()
+#     def get(self):
+#         """이메일 인증 여부 확인"""
+#         # id = get_jwt_identity()
+#         # [JWT] delete below
+#         id = 1
+#         return serv.email_status(id)
 
 
 @ns.route("/email")
@@ -397,7 +397,7 @@ class Profile(Resource):
     def post(self):
         """회원 가입"""
         return serv.register(request.json)
-    
+
     # @jwt_required(refresh=True)
     @ns.expect(_RequestSchema.field_patch_setting)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
@@ -411,9 +411,11 @@ class Profile(Resource):
         # [JWT] delete below
         id = 1
         try:
-            images = serv.save_pictures(id, request.json["pictures"]) \
-                    if 'pictures' in request.json \
-                    else []
+            images = (
+                serv.save_pictures(id, request.json["pictures"])
+                if "pictures" in request.json and 1 < len(request.json["pictures"][0])
+                else []
+            )
             # images = serv.save_pictures(request.files)
         except ValueError:
             return {"message": "업로드 불가능한 사진입니다"}, StatusCode.BAD_REQUEST
@@ -423,20 +425,18 @@ class Profile(Resource):
 
         return serv.setting(request.json, id, images)
 
-    # 프로필 하나 요청하는 상황은 없음 ################################
-    # # @jwt_required(refresh=True)
-    # @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
-    # @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    # @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @ns.doc(params={"id": "프로필 확인할 id"})
-    # # @update_location()
-    # def get(self):
-    #     """프로필 확인"""
-    #     target_id = request.args.get("id")
-    #     if not target_id:
-    #         return {"message": "검색할 프로필 id를 제공해야 합니다."}, StatusCode.BAD_REQUEST
-    #     return serv.get_profile(id, target_id), 200
-    ############################################################
+    # 프로필 하나 요청하는 상황 == 자기 자신 정보 보기
+    # @jwt_required(refresh=True)
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
+    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    # @update_location()
+    def get(self):
+        """프로필 확인"""
+        # id = get_jwt_identity()
+        # [JWT] delete below
+        id = 1
+        return serv.get_profile(id), StatusCode.OK
 
     # # @jwt_required(refresh=True)
     # @ns.expect(_RequestSchema.field_patch_profile, validate=True)
@@ -471,11 +471,20 @@ class ProfileDetail(Resource):
     # @update_location()
     def get(self):
         """상세 프로필 확인"""
+        # id = get_jwt_identity()
+        # [JWT] delete below
+        id = 1
         target_id = request.args.get("id")
         if not target_id:
             return {
                 "message": "프로필을 확인할 유저의 id를 제공해야 합니다."
             }, StatusCode.BAD_REQUEST
+
+        try:
+            target_id = int(target_id)
+        except ValueError:
+            return {"message": "id는 숫자로 제공되어야 합니다."}, StatusCode.BAD_REQUEST
+
         return serv.profile_detail(id, target_id)
 
 
@@ -487,10 +496,7 @@ class Logout(Resource):
     # @update_location()
     def post(self):
         """logout"""
-        # id = get_jwt_identity()
-        # [JWT] delete below
-        id = 1
-        return serv.logout(id)
+        return serv.logout()
 
 
 @ns.route("/login-id")
