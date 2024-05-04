@@ -1,5 +1,5 @@
 from flask_socketio import emit
-from ..const import UserStatus, RedisOpt
+from ..utils.const import UserStatus, RedisOpt
 from ..user import userUtils
 from ..utils import redisServ
 from ..history import historyUtils

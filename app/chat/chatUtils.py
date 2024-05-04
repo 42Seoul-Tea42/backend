@@ -1,8 +1,8 @@
-from app.db import conn
+from backend.app.db.db import conn
 from psycopg2.extras import DictCursor
 from datetime import datetime
 import pytz
-from ..const import KST
+from ..utils.const import KST
 
 
 def get_match_user_list(id) -> set:

@@ -1,5 +1,5 @@
 from app import redis_client
-from ..const import RedisOpt
+from .const import RedisOpt
 
 
 def set_user_info(user):
