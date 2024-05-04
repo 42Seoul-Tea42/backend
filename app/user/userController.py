@@ -230,6 +230,7 @@ class _ResponseSchema:
         "API 요청 실패",
         {
             "message": fields.String(description="실패 이유"),
+            "error": fields.Integer(description="(401 시) 만료 토큰 Enum"),
         },
     )
 
@@ -237,7 +238,7 @@ class _ResponseSchema:
 ##### login
 @ns.route("/login")
 class Login(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_login)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -292,7 +293,7 @@ class CheckEmail(Resource):
 
 # @ns.route("/email-status")
 # class EmailStatus(Resource):
-#     # @jwt_required(refresh=True)
+#     # @jwt_required()
 #     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_emailStatus)
 #     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
 #     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -307,7 +308,7 @@ class CheckEmail(Resource):
 
 @ns.route("/email")
 class GetEmail(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_email)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -319,7 +320,7 @@ class GetEmail(Resource):
         id = 1
         return serv.get_email(id)
 
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_patch_email, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_email)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
@@ -335,7 +336,7 @@ class GetEmail(Resource):
 
 @ns.route("/send-email")
 class SendEmail(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_sendEmail)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -364,7 +365,7 @@ class VerifyEmail(Resource):
 # ##### register && setting
 # @ns.route("/setting")
 # class Setting(Resource):
-#     # @jwt_required(refresh=True)
+#     # @jwt_required()
 #     @ns.expect(_RequestSchema.field_patch_setting)
 #     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
 #     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
@@ -398,7 +399,7 @@ class Profile(Resource):
         """회원 가입"""
         return serv.register(request.json)
 
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_patch_setting)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
@@ -426,7 +427,7 @@ class Profile(Resource):
         return serv.setting(request.json, id, images)
 
     # 프로필 하나 요청하는 상황 == 자기 자신 정보 보기
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -438,7 +439,7 @@ class Profile(Resource):
         id = 1
         return serv.get_profile(id), StatusCode.OK
 
-    # # @jwt_required(refresh=True)
+    # # @jwt_required()
     # @ns.expect(_RequestSchema.field_patch_profile, validate=True)
     # @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
     # @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
@@ -463,7 +464,7 @@ class Profile(Resource):
 
 @ns.route("/profile-detail")
 class ProfileDetail(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profileDetail)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -490,13 +491,16 @@ class ProfileDetail(Resource):
 
 @ns.route("/logout")
 class Logout(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     # @update_location()
     def post(self):
         """logout"""
-        return serv.logout()
+        # id = get_jwt_identity()
+        # [JWT] delete below
+        id = 1
+        return serv.logout(id)
 
 
 @ns.route("/login-id")
@@ -541,7 +545,7 @@ class ResetPw(Resource):
 # soft delete 없을때까지는 사용 안하는걸로 하자
 # @ns.route("/unregister")
 # class Unregister(Resource):
-#     # @jwt_required(refresh=True)
+#     # @jwt_required()
 #     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
 #     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
 #     # @update_location()
@@ -556,7 +560,7 @@ class ResetPw(Resource):
 # ##### taste
 # @ns.route("/emoji")
 # class Emoji(Resource):
-#     # @jwt_required(refresh=True)
+#     # @jwt_required()
 #     @ns.expect(_RequestSchema.field_patch_emoji, validate=True)
 #     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
 #     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -573,7 +577,7 @@ class ResetPw(Resource):
 # ##### search
 @ns.route("/search")
 class Search(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_post_search)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_post_search)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
@@ -591,7 +595,7 @@ class Search(Resource):
 # ##### report && block
 @ns.route("/report")
 class Report(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_post_report)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -607,7 +611,7 @@ class Report(Resource):
 
 @ns.route("/block")
 class Block(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_post_block, validate=True)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -619,3 +623,15 @@ class Block(Resource):
         # [JWT] delete below
         id = 1
         return serv.block(request.json, id)
+
+
+@ns.route("/resetToken")
+class resetToken(Resource):
+    # @jwt_required(refresh=True)
+    @ns.response(401, "토큰 만료", _ResponseSchema.field_failed)
+    def patch(self):
+        """토큰 재발급"""
+        # id = get_jwt_identity()
+        # [JWT] delete below
+        id = 1
+        return serv.resetToken(id)

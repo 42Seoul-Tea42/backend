@@ -63,7 +63,7 @@ class _ResponseSchema:
 
 @ns.route("/list")
 class ChatList(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -78,7 +78,7 @@ class ChatList(Resource):
 
 @ns.route("/msg")
 class GetMsg(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)

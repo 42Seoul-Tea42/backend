@@ -4,7 +4,8 @@ from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
 from app.const import History, StatusCode
 from flask_jwt_extended import jwt_required, get_jwt_identity
-#from ..wrapper.location import update_location
+
+# from ..wrapper.location import update_location
 
 ns = Namespace(
     name="history", description="fancy 및 히스토리 관련 API", path="/history"
@@ -58,7 +59,7 @@ class _ResponseSchema:
 
 @ns.route("/fancy-list")
 class CheckFancy(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -66,7 +67,7 @@ class CheckFancy(Resource):
     # @update_location()
     def get(self):
         """나를 팬시한 사람 그 누구냐!"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         time = request.args.get("time")
@@ -77,7 +78,7 @@ class CheckFancy(Resource):
 
 @ns.route("/fancy")
 class Fancy(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.expect(_RequestSchema.field_patch_fancy, validate=True)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -85,7 +86,7 @@ class Fancy(Resource):
     # @update_location()
     def patch(self):
         """fancy/unfancy 했음!"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         return serv.fancy(request.json, id)
@@ -93,7 +94,7 @@ class Fancy(Resource):
 
 @ns.route("/history-list")
 class ViewHistory(Resource):
-    # @jwt_required(refresh=True)
+    # @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -101,7 +102,7 @@ class ViewHistory(Resource):
     # @update_location()
     def get(self):
         """내가 본 사람들"""
-        #id = get_jwt_identity()
+        # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
         time = request.args.get("time")

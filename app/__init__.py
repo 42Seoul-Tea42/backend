@@ -9,11 +9,25 @@ import redis
 from .routes import add_routes
 
 
-jwt = JWTManager()
-socket_io = SocketIO()
-
 # redis 클라이언트 생성
-redis_client = redis.StrictRedis(host="redis", port=6379, decode_responses=True)
+redis_client = redis.StrictRedis(host="redis", port=6379, db=0, decode_responses=True)
+redis_jwt_blocklist = redis.StrictRedis(
+    host="redis", port=6379, db=1, decode_responses=True
+)
+
+# jwt
+jwt = JWTManager()
+
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
+    token = jwt_payload["jti"]
+    token_in_redis = redis_jwt_blocklist.get(token)
+    return token_in_redis is not None
+
+
+# socket io
+socket_io = SocketIO()
 
 
 def create_app():

@@ -6,9 +6,7 @@ from flask_jwt_extended import jwt_required
 
 
 #### connect && disconnect ####
-
-
-@jwt_required(refresh=True)
+@jwt_required()
 @socket_io.on("connect")
 def handle_connect():
     # id = get_jwt_identity()

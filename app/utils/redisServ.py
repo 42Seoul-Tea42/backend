@@ -50,10 +50,19 @@ def update_user_info(id, fields):
         redis_client.hset(str(id), "emoji_check", 1)
     if "socket_id" in fields:
         redis_client.hset(str(id), "socket_id", fields["socket_id"])
+    if "refresh_jti" in fields:
+        redis_client.hset(str(id), "refresh_jti", fields["refresh_jti"])
 
 
 def delete_user_info(id):
     redis_client.delete(str(id))
+
+
+### jti ###
+
+
+def get_refresh_jti_by_id(id):
+    return redis_client.hget(str(id), "refresh_jti")
 
 
 ### socket ###

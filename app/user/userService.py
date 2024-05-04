@@ -31,9 +31,12 @@ from flask_jwt_extended import (
     set_access_cookies,
     set_refresh_cookies,
     unset_jwt_cookies,
+    get_jwt,
+    get_jti,
 )
 import base64
 from ..utils import redisServ
+from ...app import redis_jwt_blocklist
 
 # TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
@@ -80,8 +83,8 @@ def login(data):
     set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
 
     #Redis에 유저 정보 저장
-    redisServ.save_user_info(user)
-
+    redisServ.set_user_info(user)
+    redisServ.update_user_info(user["id"], {"refresh_jti": get_jti(refresh_token)})
     return response
 
 
@@ -96,7 +99,7 @@ def login_check(id):
             return {
                 "message": "존재하지 않는 유저입니다.",
             }, StatusCode.UNAUTHORIZED
-        redisServ.save_user_info(user)
+        redisServ.set_user_info(user)
 
     response = make_response(
         jsonify(
@@ -142,7 +145,8 @@ def login_kakao(login_id):
     set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
 
     #Redis에 유저 정보 저장
-    redisServ.save_user_info(user)
+    redisServ.set_user_info(user)
+    redisServ.update_user_info(user["id"], {"refresh_jti": get_jti(refresh_token)})
 
     return response
 
@@ -533,12 +537,22 @@ def profile_detail(id, target_id):
     }, StatusCode.OK
 
 
-def logout():
+def logout(id):
     # socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
+
+    # 유저의 토큰을 블록리스트에 추가
+    jti = get_jwt()["jti"]
+    redis_jwt_blocklist.set(jti, "", ex=int(os.getenv("ACCESS_TIME")))
+    refresh_jti = redisServ.get_refresh_jti(id)
+    redis_jwt_blocklist.set(refresh_jti, "", ex=int(os.getenv("REFRESH_TIME")))
 
     # jwt token 캐시에서 삭제
     response = make_response("", StatusCode.OK)
     unset_jwt_cookies(response)
+    
+    #redis 정보 삭제
+    redisServ.delete_user_info(id)
+    
     return response
 
 
@@ -792,3 +806,19 @@ def block(data, id):
         conn.commit()
 
     return StatusCode.OK
+
+
+def resetToken(id):
+    user = utils.get_user(id)
+    if not user:
+        return {
+            "message": "존재하지 않는 유저입니다.",
+        }, StatusCode.UNAUTHORIZED
+
+    response = make_response("", StatusCode.OK)
+    
+    #JWT 토큰 생성 및 쿠키 설정
+    access_token = create_access_token(identity=id)
+    set_access_cookies(response, access_token, samesite='Strict', httponly=True)
+
+    return response
