@@ -3,6 +3,7 @@
 # General
 KST = "Asia/Seoul"
 PICTURE_DIR = "/usr/app/srcs/app/profile/"
+DEFAULT_PICTURE = "default.png"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 MAX_REQUEST_SIZE = 5 * 1024 * 1024  # 5MB
 
