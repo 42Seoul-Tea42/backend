@@ -3,7 +3,7 @@ from app.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
 from psycopg2.extras import DictCursor
 from . import chatUtils
 from ..history import historyUtils as hisUtils
-from ..socket import socket_service as socketServ
+from ..socket import socketService as socketServ
 from ..user import userUtils
 
 

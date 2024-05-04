@@ -24,10 +24,12 @@ def get_user_info(id, opt):
         check_fields = ["longitude", "latitude"]
     elif opt == RedisOpt.LOGIN:
         check_fields = ["email_check", "profile_check", "emoji_check"]
+    elif opt == RedisOpt.SOCKET:
+        check_fields = ["socket_id"]
 
     check_values = redis_client.hmget(str(id), *check_fields)
 
-    # 위치 필드와 값을 딕셔너리로 반환
+    # 요청 필드와 값을 딕셔너리로 반환
     if check_values:
         return dict(zip(check_fields, check_values))
     else:

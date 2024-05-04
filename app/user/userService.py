@@ -24,7 +24,7 @@ from datetime import datetime
 import pytz
 import app.history.historyUtils as historyUtils
 import os
-from ..socket import socket_service as socketServ
+from ..socket import socketService as socketServ
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,

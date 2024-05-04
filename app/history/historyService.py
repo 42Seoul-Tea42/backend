@@ -5,7 +5,7 @@ from app.const import MAX_HISTORY, History, KST, Fancy, StatusCode, FancyOpt
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
 from psycopg2.extras import DictCursor
-from ..socket import socket_service as socketServ
+from ..socket import socketService as socketServ
 
 
 def view_history(id, time_limit, opt):

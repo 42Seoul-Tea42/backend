@@ -58,3 +58,18 @@ def update_last_view(id, target_id):
             cursor.execute(sql, (id, target_id, False, now_kst))
 
         conn.commit()
+
+
+def get_match_list(id) -> set:
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT "target_id" \
+                FROM "History" \
+                WHERE "user_id" = %s \
+                    AND "fancy" = True \
+                    AND "target_id" \
+                        IN (SELECT "user_id" FROM "History" \
+                            WHERE "target_id" = %s AND "fancy" = True);'
+        cursor.execute(sql, (id, id))
+        match_list = cursor.fetchall()
+
+        return set([item["target_id"] for item in match_list])

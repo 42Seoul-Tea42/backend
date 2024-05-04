@@ -106,13 +106,6 @@ FIRST_CHAT = 0
 MAX_CHAT = 30
 
 
-class SocketErr:
-    NONE = 0
-    NO_TOKEN = 1
-    BAD_TOKEN = 2
-    NO_USER = 3
-
-
 # Taste
 class Gender:
     OTHER = 1
