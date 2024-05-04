@@ -1,11 +1,19 @@
-from app.db import conn
+from backend.app.db.db import conn
 from datetime import datetime
 import pytz
-from app.const import MAX_HISTORY, History, KST, Fancy, StatusCode, FancyOpt
+from backend.app.utils.const import (
+    MAX_HISTORY,
+    History,
+    KST,
+    Fancy,
+    StatusCode,
+    FancyOpt,
+)
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
 from psycopg2.extras import DictCursor
 from ..socket import socketService as socketServ
+from werkzeug.exceptions import BadRequest
 
 
 def view_history(id, time_limit, opt):
@@ -39,17 +47,13 @@ def fancy(data, id):
     try:
         target_id = int(target_id)
     except ValueError:
-        return {"message": "id는 숫자로 제공되어야 합니다."}, StatusCode.BAD_REQUEST
+        raise BadRequest("id는 숫자로 제공되어야 합니다.")
 
     if id == int(target_id):
-        return {
-            "message": "스스로를 fancy할 수 없습니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("스스로를 fancy할 수 없습니다.")
 
     if userUtils.get_user(target_id) is None:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     now_kst = datetime.now(pytz.timezone(KST))
 

@@ -1,12 +1,12 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
-from .db import conn
+from .db.db import conn
 import os
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from .config import DevelopmentConfig
 import redis
-from .routes import add_routes
+from .utils.routes import add_routes
 
 
 # redis 클라이언트 생성
@@ -40,13 +40,20 @@ def create_app():
     app.config.from_object(DevelopmentConfig)
     add_routes(app)
 
-    # config = app.config.get('ENV')
-    # if config == 'production':
+    @app.before_request
+    def log_request_info():
+        app.logger.info(f"Request to {request.path} received")
+
+    # config = app.config.get('FLASK_ENV')
+    # if config == 'prod':
     #     app.config.from_object('config.ProductionConfig')
     # elif config == 'testing':
     #     app.config.from_object('config.TestingConfig')
     # else:
-    #     app.config.from_object('config.DevelopmentConfig')
+    # @app.before_request
+    # def log_request_info():
+    #     app.logger.info(f"Request to {request.path} received")
+    # app.config.from_object('config.DevelopmentConfig')
 
     jwt.init_app(app)
     socket_io.init_app(app)
@@ -55,7 +62,7 @@ def create_app():
     # # Create a cursor
     # cursor = conn.cursor()
     # # Read the content of db_schema.sql
-    # with open("./app/db_schema.sql") as f:
+    # with open("./app/db/db_schema.sql") as f:
     #     db_setup_sql = f.read()
     # # Execute the database setup logic from the SQL script
     # cursor.execute(db_setup_sql)
@@ -80,9 +87,10 @@ def create_app():
     # cursor.close()
     ################################################################
 
-    # # general error handler
-    # from .common.errors import error_handle
-    # error_handle(app)
+    # general error handler
+    from .utils.error import error_handle
+
+    error_handle(app)
 
     @app.route("/")
     def welcome():

@@ -1,5 +1,5 @@
-from app.db import conn
-from app.const import (
+from backend.app.db.db import conn
+from backend.app.utils.const import (
     MAX_SUGGEST,
     AGE_GAP,
     Gender,
@@ -8,8 +8,8 @@ from app.const import (
     StatusCode,
 )
 import app.user.userUtils as userUtils
-import app.history.historyUtils as historyUtils
 from psycopg2.extras import DictCursor
+from werkzeug.exceptions import Unauthorized
 
 
 def suggest(id):
@@ -21,9 +21,7 @@ def suggest(id):
 
     user = userUtils.get_user(id)
     if not user:
-        return {
-            "message": "유저 정보를 찾을 수 없습니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     tags, hate_tags = user["tags"], user["hate_tags"]
     emoji, hate_emoji = user["emoji"], user["hate_emoji"]
@@ -40,69 +38,64 @@ def suggest(id):
     find_gender = Gender.ALL if user["taste"] & Gender.OTHER else user["taste"]
 
     db_data = []
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            sql = 'SELECT * FROM ( \
-                                SELECT *, \
-                                    sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
-                                FROM "User" \
-                            ) AS user_distance \
-                    WHERE "id" != %s \
-                        AND "id" NOT IN ( \
-                                SELECT "target_id" \
-                                FROM "Block" \
-                                WHERE "user_id" = %s ) \
-                        AND "emoji" IS NOT NULL \
-                        AND "taste" & %s > 0 \
-                        AND "gender" & %s > 0 \
-                        AND "hate_tags" & %s = 0 \
-                        AND "tags" & %s = 0 \
-                        AND "hate_emoji" & %s = 0 \
-                        AND "emoji" & %s = 0 \
-                        AND "tags" & %s > 0 \
-                        AND CASE WHEN %s THEN "emoji" & %s > 0 \
-                                ELSE "emoji" & %s = 0 \
-                            END \
-                        AND "age" BETWEEN %s AND %s \
-                        AND "distance" <= %s \
-                    ORDER BY CASE WHEN %s THEN "emoji" & %s \
-                            END DESC, \
-                            distance ASC, \
-                            "count_fancy"::float / COALESCE("count_view", 1) DESC \
-                    LIMIT %s ;'
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT * FROM ( \
+                            SELECT *, \
+                                sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
+                            FROM "User" \
+                        ) AS user_distance \
+                WHERE "id" != %s \
+                    AND "id" NOT IN ( \
+                            SELECT "target_id" \
+                            FROM "Block" \
+                            WHERE "user_id" = %s ) \
+                    AND "emoji" IS NOT NULL \
+                    AND "taste" & %s > 0 \
+                    AND "gender" & %s > 0 \
+                    AND "hate_tags" & %s = 0 \
+                    AND "tags" & %s = 0 \
+                    AND "hate_emoji" & %s = 0 \
+                    AND "emoji" & %s = 0 \
+                    AND "tags" & %s > 0 \
+                    AND CASE WHEN %s THEN "emoji" & %s > 0 \
+                            ELSE "emoji" & %s = 0 \
+                        END \
+                    AND "age" BETWEEN %s AND %s \
+                    AND "distance" <= %s \
+                ORDER BY CASE WHEN %s THEN "emoji" & %s \
+                        END DESC, \
+                        distance ASC, \
+                        "count_fancy"::float / COALESCE("count_view", 1) DESC \
+                LIMIT %s ;'
 
-            cursor.execute(
-                sql,
-                (
-                    long,
-                    lat,
-                    id,
-                    id,
-                    find_taste,
-                    find_gender,
-                    tags,
-                    hate_tags,
-                    emoji,
-                    hate_emoji,
-                    tags,
-                    similar,
-                    emoji,
-                    emoji,
-                    min_age,
-                    max_age,
-                    AREA_DISTANCE,
-                    similar,
-                    emoji,
-                    MAX_SUGGEST,
-                ),
-            )
-            db_data = cursor.fetchall()
+        cursor.execute(
+            sql,
+            (
+                long,
+                lat,
+                id,
+                id,
+                find_taste,
+                find_gender,
+                tags,
+                hate_tags,
+                emoji,
+                hate_emoji,
+                tags,
+                similar,
+                emoji,
+                emoji,
+                min_age,
+                max_age,
+                AREA_DISTANCE,
+                similar,
+                emoji,
+                MAX_SUGGEST,
+            ),
+        )
+        db_data = cursor.fetchall()
 
-            result = [userUtils.get_profile(id, target["id"]) for target in db_data]
-            return {
-                "profiles": result,
-            }, StatusCode.OK
-
-    except Exception as e:
-        print(e)
-        conn.rollback()
+        result = [userUtils.get_profile(id, target["id"]) for target in db_data]
+        return {
+            "profiles": result,
+        }, StatusCode.OK

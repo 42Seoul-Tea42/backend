@@ -1,24 +1,23 @@
-import app.smtp as smtp
+import backend.app.utils.smtp as smtp
 import os, re, random, string
 import bcrypt
 from datetime import datetime
 import pytz
-from ..const import (
+from ..utils.const import (
     KST,
     EARTH_RADIUS,
     MIN_PASSWORD_SIZE,
     ALLOWED_EXTENSIONS,
     PICTURE_DIR,
-    StatusCode,
     MAX_FAME,
     FancyOpt,
 )
 import math
-from app.db import conn
+from backend.app.db.db import conn
 from psycopg2.extras import DictCursor
-from werkzeug.utils import secure_filename
 import base64
 from ..history import historyUtils
+from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 
 def create_email_key(login_id, key):
@@ -201,7 +200,7 @@ def get_picture(filename):
 def get_my_profile(id):
     user = get_user(id)
     if not user:
-        return {"message": "존재하지 않는 유저입니다."}, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     # 이미지 파일 생성
     images = []
@@ -227,11 +226,11 @@ def get_my_profile(id):
 def get_profile(id, target_id):
     user = get_user(id)
     if not user:
-        return {"message": "존재하지 않는 유저입니다."}, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     target = get_user(target_id)
     if not target:
-        return {"message": "존재하지 않는 유저입니다."}, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     # 이미지 파일 생성
     images = []

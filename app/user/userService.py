@@ -1,9 +1,9 @@
 from flask import make_response, jsonify
-from app.db import conn
+from backend.app.db.db import conn
 from psycopg2.extras import DictCursor
 import psycopg2
 from . import userUtils as utils
-from app.const import (
+from backend.app.utils.const import (
     MAX_SEARCH,
     DISTANCE,
     Key,
@@ -12,13 +12,13 @@ from app.const import (
     Oauth,
     Gender,
     Tags,
-    StatusCode,
     MAX_AGE,
     MIN_AGE,
     MAX_DISTANCE,
     MIN_FAME,
     MAX_FAME,
-    MAX_PICTURE_AMOUNT
+    MAX_PICTURE_AMOUNT,
+    StatusCode
 )
 from datetime import datetime
 import pytz
@@ -37,12 +37,11 @@ from flask_jwt_extended import (
 import base64
 from ..utils import redisServ
 from ...app import redis_jwt_blocklist
+from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 # TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
 
-# TODO with ~ as ~ 내용으로 모두 바꾸기
-# with conn.cursor(cursor_factory=DictCursor) as cursor:
 # db result 접근 전 에러 처리 (user 없을 경우 등)
 
 
@@ -50,15 +49,11 @@ def login(data):
     login_id = data["login_id"].lower()
     user = utils.get_user_by_login_id(login_id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     # [TEST] login-pw
     if not utils.is_valid_password(data["pw"], user["password"]):
-        return {
-            "message": "잘못된 비밀번호입니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("잘못된 비밀번호입니다.")
 
     response = make_response(
         jsonify(
@@ -96,9 +91,7 @@ def login_check(id):
         #DB에서 유저 정보 가져와서 redis에 저장
         user = utils.get_user(id)
         if not user:
-            return {
-                "message": "존재하지 않는 유저입니다.",
-            }, StatusCode.UNAUTHORIZED
+            raise Unauthorized("존재하지 않는 유저입니다.")
         redisServ.set_user_info(user)
 
     response = make_response(
@@ -117,9 +110,7 @@ def login_check(id):
 def login_kakao(login_id):
     user = utils.get_user_by_login_id(login_id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     response = make_response(
         jsonify(
@@ -158,7 +149,7 @@ def login_kakao(login_id):
 def check_id(login_id):
     login_id = login_id.lower()
     if not utils.is_valid_login_id(login_id):
-        return {"occupied": True}, StatusCode.BAD_REQUEST
+        raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
@@ -173,9 +164,7 @@ def check_id(login_id):
 def check_email(email):
 
     if not utils.is_valid_email(email):
-        return {
-            "message": "올바르지 않은 이메일 형식입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
@@ -203,29 +192,21 @@ def check_email(email):
 def get_email(id):
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     return {"email": user["email"]}, StatusCode.OK
 
 
 def change_email(data, id):
     if not utils.is_valid_email(data["email"]):
-        return {
-            "message": "유효하지 않은 이메일 형식입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     if user["email_check"]:
-        return {
-            "message": "이미 인증된 메일입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("이미 인증된 메일입니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         # update
@@ -247,15 +228,11 @@ def change_email(data, id):
 def resend_email(id):
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     email = user["email"]
     if user["email_check"]:
-        return {
-            "message": "이미 인증된 메일입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("이미 인증된 메일입니다.")
 
     utils.send_email(email, user["email_key"], Key.EMAIL)
     return {
@@ -267,9 +244,7 @@ def resend_email(id):
 
 def verify_email(key):
     if key[-1] != str(Key.EMAIL):
-        return {
-            "message": "유효하지 않은 인증키입니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("유효하지 않은 인증키입니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET "email_check" = %s, "email_key" = %s WHERE "email_key" = %s;'
@@ -280,32 +255,24 @@ def verify_email(key):
     if num_rows_updated:
         return StatusCode.OK
 
-    return {
-        "message": "유효하지 않은 인증키입니다.",
-    }, StatusCode.FORBIDDEN
+    raise Forbidden("유효하지 않은 인증키입니다.")
 
 
 # # ##### register && setting
 def setting(data, id, images):
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     # 업데이트할 항목 정리
     update_fields = {}
     if data.get("email", None) and user["email"] != data["email"]:
         if not utils.is_valid_email(data["email"]):
-            return {
-                "message": "유효하지 않은 이메일 형식입니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("유효하지 않은 이메일 형식입니다.")
         update_fields["email"] = data["email"]
     if user["oauth"] == Oauth.NONE and data.get("pw", None):
         if not utils.is_valid_new_password(data["pw"]):
-            return {
-                "message": "안전하지 않은 비밀번호입니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("안전하지 않은 비밀번호입니다.")
         update_fields["password"] = utils.hashing(data["pw"])
     if data.get("last_name", None):
         update_fields["last_name"] = data["last_name"]
@@ -337,33 +304,27 @@ def setting(data, id, images):
             try:
                 os.remove(file_path)
             except Exception as e:
-                print(f"An error occurred(setPicture): {e}")
+                from ...app import app
+                app.logger.error(f"사진 삭제 시 에러 발생(setting): {e}")
                 pass
         update_fields["pictures"] = images
 
     if not update_fields:
-        return {"message": "업데이트 내용이 없습니다."}, StatusCode.BAD_REQUEST
+        raise BadRequest("업데이트 내용이 없습니다.")
+    
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        set_statements = ", ".join(
+            [f'"{key}" = %s' for key in update_fields.keys()]
+        )
+        sql = f'UPDATE "User" SET {set_statements} WHERE "id" = %s;'
+        cursor.execute(sql, tuple(update_fields.values()) + (id,))
 
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            set_statements = ", ".join(
-                [f'"{key}" = %s' for key in update_fields.keys()]
-            )
-            sql = f'UPDATE "User" SET {set_statements} WHERE "id" = %s;'
-            cursor.execute(sql, tuple(update_fields.values()) + (id,))
+        if "email" in update_fields:
+            sql = f'UPDATE "User" SET "email_check" = %s WHERE "id" = %s;'
+            cursor.execute(sql, tuple(update_fields.values()) + (False, id))
 
-            if "email" in update_fields:
-                sql = f'UPDATE "User" SET "email_check" = %s WHERE "id" = %s;'
-                cursor.execute(sql, tuple(update_fields.values()) + (False, id))
+        conn.commit()
 
-            conn.commit()
-
-    except psycopg2.Error as e:
-        conn.rollback()
-        if isinstance(e, psycopg2.errors.UniqueViolation):
-            return {"message": "이미 등록된 이메일입니다."}, StatusCode.BAD_REQUEST
-        else:
-            raise e
 
     if "email" in update_fields:
         logout(id)
@@ -376,51 +337,46 @@ def setting(data, id, images):
 
 # TODO [TEST] dummy data
 def register_dummy(data):
-    try:
-        hashed_pw = utils.hashing(data["pw"])
-        now_kst = datetime.now(pytz.timezone(KST))
-        pictures = ["1_0.png"]
+    hashed_pw = utils.hashing(data["pw"])
+    now_kst = datetime.now(pytz.timezone(KST))
+    pictures = ["1_0.png"]
 
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            sql = 'INSERT INTO "User" (login_id, password, oauth, \
-                                        email, email_check, name, last_name, pictures, \
-                                        age, last_online, longitude, latitude, \
-                                        gender, taste, bio, tags, hate_tags, emoji, hate_emoji, "similar") \
-                                VALUES (%s, %s, %s, \
-                                        %s, %s, %s, %s, %s, \
-                                        %s, %s, %s, %s, \
-                                        %s, %s, %s, %s, %s, %s, %s, %s)'
-            cursor.execute(
-                sql,
-                (
-                    data["login_id"],
-                    hashed_pw,
-                    Oauth.NONE,
-                    data["email"],
-                    True,
-                    data["name"],
-                    data["last_name"],
-                    pictures,
-                    data["age"],
-                    now_kst,
-                    data["longitude"],
-                    data["latitude"],
-                    Gender.FEMALE,
-                    Gender.ALL,
-                    "자기소개입니다",
-                    98,
-                    2024,
-                    33296,
-                    16384,
-                    True,
-                ),
-            )
-            conn.commit()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'INSERT INTO "User" (login_id, password, oauth, \
+                                    email, email_check, name, last_name, pictures, \
+                                    age, last_online, longitude, latitude, \
+                                    gender, taste, bio, tags, hate_tags, emoji, hate_emoji, "similar") \
+                            VALUES (%s, %s, %s, \
+                                    %s, %s, %s, %s, %s, \
+                                    %s, %s, %s, %s, \
+                                    %s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(
+            sql,
+            (
+                data["login_id"],
+                hashed_pw,
+                Oauth.NONE,
+                data["email"],
+                True,
+                data["name"],
+                data["last_name"],
+                pictures,
+                data["age"],
+                now_kst,
+                data["longitude"],
+                data["latitude"],
+                Gender.FEMALE,
+                Gender.ALL,
+                "자기소개입니다",
+                98,
+                2024,
+                33296,
+                16384,
+                True,
+            ),
+        )
+        conn.commit()
 
-    except Exception as e:
-        conn.rollback()
-        print("/user/register: failed while create db")
-        raise e
 
 
 def save_pictures(id, files):
@@ -453,7 +409,8 @@ def save_pictures(id, files):
             try:
                 os.remove(file_path)
             except Exception as e:
-                print(f"An error occurred(setPicture): {e}")
+                from ...app import app
+                app.logger.error(f"사진 삭제 시 에러 발생(save_pictures): {e}")
                 pass
         raise e
 
@@ -462,45 +419,33 @@ def save_pictures(id, files):
 
 def register(data):
     if not utils.is_valid_email(data["email"]):
-        return {
-            "message": "유효하지 않은 이메일 형식입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("유효하지 않은 이메일 형식입니다.")
 
     if not utils.is_valid_login_id(data["login_id"]):
-        return {
-            "message": "이미 사용 중인 로그인 아이디입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
 
     login_id = data["login_id"].lower()
     hashed_pw = utils.hashing(data["pw"])
     email_key = utils.create_email_key(login_id, Key.EMAIL)
 
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
-                                        name, last_name, oauth) \
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
-            cursor.execute(
-                sql,
-                (
-                    data["email"],
-                    False,
-                    email_key,
-                    login_id,
-                    hashed_pw,
-                    data["name"],
-                    data["last_name"],
-                    Oauth.NONE,
-                ),
-            )
-            conn.commit()
-
-    except psycopg2.Error as e:
-        conn.rollback()
-        if isinstance(e, psycopg2.errors.UniqueViolation):
-            return {"message": "이미 등록된 이메일입니다."}, StatusCode.BAD_REQUEST
-        else:
-            raise e
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
+                                    name, last_name, oauth) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+        cursor.execute(
+            sql,
+            (
+                data["email"],
+                False,
+                email_key,
+                login_id,
+                hashed_pw,
+                data["name"],
+                data["last_name"],
+                Oauth.NONE,
+            ),
+        )
+        conn.commit()
 
     utils.send_email(data["email"], email_key, Key.EMAIL)
 
@@ -520,7 +465,7 @@ def register_kakao(data):
 def profile_detail(id, target_id):
     target = utils.get_user(target_id)
     if not target:
-        return {"message": "존재하지 않는 유저입니다."}, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     # History.last_view update
     historyUtils.update_last_view(id, target_id)
@@ -578,14 +523,10 @@ def find_login_id(email):
         cursor.execute(sql, (email,))
         user = cursor.fetchone()
         if not user:
-            return {
-                "message": "이메일이 존재하지 않습니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("이메일이 존재하지 않습니다.")
 
         if user["oauth"] != Oauth.NONE:
-            return {
-                "message": "소셜 로그인 사용자입니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("소셜 로그인 사용자입니다.")
 
         return {"login_id": utils.blur_login_id(user["login_id"])}, StatusCode.OK
 
@@ -595,12 +536,10 @@ def request_reset(login_id):
 
     user = utils.get_user_by_login_id(login_id)
     if not user:
-        return {"message": "없는 로그인 id입니다."}, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 로그인 id입니다.")
 
     if not user["email_check"]:
-        return {
-            "message": "인증되지 않은 이메일입니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("인증되지 않은 이메일입니다.")
 
     email_key = utils.create_email_key(login_id, Key.PASSWORD)
 
@@ -616,14 +555,10 @@ def request_reset(login_id):
 
 def reset_pw(data, key):
     if key[-1] != str(Key.PASSWORD):
-        return {
-            "message": "잘못된 key입니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("유효하지 않은 인증키입니다.")
 
     if not data["pw"]:
-        return {
-            "message": "변경할 비밀번호를 입력해주세요.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("변경할 비밀번호를 입력해주세요.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
@@ -631,9 +566,7 @@ def reset_pw(data, key):
 
         user = cursor.fetchone()
         if not user:
-            return {
-                "message": "잘못된 key입니다.",
-            }, StatusCode.FORBIDDEN
+            raise Forbidden("유효하지 않은 인증키입니다.")
 
         hashed_pw = utils.hashing(data["pw"])
         sql = 'UPDATE "User" SET "password" = %s, "email_key" = %s WHERE "email_key" = %s;'
@@ -661,7 +594,7 @@ def unregister(id):
 
 # ##### search
 def get_profile(id):
-    return utils.get_my_profile(id)
+    return utils.get_my_profile(id), StatusCode.OK
     
     
 def search(data, id):
@@ -675,73 +608,62 @@ def search(data, id):
 
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
     long, lat = user["longitude"], user["latitude"]
 
-    try:
-        with conn.cursor(cursor_factory=DictCursor) as cursor:
-            sql = 'SELECT * FROM ( \
-                                SELECT *, \
-                                    sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
-                                FROM "User" \
-                            ) AS user_distance \
-                    WHERE "id" != %s \
-                            AND "id" NOT IN ( \
-                                    SELECT "target_id" \
-                                    FROM "Block" \
-                                    WHERE "user_id" = %s ) \
-                            AND "emoji" IS NOT NULL \
-                            AND "age" BETWEEN %s AND %s \
-                            AND "count_fancy"::float / COALESCE("count_view", 1) * %s >= %s \
-                            AND "tags" & %s > 0 \
-                            AND distance <= %s \
-                    ORDER BY "last_online" DESC, distance ASC \
-                    LIMIT %s;'
 
-            cursor.execute(
-                sql,
-                (
-                    long,
-                    lat,
-                    id,
-                    id,
-                    min_age,
-                    max_age,
-                    MAX_FAME,
-                    fame,
-                    tags,
-                    distance,
-                    MAX_SEARCH,
-                ),
-            )
-            db_data = cursor.fetchall()
-            
-            result = [utils.get_profile(id, target["id"]) for target in db_data]
-            return {
-                "profiles": result,
-            }, StatusCode.OK
-            
-    except Exception as e:
-        print(e)
-        conn.rollback()
-    
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT * FROM ( \
+                            SELECT *, \
+                                sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
+                            FROM "User" \
+                        ) AS user_distance \
+                WHERE "id" != %s \
+                        AND "id" NOT IN ( \
+                                SELECT "target_id" \
+                                FROM "Block" \
+                                WHERE "user_id" = %s ) \
+                        AND "emoji" IS NOT NULL \
+                        AND "age" BETWEEN %s AND %s \
+                        AND "count_fancy"::float / COALESCE("count_view", 1) * %s >= %s \
+                        AND "tags" & %s > 0 \
+                        AND distance <= %s \
+                ORDER BY "last_online" DESC, distance ASC \
+                LIMIT %s;'
+
+        cursor.execute(
+            sql,
+            (
+                long,
+                lat,
+                id,
+                id,
+                min_age,
+                max_age,
+                MAX_FAME,
+                fame,
+                tags,
+                distance,
+                MAX_SEARCH,
+            ),
+        )
+        db_data = cursor.fetchall()
+        
+        result = [utils.get_profile(id, target["id"]) for target in db_data]
+        return {
+            "profiles": result,
+        }, StatusCode.OK
 
 
 # ##### report && block
 def report(data, id):
 
     if id == int(data["target_id"]):
-        return {
-            "message": "스스로를 신고할 수 없습니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("스스로를 신고할 수 없습니다.")
 
     target = utils.get_user(data["target_id"])
     if not target:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     # report시 자동 block 처리
     block(data, id)
@@ -750,17 +672,13 @@ def report(data, id):
     reason = data.get("reason", None)
     reason_opt = data.get("reason_opt", None)
     if not target_id or not reason:
-        return {
-            "message": "신고할 대상과 사유를 입력해주세요.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("신고할 대상과 사유를 입력해주세요.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "Report" WHERE "user_id" = %s AND "target_id" = %s'
         cursor.execute(sql, (id, data["target_id"]))
         if cursor.fetchone():
-            return {
-                "message": "이미 신고한 유저입니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("이미 신고한 유저입니다.")
 
         sql = 'INSERT INTO "Report" (user_id, target_id, reason, reason_opt) \
                             VALUES (%s, %s, %s, %s)'
@@ -772,23 +690,17 @@ def report(data, id):
 
 def block(data, id):
     if id == int(data["target_id"]):
-        return {
-            "message": "스스로를 block할 수 없습니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("스스로를 block할 수 없습니다.")
 
     target = utils.get_user(data["target_id"])
     if not target:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("존재하지 않는 유저입니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "Block" WHERE "user_id" = %s AND "target_id" = %s'
         cursor.execute(sql, (id, data["target_id"]))
         if cursor.fetchone():
-            return {
-                "message": "이미 블록한 유저입니다.",
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("이미 블록한 유저입니다.")
 
         sql = 'INSERT INTO "Block" (user_id, target_id) VALUES (%s, %s)'
         cursor.execute(sql, (id, data["target_id"]))
@@ -811,9 +723,7 @@ def block(data, id):
 def resetToken(id):
     user = utils.get_user(id)
     if not user:
-        return {
-            "message": "존재하지 않는 유저입니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     response = make_response("", StatusCode.OK)
     

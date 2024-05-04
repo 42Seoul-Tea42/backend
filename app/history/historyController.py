@@ -1,9 +1,10 @@
-from app.db import conn
+from backend.app.db.db import conn
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
-from app.const import History, StatusCode
+from backend.app.utils.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.exceptions import BadRequest
 
 # from ..wrapper.location import update_location
 
@@ -72,7 +73,7 @@ class CheckFancy(Resource):
         id = 1
         time = request.args.get("time")
         if time is None:
-            return {"message": "검색 기준 일시가 필요합니다."}, StatusCode.BAD_REQUEST
+            raise BadRequest("검색 기준 일시가 필요합니다.")
         return serv.view_history(id, time, History.FANCY)
 
 
@@ -107,5 +108,5 @@ class ViewHistory(Resource):
         id = 1
         time = request.args.get("time")
         if time is None:
-            return {"message": "검색 기준 일시가 필요합니다."}, StatusCode.BAD_REQUEST
+            raise BadRequest("검색 기준 일시가 필요합니다.")
         return serv.view_history(id, time, History.HISTORY)

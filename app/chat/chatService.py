@@ -1,18 +1,17 @@
-from app.db import conn
-from app.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
+from backend.app.db.db import conn
+from backend.app.utils.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
 from psycopg2.extras import DictCursor
 from . import chatUtils
 from ..history import historyUtils as hisUtils
 from ..socket import socketService as socketServ
 from ..user import userUtils
+from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 
 def chat_list(id):
     user = userUtils.get_user(id)
     if not user:
-        return {
-            "message": "유저 정보를 찾을 수 없습니다.",
-        }, StatusCode.UNAUTHORIZED
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = user["longitude"], user["latitude"]
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -50,14 +49,10 @@ def chat_list(id):
 
 def get_msg(id, target_id, msg_id):
     if not userUtils.get_user(target_id):
-        return {
-            "message": "유저 정보를 찾을 수 없습니다.",
-        }, StatusCode.BAD_REQUEST
+        raise BadRequest("유저 정보를 찾을 수 없습니다.")
 
     if hisUtils.get_fancy(id, target_id) < Fancy.CONN:
-        return {
-            "message": "연결된 상대가 아닙니다.",
-        }, StatusCode.FORBIDDEN
+        raise Forbidden("매칭된 상대가 아닙니다.")
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 

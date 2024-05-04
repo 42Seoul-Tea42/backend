@@ -2,9 +2,9 @@ from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.exceptions import BadRequest
 
 # from ..wrapper.location import update_location
-from ..const import StatusCode
 
 ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
 
@@ -82,7 +82,9 @@ class GetMsg(Resource):
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    @ns.doc(params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 시간"})
+    @ns.doc(
+        params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 msg_id"}
+    )
     # @update_location()
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
@@ -91,19 +93,16 @@ class GetMsg(Resource):
         id = 1
         target_id = request.args.get("target_id")
         if not target_id:
-            return {
-                "message": "메시지를 확인할 유저 id를 제공해야 합니다."
-            }, StatusCode.BAD_REQUEST
-
-        try:
-            target_id = int(target_id)
-        except ValueError:
-            return {"message": "id는 숫자로 제공되어야 합니다."}, StatusCode.BAD_REQUEST
+            raise BadRequest("메시지를 확인할 유저 id를 제공해야 합니다.")
 
         msg_id = request.args.get("msg_id")
         if not msg_id:
-            return {
-                "message": "중복 검사할 id를 제공해야 합니다."
-            }, StatusCode.BAD_REQUEST
+            raise BadRequest("로딩 기준 메시지 id를 제공해야 합니다.")
+
+        try:
+            target_id = int(target_id)
+            msg_id = int(msg_id)
+        except ValueError:
+            raise BadRequest("id는 숫자로 제공되어야 합니다.")
 
         return serv.get_msg(id, target_id, msg_id)

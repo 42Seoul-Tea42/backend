@@ -2,8 +2,9 @@ from flask import request, redirect, abort
 import requests, os
 from flask_restx import Namespace, Resource
 from ..user import userService as userServ, userUtils
-from ..const import Kakao, StatusCode
+from ..utils.const import Kakao, StatusCode
 import psycopg2
+from werkzeug.exceptions import BadRequest
 
 ns = Namespace(name='kakao', description='카카오 회원가입/로그인 관련 API', path='/kakao')
 
@@ -25,7 +26,7 @@ class redirect_page(Resource):
 
         #TODO error 맞는지 확인 (request.json)
         if request.args.get("error"):
-            abort(StatusCode.BAD_REQUEST)
+            raise BadRequest("카카오 로그인 도중 에러가 발생했습니다.")
 
         headers = {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'}
 
@@ -37,14 +38,14 @@ class redirect_page(Resource):
 
         resp = requests.post(Kakao.TOKEN_URI, data=data, headers=headers)
         if resp.status_code != StatusCode.OK:
-            abort(StatusCode.BAD_REQUEST)
+            raise BadRequest("카카오 로그인 도중 에러가 발생했습니다.")
 
         headers = {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
                    'Authorization': f'Bearer {resp.json()['access_token']}'}
 
         resp = requests.post(Kakao.DATA_URI, headers=headers)
         if resp.status_code != StatusCode.OK:
-            abort(StatusCode.BAD_REQUEST)
+            raise BadRequest("카카오 로그인 도중 에러가 발생했습니다.")
 
         kakao_data = resp.json()
         data = {'login_id': f'kakao{kakao_data['id']}',
@@ -52,18 +53,8 @@ class redirect_page(Resource):
                 'name': kakao_data['kakao_account']['profile']['nickname']}
 
         #유저 정보 없으면 회원가입
-        try:
-            if not userUtils.get_user_by_login_id(data['login_id']):
-                userServ.register_kakao(data)
-        
-        except psycopg2.Error as e:
-            if isinstance(e, psycopg2.errors.UniqueViolation):
-                return {
-                    "message": "이미 사용 중인 이메일입니다. 다른 계정으로 시도해주세요.",
-                    'Location': domain,
-                }, StatusCode.REDIRECTION
-            else:
-                raise e
+        if not userUtils.get_user_by_login_id(data['login_id']):
+            userServ.register_kakao(data)
 
         #로그인 후 리 다이렉트
         #TODO [TEST] 리다이렉션 및 데이터 전송
