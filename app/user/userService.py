@@ -1,7 +1,6 @@
 from flask import make_response, jsonify
 from backend.app.db.db import conn
 from psycopg2.extras import DictCursor
-import psycopg2
 from . import userUtils as utils
 from backend.app.utils.const import (
     MAX_SEARCH,
@@ -35,8 +34,8 @@ from flask_jwt_extended import (
     get_jti,
 )
 import base64
-from ..utils import redisServ
-from ...app import redis_jwt_blocklist
+from ..utils import redisServ, redisBlockList
+# from ...app import redis_jwt_blocklist
 from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 # TODO conn.commit()
@@ -487,10 +486,9 @@ def logout(id):
 
     # 유저의 토큰을 블록리스트에 추가
     jti = get_jwt()["jti"]
-    redis_jwt_blocklist.set(jti, "", ex=int(os.getenv("ACCESS_TIME")))
     refresh_jti = redisServ.get_refresh_jti(id)
-    redis_jwt_blocklist.set(refresh_jti, "", ex=int(os.getenv("REFRESH_TIME")))
-
+    redisBlockList.update_block_list(jti, refresh_jti)
+    
     # jwt token 캐시에서 삭제
     response = make_response("", StatusCode.OK)
     unset_jwt_cookies(response)
