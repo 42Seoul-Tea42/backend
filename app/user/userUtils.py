@@ -1,3 +1,4 @@
+import requests
 import backend.app.utils.smtp as smtp
 import os, re, random, string
 import bcrypt
@@ -100,23 +101,6 @@ def is_valid_password(password, hashed_pw):
     # return False
 
 
-def get_distance(lat1, long1, lat2, long2):
-
-    # 위도와 경도의 라디안 차이 계산
-    diff_long = math.radians(long2) - math.radians(long1)
-    diff_lat = math.radians(lat2) - math.radians(lat1)
-
-    # Haversine 공식 계산
-    a = (
-        math.sin(diff_lat / 2) ** 2
-        + math.cos(lat1) * math.cos(lat2) * math.sin(diff_long / 2) ** 2
-    )
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    # 거리 계산 (m)
-    return EARTH_RADIUS * c / 1000
-
-
 def allowed_file(filename, id):
     if "." in filename:
         name, extension = filename.rsplit(".", 1)
@@ -172,21 +156,6 @@ def get_extension(image_info):
         raise ValueError("Invalid image extension")
 
     return extension
-
-
-# def _allowed_file(filename):
-#     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-# def save_uploaded_file(file):
-#     if file and _allowed_file(file.filename):
-#         filename = secure_filename(file.filename)
-#         file_path = os.path.join(PICTURE_DIR, filename)
-#         file.save(file_path)
-#         return filename
-#     else:
-#         # TODO: 저장된 사진 삭제하기
-#         raise Exception
 
 
 def get_pictures(filenames):
@@ -296,4 +265,50 @@ def update_fancy_view(target_id, opt):
             sql = 'UPDATE "User" SET fancy_view = COALESCE("fancy_view", 0) - 1 \
                         WHERE "id" = %s'
         cursor.execute(sql, (target_id,))
+        conn.commit()
+
+
+### location & distance ###
+
+
+def get_location_by_ip(ip_address):
+    # API로 위도ㅡ경도 받아오기
+    api_uri = os.environ.get("IP_API_URI")
+    api_key = os.environ.get("IP_API_KEY")
+    url = f"{api_uri}{ip_address}?token={api_key}"
+
+    # API에 HTTP GET 요청 보내기
+    response = requests.get(url)
+    data = response.json()
+
+    # 위도와 경도 추출
+    lat, long = [float(i) for i in data["loc"].split(",")]
+    # TEST
+    print("IP_API:", lat, long)
+
+    return lat, long
+
+
+def get_distance(lat1, long1, lat2, long2):
+
+    # 위도와 경도의 라디안 차이 계산
+    diff_long = math.radians(long2) - math.radians(long1)
+    diff_lat = math.radians(lat2) - math.radians(lat1)
+
+    # Haversine 공식 계산
+    a = (
+        math.sin(diff_lat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(diff_long / 2) ** 2
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    # 거리 계산 (m)
+    return EARTH_RADIUS * c / 1000
+
+
+# 위치 정보 DB에 저장
+def update_location(id, lat, long):
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
+        cursor.execute(sql, (long, lat, id))
         conn.commit()

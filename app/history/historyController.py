@@ -6,7 +6,7 @@ from backend.app.utils.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 
-# from ..wrapper.location import update_location
+# from ..wrapper.location import check_location
 
 ns = Namespace(
     name="history", description="fancy 및 히스토리 관련 API", path="/history"
@@ -65,7 +65,6 @@ class CheckFancy(Resource):
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
-    # @update_location()
     def get(self):
         """나를 팬시한 사람 그 누구냐!"""
         # id = get_jwt_identity()
@@ -84,7 +83,6 @@ class Fancy(Resource):
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
-    # @update_location()
     def patch(self):
         """fancy/unfancy 했음!"""
         # id = get_jwt_identity()
@@ -100,7 +98,6 @@ class ViewHistory(Resource):
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
-    # @update_location()
     def get(self):
         """내가 본 사람들"""
         # id = get_jwt_identity()

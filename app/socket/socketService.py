@@ -121,7 +121,7 @@ def new_history(id):
 
 
 #### update ####
-def update_distance(id, long, lat):
+def update_distance(id, lat, long):
     for target_id in id_match.get(id, set()):
         target_sid = redisServ.get_socket_id_by_id(target_id)
 

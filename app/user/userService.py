@@ -1,4 +1,4 @@
-from flask import make_response, jsonify
+from flask import make_response, jsonify, request
 from backend.app.db.db import conn
 from psycopg2.extras import DictCursor
 from . import userUtils as utils
@@ -17,7 +17,8 @@ from backend.app.utils.const import (
     MIN_FAME,
     MAX_FAME,
     MAX_PICTURE_AMOUNT,
-    StatusCode
+    StatusCode,
+    RedisOpt
 )
 from datetime import datetime
 import pytz
@@ -50,7 +51,6 @@ def login(data):
     if not user:
         raise BadRequest("존재하지 않는 유저입니다.")
 
-    # [TEST] login-pw
     if not utils.is_valid_password(data["pw"], user["password"]):
         raise Forbidden("잘못된 비밀번호입니다.")
 
@@ -76,22 +76,25 @@ def login(data):
     set_access_cookies(response, access_token, samesite='Strict', httponly=True)
     set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
 
+    #IP기반 위치 정보 업데이트
+    user["latitude"], user["longitude"] = utils.get_location_by_ip(
+        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+    )
+    utils.update_location(user["id"], user["latitude"], user["longitude"])
+
     #Redis에 유저 정보 저장
+    user["refresh_jti"] = get_jti(refresh_token)
     redisServ.set_user_info(user)
-    redisServ.update_user_info(user["id"], {"refresh_jti": get_jti(refresh_token)})
     return response
 
 
 def login_check(id):
     #Redis에서 유저 정보 가져오기
-    user = redisServ.get_login_check(id)
+    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     
     if user is None:
-        #DB에서 유저 정보 가져와서 redis에 저장
-        user = utils.get_user(id)
         if not user:
             raise Unauthorized("존재하지 않는 유저입니다.")
-        redisServ.set_user_info(user)
 
     response = make_response(
         jsonify(
@@ -133,10 +136,16 @@ def login_kakao(login_id):
     refresh_token = create_refresh_token(identity=user["id"])
     set_access_cookies(response, access_token, samesite='Strict', httponly=True)
     set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
+    
+    #IP기반 위치 정보 업데이트
+    user["latitude"], user["longitude"] = utils.get_location_by_ip(
+        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+    )
+    utils.update_location(user["id"], user["latitude"], user["longitude"])
 
     #Redis에 유저 정보 저장
+    user["refresh_jti"] = get_jti(refresh_token)
     redisServ.set_user_info(user)
-    redisServ.update_user_info(user["id"], {"refresh_jti": get_jti(refresh_token)})
 
     return response
 
@@ -484,34 +493,19 @@ def profile_detail(id, target_id):
 def logout(id):
     # socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
 
-    # 유저의 토큰을 블록리스트에 추가
+    # 유저의 토큰을 redis 블록리스트에 추가
     jti = get_jwt()["jti"]
     refresh_jti = redisServ.get_refresh_jti(id)
     redisBlockList.update_block_list(jti, refresh_jti)
+    
+    #redis 정보 삭제
+    redisServ.delete_user_info(id)
     
     # jwt token 캐시에서 삭제
     response = make_response("", StatusCode.OK)
     unset_jwt_cookies(response)
     
-    #redis 정보 삭제
-    redisServ.delete_user_info(id)
-    
     return response
-
-
-# # def setLocation(data, id):
-# #     cursor = conn.cursor(cursor_factory=DictCursor)
-# #     sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
-# #     cursor.execute(sql, (data['longitude'], data['latitude'], id))
-# #     conn.commit()
-# #     cursor.close()
-
-# #     #(socket) 거리 업데이트
-# #     socketServ.update_distance(id, data['longitude'], data['latitude'])
-
-# #     return {
-# #         'message': 'succeed',
-# #     }, 200
 
 
 def find_login_id(email):
@@ -718,15 +712,15 @@ def block(data, id):
     return StatusCode.OK
 
 
-def resetToken(id):
+def reset_token(id):
     user = utils.get_user(id)
     if not user:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+        raise Unauthorized("인증정보가 없습니다. 로그인해주세요.")
 
     response = make_response("", StatusCode.OK)
     
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=id)
     set_access_cookies(response, access_token, samesite='Strict', httponly=True)
-
+    
     return response

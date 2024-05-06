@@ -4,7 +4,7 @@ from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 
-# from ..wrapper.location import update_location
+# from ..wrapper.location import check_location
 
 ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
 
@@ -67,7 +67,6 @@ class ChatList(Resource):
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()
     def get(self):
         """채팅리스트를 드립니다!"""
         # id = get_jwt_identity()
@@ -85,7 +84,6 @@ class GetMsg(Resource):
     @ns.doc(
         params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 msg_id"}
     )
-    # @update_location()
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
         # id = get_jwt_identity()

@@ -2,7 +2,7 @@ from backend.app.db.db import conn
 from flask_restx import Namespace, Resource, fields
 from . import teaService as serv
 
-# from ..wrapper.location import update_location
+# from ..wrapper.location import check_location
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 ns = Namespace(name="tea", description="추천 관련 API", path="/tea")
@@ -50,7 +50,6 @@ class Suggest(Resource):
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_tea)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
-    # @update_location()
     def get(self):
         """get tea suggestions for you!"""
         # id = get_jwt_identity()

@@ -1,5 +1,6 @@
 from app import redis_client
 from .const import RedisOpt
+import os
 
 
 def set_user_info(user):
@@ -14,8 +15,12 @@ def set_user_info(user):
                 1 if all(user["gender"], user["taste"], user["age"]) else 0
             ),
             "emoji_check": 1 if user["emoji"] is not None else 0,
+            "refresh_jti": user["refresh_jti"],
         },
     )
+
+    # 만료 시간 설정 (refresh token 만료 시간과 동일하게 설정)
+    redis_client.expire(str(user["id"]), int(os.getenv("REFRESH_TIME")) * 24 * 60 * 60)
 
 
 def get_user_info(id, opt):
@@ -26,6 +31,8 @@ def get_user_info(id, opt):
         check_fields = ["email_check", "profile_check", "emoji_check"]
     elif opt == RedisOpt.SOCKET:
         check_fields = ["socket_id"]
+    else:
+        return None
 
     check_values = redis_client.hmget(str(id), *check_fields)
 
@@ -86,16 +93,3 @@ def get_id_by_socket_id(socket_id):
 
 def delete_socket_info(socket_id):
     redis_client.delete(socket_id)
-
-
-### location ###
-
-
-def get_user_location(id):
-    # 사용자의 위치 정보를 가져옴
-    location_fields = ["longitude", "latitude"]
-    location_values = redis_client.hmget(str(id), *location_fields)
-
-    # 위치 필드와 값을 딕셔너리로 반환
-    location_data = dict(zip(location_fields, location_values))
-    return location_data
