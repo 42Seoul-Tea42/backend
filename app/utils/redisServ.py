@@ -20,7 +20,9 @@ def set_user_info(user):
     )
 
     # 만료 시간 설정 (refresh token 만료 시간과 동일하게 설정)
-    redis_client.expire(str(user["id"]), int(os.getenv("REFRESH_TIME")) * 24 * 60 * 60)
+    redis_client.expire(
+        str(user["id"]), int(os.environ.get("REFRESH_TIME")) * 24 * 60 * 60
+    )
 
 
 def get_user_info(id, opt):
