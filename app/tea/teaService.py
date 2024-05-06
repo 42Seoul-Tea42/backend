@@ -20,7 +20,7 @@ def suggest(id):
     # 유저와 같은 지역에 fame rating 높은 사람으로
 
     user = userUtils.get_user(id)
-    if not user:
+    if user is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     tags, hate_tags = user["tags"], user["hate_tags"]

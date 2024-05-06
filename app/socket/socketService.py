@@ -15,7 +15,7 @@ def handle_connect(id, user_sid):
     if user is None:
         # DB에서 유저 정보 가져와서 redis에 저장
         user = userUtils.get_user(id)
-        if not user:
+        if user is None:
             emit("conn_fail", {"message": "존재하지 않는 유저입니다."}, room=user_sid)
         redisServ.save_user_info(user)
 
@@ -127,7 +127,7 @@ def update_distance(id, lat, long):
 
         if target_sid:
             target = userUtils.get_user(target_id)
-            if not target:
+            if target is None:
                 continue
 
             emit(

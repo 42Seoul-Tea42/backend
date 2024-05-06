@@ -1,9 +1,16 @@
-import requests
-from ..utils import smtp
 import os, re, random, string
+import requests
 import bcrypt
+
 from datetime import datetime
+import math
 import pytz
+import base64
+from ..db.db import conn
+from psycopg2.extras import DictCursor
+
+from ..history import historyUtils
+from ..utils import smtp, redisServ
 from ..utils.const import (
     KST,
     EARTH_RADIUS,
@@ -13,13 +20,9 @@ from ..utils.const import (
     MAX_FAME,
     FancyOpt,
     DEFAULT_PICTURE,
+    RedisOpt,
 )
-import math
-from ..db.db import conn
-from psycopg2.extras import DictCursor
-import base64
-from ..history import historyUtils
-from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
+from werkzeug.exceptions import Unauthorized, BadRequest
 
 
 def create_email_key(login_id, key):
@@ -204,7 +207,7 @@ def get_my_profile(id):
 
 
 def get_profile(id, target_id):
-    user = get_user(id)
+    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
 

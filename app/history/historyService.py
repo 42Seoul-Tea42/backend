@@ -78,10 +78,10 @@ def fancy(data, id):
             # history = cursor.fetchone()
 
         # TODO unfancy 잘 돌아가는지 확인 필요
-        if not history or not history["fancy"]:  # fancy
+        if history is None or history["fancy"] is None:  # fancy
             userUtils.update_fancy_view(target_id, FancyOpt.ADD)
 
-            if not history:
+            if history is None:
                 userUtils.update_count_view(target_id)
 
             if utils.get_fancy(id, target_id) == Fancy.CONN:

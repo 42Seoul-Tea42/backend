@@ -93,8 +93,7 @@ def login_check(id):
     user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     
     if user is None:
-        if not user:
-            raise Unauthorized("존재하지 않는 유저입니다.")
+        raise Unauthorized("존재하지 않는 유저입니다.")
 
     response = make_response(
         jsonify(
@@ -209,27 +208,27 @@ def change_email(data, id):
     if not utils.is_valid_email(data["email"]):
         raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
-    user = utils.get_user(id)
+    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     if user["email_check"]:
         raise BadRequest("이미 인증된 메일입니다.")
 
+    email_key = utils.create_email_key(user["login_id"], Key.EMAIL)
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         # update
-        email_key = utils.create_email_key(user["login_id"], Key.EMAIL)
         sql = 'UPDATE "User" SET "email" = %s, "email_key" = %s WHERE "id" = %s;'
         cursor.execute(sql, (data["email"], email_key, id))
         conn.commit()
 
     # send verify email
-    utils.send_email(data["email"], user["email_key"], Key.EMAIL)
+    utils.send_email(data["email"], email_key, Key.EMAIL)
 
     return {
         "email_check": False,
-        "profile_check": True if user["gender"] else False,
-        "emoji_check": True if user["emoji"] is not None else False,
+        "profile_check": user["profile_check"],
+        "emoji_check": user["emoji_check"],
     }, StatusCode.OK
 
 
@@ -599,7 +598,7 @@ def search(data, id):
     min_age = data["min_age"] if data.get("min_age", None) else MIN_AGE
     max_age = data["max_age"] if data.get("max_age", None) else MAX_AGE
 
-    user = utils.get_user(id)
+    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
     long, lat = user["longitude"], user["latitude"]
@@ -714,7 +713,7 @@ def block(data, id):
 
 
 def reset_token(id):
-    user = utils.get_user(id)
+    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if not user:
         raise Unauthorized("인증정보가 없습니다. 로그인해주세요.")
 

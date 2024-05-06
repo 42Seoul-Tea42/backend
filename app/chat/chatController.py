@@ -90,11 +90,11 @@ class GetMsg(Resource):
         # [JWT] delete below
         id = 1
         target_id = request.args.get("target_id")
-        if not target_id:
+        if target_id is None:
             raise BadRequest("메시지를 확인할 유저 id를 제공해야 합니다.")
 
         msg_id = request.args.get("msg_id")
-        if not msg_id:
+        if msg_id is None:
             raise BadRequest("로딩 기준 메시지 id를 제공해야 합니다.")
 
         try:

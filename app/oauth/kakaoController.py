@@ -53,7 +53,7 @@ class redirect_page(Resource):
                 'name': kakao_data['kakao_account']['profile']['nickname']}
 
         #유저 정보 없으면 회원가입
-        if not userUtils.get_user_by_login_id(data['login_id']):
+        if userUtils.get_user_by_login_id(data['login_id']) is None:
             userServ.register_kakao(data)
 
         #로그인 후 리 다이렉트

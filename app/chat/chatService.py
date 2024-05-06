@@ -1,16 +1,18 @@
 from ..db.db import conn
-from ..utils.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
+from ..utils.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode, RedisOpt
 from psycopg2.extras import DictCursor
 from . import chatUtils
 from ..history import historyUtils as hisUtils
 from ..socket import socketService as socketServ
 from ..user import userUtils
 from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
+from ...app import chat_collection
+from ..utils import redisServ
 
 
 def chat_list(id):
-    user = userUtils.get_user(id)
-    if not user:
+    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+    if user is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = user["longitude"], user["latitude"]
 
@@ -48,7 +50,7 @@ def chat_list(id):
 
 
 def get_msg(id, target_id, msg_id):
-    if not userUtils.get_user(target_id):
+    if userUtils.get_user(target_id) is None:
         raise BadRequest("유저 정보를 찾을 수 없습니다.")
 
     if hisUtils.get_fancy(id, target_id) < Fancy.CONN:
