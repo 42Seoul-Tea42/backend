@@ -12,6 +12,7 @@ from ..utils.const import (
     PICTURE_DIR,
     MAX_FAME,
     FancyOpt,
+    DEFAULT_PICTURE,
 )
 import math
 from ..db.db import conn
@@ -157,24 +158,23 @@ def get_extension(image_info):
     return extension
 
 
+def get_picture(filename):
+    image_path = os.path.join(PICTURE_DIR, filename)
+
+    with open(image_path, "rb") as image_file:
+        image_data = base64.b64encode(image_file.read()).decode("utf-8")
+
+    return image_data
+
+
 def get_pictures(filenames):
     images = []
     for filename in filenames:
-        image_path = os.path.join(PICTURE_DIR, filename)
-
-        with open(image_path, "rb") as image_file:
-            image_data = base64.b64encode(image_file.read()).decode("utf-8")
-
-        images.append(image_data)
+        images.append(get_picture(filename))
 
     # 이미지 파일이 없을 경우 default 이미지 추가
     if not images:
-        image_path = os.path.join(PICTURE_DIR, filename)
-
-        with open(image_path, "rb") as image_file:
-            image_data = base64.b64encode(image_file.read()).decode("utf-8")
-
-        images.append(image_data)
+        images.append(get_picture(DEFAULT_PICTURE))
 
     return images
 
@@ -213,7 +213,7 @@ def get_profile(id, target_id):
         raise BadRequest("존재하지 않는 유저입니다.")
 
     # 이미지 파일 생성
-    images = images = get_pictures(target["pictures"])
+    images = get_pictures(target["pictures"])
 
     # 유저 정보 및 이미지 파일을 포함한 응답 생성
     return {

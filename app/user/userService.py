@@ -18,7 +18,8 @@ from ..utils.const import (
     MAX_FAME,
     MAX_PICTURE_AMOUNT,
     StatusCode,
-    RedisOpt
+    RedisOpt,
+    DEFAULT_PICTURE
 )
 from datetime import datetime
 import pytz
@@ -346,7 +347,7 @@ def setting(data, id, images):
 def register_dummy(data):
     hashed_pw = utils.hashing(data["pw"])
     now_kst = datetime.now(pytz.timezone(KST))
-    pictures = ["1_0.png"]
+    pictures = [DEFAULT_PICTURE]
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (login_id, password, oauth, \
@@ -437,8 +438,8 @@ def register(data):
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
-                                    name, last_name, oauth) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+                                    name, last_name, oauth, pictures) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(
             sql,
             (
@@ -450,6 +451,7 @@ def register(data):
                 data["name"],
                 data["last_name"],
                 Oauth.NONE,
+                [DEFAULT_PICTURE]
             ),
         )
         conn.commit()
