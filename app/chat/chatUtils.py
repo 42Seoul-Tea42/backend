@@ -1,4 +1,4 @@
-from backend.app.db.db import conn
+from ..db.db import conn
 from psycopg2.extras import DictCursor
 from datetime import datetime
 import pytz

@@ -1,8 +1,7 @@
-from backend.app.db.db import conn
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
-from backend.app.utils.const import History
+from ..utils.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 

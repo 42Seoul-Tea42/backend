@@ -1,8 +1,8 @@
 from flask import make_response, jsonify, request
-from backend.app.db.db import conn
+from ..db.db import conn
 from psycopg2.extras import DictCursor
 from . import userUtils as utils
-from backend.app.utils.const import (
+from ..utils.const import (
     MAX_SEARCH,
     DISTANCE,
     Key,
@@ -36,7 +36,6 @@ from flask_jwt_extended import (
 )
 import base64
 from ..utils import redisServ, redisBlockList
-# from ...app import redis_jwt_blocklist
 from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 # TODO conn.commit()

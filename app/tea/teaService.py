@@ -1,5 +1,5 @@
-from backend.app.db.db import conn
-from backend.app.utils.const import (
+from ..db.db import conn
+from ..utils.const import (
     MAX_SUGGEST,
     AGE_GAP,
     Gender,

@@ -1,7 +1,7 @@
-from backend.app.db.db import conn
+from ..db.db import conn
 from datetime import datetime
 import pytz
-from backend.app.utils.const import (
+from ..utils.const import (
     MAX_HISTORY,
     History,
     KST,

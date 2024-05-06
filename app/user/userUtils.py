@@ -1,5 +1,5 @@
 import requests
-import backend.app.utils.smtp as smtp
+from ..utils import smtp
 import os, re, random, string
 import bcrypt
 from datetime import datetime
@@ -12,10 +12,9 @@ from ..utils.const import (
     PICTURE_DIR,
     MAX_FAME,
     FancyOpt,
-    DEFAULT_PICTURE,
 )
 import math
-from backend.app.db.db import conn
+from ..db.db import conn
 from psycopg2.extras import DictCursor
 import base64
 from ..history import historyUtils

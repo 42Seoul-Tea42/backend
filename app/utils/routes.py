@@ -25,11 +25,11 @@ def add_routes(app):
 
     api.init_app(app)
 
-    from .user import userController
-    from .tea import teaController
-    from .history import historyController
-    from .chat import chatController
-    from .oauth import kakaoController
+    from ..user import userController
+    from ..tea import teaController
+    from ..history import historyController
+    from ..chat import chatController
+    from ..oauth import kakaoController
 
     api.add_namespace(userController.ns)
     api.add_namespace(teaController.ns)

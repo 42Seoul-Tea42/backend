@@ -1,5 +1,5 @@
-from backend.app.db.db import conn
-from backend.app.utils.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
+from ..db.db import conn
+from ..utils.const import MAX_CHAT, FIRST_CHAT, Fancy, StatusCode
 from psycopg2.extras import DictCursor
 from . import chatUtils
 from ..history import historyUtils as hisUtils

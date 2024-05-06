@@ -1,4 +1,3 @@
-from backend.app.db.db import conn
 from flask_restx import Namespace, Resource, fields
 from . import teaService as serv
 
