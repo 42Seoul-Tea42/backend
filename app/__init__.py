@@ -7,7 +7,6 @@ from flask_socketio import SocketIO
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 import redis
 from .utils.routes import add_routes
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 
@@ -17,16 +16,17 @@ load_dotenv()
 
 # redis 클라이언트 생성
 redis_client = redis.StrictRedis(
-    host=os.getenv("REDIS_HOST"), port="REDIS_PORT", db=0, decode_responses=True
+    host=os.getenv("REDIS_HOST"),
+    port=int(os.getenv("REDIS_PORT")),
+    db=0,
+    decode_responses=True,
 )
 redis_jwt_blocklist = redis.StrictRedis(
-    host=os.getenv("REDIS_HOST"), port="REDIS_PORT", db=1, decode_responses=True
+    host=os.getenv("REDIS_HOST"),
+    port=int(os.getenv("REDIS_PORT")),
+    db=1,
+    decode_responses=True,
 )
-
-# MongoDB 클라이언트 생성
-mongo_client = MongoClient(host=os.getenv("MONGO_HOST"), port="MONGO_PORT")
-mongo_db = mongo_client["tea42"]
-chat_collection = mongo_db["chat"]
 
 
 # jwt

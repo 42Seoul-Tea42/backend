@@ -4,7 +4,9 @@ from ..history import historyUtils as hisUtils
 from ..socket import socketService as socketServ
 from ..user import userUtils
 from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
-from ...app import chat_collection
+
+# from app import chat_collection
+from ..db.mongo import MongoDBFactory
 from ..utils import redisServ
 
 
@@ -52,6 +54,7 @@ def get_msg(id, target_id, time):
     chatUtils.read_chat(recver_id=id, sender_id=target_id)
 
     # time을 기준으로 이전의 메시지를 가져와 최신 MAX_CHAT개 반환
+    chat_collection = MongoDBFactory.get_collection("tea42", "chat")
     chat = chat_collection.find(
         {
             "participants": {"$all": [id, target_id]},
@@ -59,7 +62,6 @@ def get_msg(id, target_id, time):
         },
         {
             "_id": 0,
-            "participants": 0,
             "messages": {"$slice": -MAX_CHAT},
         },
     )
