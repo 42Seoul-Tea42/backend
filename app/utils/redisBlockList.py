@@ -1,4 +1,4 @@
-from app import redis_jwt_blocklist
+from ...app import redis_jwt_blocklist
 import os
 
 
