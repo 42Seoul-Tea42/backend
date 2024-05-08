@@ -10,5 +10,5 @@ Flask-JWT-Extended
 Flask-SocketIO
 requests
 python-dotenv
-redis
 pymongo
+redis
