@@ -85,14 +85,14 @@ def create_app():
     # # TODO [TEST] dummy data delete
     # from .user.userService import register_dummy
     # data = {
-    #     "login_id": os.environ.get("DUM_ID"),
-    #     "pw": os.environ.get("DUM_PW"),
-    #     "email": os.environ.get("DUM_EMAIL"),
-    #     "name": os.environ.get("DUM_NAME"),
-    #     "last_name": os.environ.get("DUM_LAST_NAME"),
-    #     "age": os.environ.get("DUM_AGE"),
-    #     "longitude": os.environ.get("DUM_LONG"),
-    #     "latitude": os.environ.get("DUM_LAT"),
+    #     "login_id": os.getenv("DUM_ID"),
+    #     "pw": os.getenv("DUM_PW"),
+    #     "email": os.getenv("DUM_EMAIL"),
+    #     "name": os.getenv("DUM_NAME"),
+    #     "last_name": os.getenv("DUM_LAST_NAME"),
+    #     "age": os.getenv("DUM_AGE"),
+    #     "longitude": os.getenv("DUM_LONG"),
+    #     "latitude": os.getenv("DUM_LAT"),
     # }
     # register_dummy(data)
 

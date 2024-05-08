@@ -8,9 +8,9 @@ from werkzeug.exceptions import BadRequest
 
 ns = Namespace(name='kakao', description='카카오 회원가입/로그인 관련 API', path='/kakao')
 
-domain = os.environ.get('DOMAIN')
-client_id = os.environ.get('KAKAO_API_KEY')
-client_secret = os.environ.get('KAKAO_API_SECRET')
+domain = os.getenv('DOMAIN')
+client_id = os.getenv('KAKAO_API_KEY')
+client_secret = os.getenv('KAKAO_API_SECRET')
 
 ##### login
 @ns.route('/login')

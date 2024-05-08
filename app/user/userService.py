@@ -115,7 +115,7 @@ def login_kakao(login_id):
     response = make_response(
         jsonify(
             {
-                "Location": os.environ.get("DOMAIN"),
+                "Location": os.getenv("DOMAIN"),
                 "id": user["id"],
                 "name": user["name"],
                 "last_name": user["last_name"],

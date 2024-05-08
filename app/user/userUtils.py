@@ -88,7 +88,7 @@ def hashing(password):
     # sha256방식
     # m = hashlib.sha256()
     # m.update((password + login_id).encode('utf-8'))
-    # m.update(os.environ.get('SECRET_KEY').encode('utf-8'))
+    # m.update(os.getenv('SECRET_KEY').encode('utf-8'))
     # return m.hexdigest()
 
 
@@ -275,8 +275,8 @@ def update_fancy_view(target_id, opt):
 
 def get_location_by_ip(ip_address):
     # API로 위도ㅡ경도 받아오기
-    api_uri = os.environ.get("IP_API_URI")
-    api_key = os.environ.get("IP_API_KEY")
+    api_uri = os.getenv("IP_API_URI")
+    api_key = os.getenv("IP_API_KEY")
     url = f"{api_uri}{ip_address}?token={api_key}"
 
     # API에 HTTP GET 요청 보내기
