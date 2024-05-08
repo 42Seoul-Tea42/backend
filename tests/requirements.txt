@@ -1,0 +1,14 @@
+uwsgi
+Flask
+Flask-Restx
+Flask-Cors
+pytz
+psycopg2-binary
+bcrypt
+PyJWT
+Flask-JWT-Extended
+Flask-SocketIO
+requests
+python-dotenv
+redis
+pymongo
