@@ -3,6 +3,7 @@ from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
+import datetime
 
 # from ..wrapper.location import check_location
 
@@ -82,25 +83,22 @@ class GetMsg(Resource):
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     @ns.doc(
-        params={"target_id": "메시지 상대 id", "msg_id": "확인할 메시지 기준 msg_id"}
+        params={"target_id": "메시지 상대 id", "time": "확인할 메시지 기준 timestamp"}
     )
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
         # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
-        target_id = request.args.get("target_id")
-        if target_id is None:
-            raise BadRequest("메시지를 확인할 유저 id를 제공해야 합니다.")
-
-        msg_id = request.args.get("msg_id")
-        if msg_id is None:
-            raise BadRequest("로딩 기준 메시지 id를 제공해야 합니다.")
+        target_id, time_str = request.args.get("target_id"), request.args.get("time")
+        if not target_id or not time_str:
+            raise BadRequest("유저 id와 기준 시간을 확인해주세요.")
 
         try:
             target_id = int(target_id)
-            msg_id = int(msg_id)
+            # TODO 하기 내용 확인 필요
+            time = datetime.fromtimestamp(int(time_str) / 1000.0)
         except ValueError:
-            raise BadRequest("id는 숫자로 제공되어야 합니다.")
+            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
 
-        return serv.get_msg(id, target_id, msg_id)
+        return serv.get_msg(id, target_id, time)

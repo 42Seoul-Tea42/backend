@@ -43,16 +43,6 @@ CREATE TABLE "History" (
   FOREIGN KEY (target_id) REFERENCES "User" (id) ON DELETE CASCADE
 );
 
-CREATE TABLE "Chat" (
-	"msg_id"        SERIAL PRIMARY KEY,
-	"user_id"	  INTEGER	NOT NULL,
-	"target_id"	INTEGER	NOT NULL,
-	"msg"	      TEXT,
-  	"msg_time"  TIMESTAMP	NOT NULL,
-	"msg_new"	BOOLEAN	NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES "User" (id) ON DELETE CASCADE,
-  FOREIGN KEY (target_id) REFERENCES "User" (id) ON DELETE CASCADE
-);
 
 CREATE TABLE "Block" (
 	"user_id"	  INTEGER	NOT NULL,

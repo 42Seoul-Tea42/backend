@@ -4,26 +4,33 @@ from .db.db import conn
 import os
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
-from .config import DevelopmentConfig
+from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 import redis
 from .utils.routes import add_routes
+from pymongo import MongoClient
+from dotenv import load_dotenv
+
+
+# 환경변수 로드
+load_dotenv()
 
 
 # redis 클라이언트 생성
-redis_client = redis.StrictRedis(host="redis", port=6379, db=0, decode_responses=True)
-redis_jwt_blocklist = redis.StrictRedis(
-    host="redis", port=6379, db=1, decode_responses=True
+redis_client = redis.StrictRedis(
+    host=os.getenv("REDIS_HOST"), port="REDIS_PORT", db=0, decode_responses=True
 )
+redis_jwt_blocklist = redis.StrictRedis(
+    host=os.getenv("REDIS_HOST"), port="REDIS_PORT", db=1, decode_responses=True
+)
+
+# MongoDB 클라이언트 생성
+mongo_client = MongoClient(host=os.getenv("MONGO_HOST"), port="MONGO_PORT")
+mongo_db = mongo_client["tea42"]
+chat_collection = mongo_db["chat"]
+
 
 # jwt
 jwt = JWTManager()
-
-
-@jwt.token_in_blocklist_loader
-def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
-    token = jwt_payload["jti"]
-    token_in_redis = redis_jwt_blocklist.get(token)
-    return token_in_redis is not None
 
 
 # socket io
@@ -42,7 +49,7 @@ def create_app():
 
     @app.before_request
     def log_request_info():
-        app.logger.info(f"Request to {request.path} received")
+        app.logger.info(f"[API] Request to {request.path}")
 
     # config = app.config.get('FLASK_ENV')
     # if config == 'prod':
@@ -55,8 +62,14 @@ def create_app():
     #     app.logger.info(f"Request to {request.path} received")
     # app.config.from_object('config.DevelopmentConfig')
 
-    jwt.init_app(app)
     socket_io.init_app(app)
+    jwt.init_app(app)
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
+        token = jwt_payload["jti"]
+        token_in_redis = redis_jwt_blocklist.get(token)
+        return token_in_redis is not None
 
     ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
     # # Create a cursor
