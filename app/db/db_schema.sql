@@ -31,6 +31,9 @@ CREATE TABLE "User" (
 	"similar"	  BOOLEAN DEFAULT TRUE
 );
 
+-- age 열에 대한 인덱스 생성
+CREATE INDEX idx_age ON "User" (age);
+
 CREATE TABLE "History" (
 	"user_id"	INTEGER	NOT NULL,
 	"target_id"	INTEGER	NOT NULL,
