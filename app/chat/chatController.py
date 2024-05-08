@@ -97,7 +97,7 @@ class GetMsg(Resource):
         try:
             target_id = int(target_id)
             # TODO 하기 내용 확인 필요
-            time = datetime.fromtimestamp(int(time_str) / 1000.0)
+            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
         except ValueError:
             raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
 

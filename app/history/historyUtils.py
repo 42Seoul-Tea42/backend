@@ -2,7 +2,6 @@ from ..db.db import conn
 from psycopg2.extras import DictCursor
 from ..utils.const import Fancy, KST
 from datetime import datetime
-import pytz
 
 
 def update_fancy_check(id):
@@ -37,7 +36,7 @@ def get_fancy(id, target_id) -> int:
 
 def update_last_view(id, target_id):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        now_kst = datetime.now(pytz.timezone(KST))
+        now_kst = datetime.now(KST)
 
         sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (id, target_id))

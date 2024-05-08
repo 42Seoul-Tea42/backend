@@ -1,5 +1,5 @@
 from datetime import datetime
-import pytz
+
 from ..utils.const import KST, RedisOpt
 from ...app import chat_collection
 from ..utils import redisServ
@@ -34,7 +34,7 @@ def get_match_user_list(id) -> set:
 
 
 def save_chat(id, target_id, message):
-    now_kst = datetime.now(pytz.timezone(KST))
+    now_kst = datetime.now(KST)
 
     # MongoDB에서 해당 사용자들 간의 대화를 검색합니다.
     chat = chat_collection.find_one(

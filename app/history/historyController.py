@@ -4,6 +4,7 @@ from . import historyService as serv
 from ..utils.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
+import datetime
 
 # from ..wrapper.location import check_location
 
@@ -69,9 +70,15 @@ class CheckFancy(Resource):
         # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
-        time = request.args.get("time")
-        if time is None:
+        time_str = request.args.get("time")
+        if time_str is None:
             raise BadRequest("검색 기준 일시가 필요합니다.")
+
+        try:
+            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
+        except ValueError:
+            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
+
         return serv.view_history(id, time, History.FANCY)
 
 
@@ -102,7 +109,13 @@ class ViewHistory(Resource):
         # id = get_jwt_identity()
         # [JWT] delete below
         id = 1
-        time = request.args.get("time")
-        if time is None:
+        time_str = request.args.get("time")
+        if time_str is None:
             raise BadRequest("검색 기준 일시가 필요합니다.")
+
+        try:
+            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
+        except ValueError:
+            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
+
         return serv.view_history(id, time, History.HISTORY)

@@ -4,7 +4,7 @@ import bcrypt
 
 from datetime import datetime
 import math
-import pytz
+
 import base64
 from ..db.db import conn
 from psycopg2.extras import DictCursor
@@ -246,7 +246,7 @@ def update_last_online(id):
         user = cursor.fetchone()
         if user:
             sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
-            cursor.execute(sql, (None, datetime.now(pytz.timezone(KST)), id))
+            cursor.execute(sql, (None, datetime.now(KST), id))
             conn.commit()
 
 

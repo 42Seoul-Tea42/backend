@@ -1,6 +1,6 @@
 from ..db.db import conn
 from datetime import datetime
-import pytz
+
 from ..utils.const import (
     MAX_HISTORY,
     History,
@@ -49,13 +49,13 @@ def fancy(data, id):
     except ValueError:
         raise BadRequest("id는 숫자로 제공되어야 합니다.")
 
-    if id == int(target_id):
+    if id == target_id:
         raise BadRequest("스스로를 fancy할 수 없습니다.")
 
     if userUtils.get_user(target_id) is None:
         raise BadRequest("존재하지 않는 유저입니다.")
 
-    now_kst = datetime.now(pytz.timezone(KST))
+    now_kst = datetime.now(KST)
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 

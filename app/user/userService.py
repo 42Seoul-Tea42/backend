@@ -21,8 +21,7 @@ from ..utils.const import (
     RedisOpt,
     DEFAULT_PICTURE
 )
-from datetime import datetime
-import pytz
+from datetime import datetime, timedelta
 import app.history.historyUtils as historyUtils
 import os
 from ..socket import socketService as socketServ
@@ -345,7 +344,7 @@ def setting(data, id, images):
 # TODO [TEST] dummy data
 def register_dummy(data):
     hashed_pw = utils.hashing(data["pw"])
-    now_kst = datetime.now(pytz.timezone(KST))
+    now_kst = datetime.now(KST)
     pictures = [DEFAULT_PICTURE]
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -398,7 +397,7 @@ def save_pictures(id, files):
             extension = utils.get_extension(image_info)
             decoded_data = base64.b64decode(encoded_data)
 
-            filename = f"{id}_{idx}_{datetime.now().strftime("%Y%m%d%H%M%S")}.{extension}"
+            filename = f"{id}_{idx}_{datetime.now(KST).strftime("%Y%m%d%H%M%S")}.{extension}"
             
             # 파일 저장
             file_path = os.path.join(PICTURE_DIR, filename)
@@ -484,7 +483,7 @@ def profile_detail(id, target_id):
     return {
         "login_id": target["login_id"],
         "status": socketServ.check_status(target_id),
-        "last_online": target["last_online"].strftime("%Y-%m-%d-%H-%M"),
+        "last_online": (target["last_online"]+timedelta(hours=9)).strftime("%Y-%m-%d-%H-%M"),
         "taste": target["taste"],
         "bio": target["bio"],
     }, StatusCode.OK

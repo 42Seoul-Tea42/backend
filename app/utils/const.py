@@ -1,7 +1,8 @@
 # from enum import Enum
+import pytz
 
 # General
-KST = "Asia/Seoul"
+KST = pytz.timezone("Asia/Seoul")
 PICTURE_DIR = "/usr/app/srcs/app/profile/"
 DEFAULT_PICTURE = "default.png"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
