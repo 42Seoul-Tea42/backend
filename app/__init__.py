@@ -42,25 +42,21 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # config
-
-    app.config.from_object(DevelopmentConfig)
+    # routes setting
     add_routes(app)
 
-    @app.before_request
-    def log_request_info():
-        app.logger.info(f"[API] Request to {request.path}")
+    # config
+    config = os.getenv("FLASK_ENV")
+    if config == "prod":
+        app.config.from_object(ProductionConfig)
+    elif config == "testing":
+        app.config.from_object(TestingConfig)
+    else:
+        app.config.from_object(DevelopmentConfig)
 
-    # config = app.config.get('FLASK_ENV')
-    # if config == 'prod':
-    #     app.config.from_object('config.ProductionConfig')
-    # elif config == 'testing':
-    #     app.config.from_object('config.TestingConfig')
-    # else:
-    # @app.before_request
-    # def log_request_info():
-    #     app.logger.info(f"Request to {request.path} received")
-    # app.config.from_object('config.DevelopmentConfig')
+        @app.before_request
+        def log_request_info():
+            app.logger.info(f"Request to {request.path} received")
 
     socket_io.init_app(app)
     jwt.init_app(app)
@@ -105,7 +101,7 @@ def create_app():
 
     error_handle(app)
 
-    @app.route("/")
+    @app.route("/hello")
     def welcome():
         return "Hello there, welcome to Tea42"
 
