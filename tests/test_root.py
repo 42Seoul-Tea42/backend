@@ -1,5 +1,5 @@
 import json
-from backend.wsgi import application as app
+from ..wsgi import application as app
 
 
 def test_hello():
