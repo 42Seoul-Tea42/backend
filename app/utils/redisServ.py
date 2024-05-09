@@ -1,4 +1,4 @@
-from ...app import redis_client
+from app import redis_client
 from .const import RedisOpt
 import os
 

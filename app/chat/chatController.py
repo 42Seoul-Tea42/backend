@@ -3,7 +3,7 @@ from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
-import datetime
+from datetime import datetime
 
 # from ..wrapper.location import check_location
 

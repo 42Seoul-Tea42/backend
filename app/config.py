@@ -44,6 +44,7 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     # https 적용
     JWT_COOKIE_SECURE = True
+    PROPAGATE_EXCEPTIONS = True
 
 
 class TestingConfig(Config):

@@ -310,7 +310,7 @@ def setting(data, id, images):
             try:
                 os.remove(file_path)
             except Exception as e:
-                from ...app import app
+                from app import app
                 app.logger.error(f"사진 삭제 시 에러 발생(setting): {e}")
                 pass
         update_fields["pictures"] = images
@@ -415,7 +415,7 @@ def save_pictures(id, files):
             try:
                 os.remove(file_path)
             except Exception as e:
-                from ...app import app
+                from app import app
                 app.logger.error(f"사진 삭제 시 에러 발생(save_pictures): {e}")
                 pass
         raise e
