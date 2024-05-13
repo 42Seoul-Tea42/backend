@@ -17,7 +17,7 @@ def error_handle(app):
         )
         response.status_code = StatusCode.INTERNAL_ERROR
         conn.rollback()
-        return response
+        return response, error.code
 
     @app.errorhandler(psycopg2.Error)
     def handle_database_error(error):
@@ -37,7 +37,7 @@ def error_handle(app):
             )
             response.status_code = StatusCode.INTERNAL_ERROR
         conn.rollback()
-        return response
+        return response, error.code
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(error):
@@ -47,14 +47,14 @@ def error_handle(app):
         if isinstance(error, InternalServerError):
             # 로그 출력
             app.logger.error(f"[500 Error] {request.path}: ", exc_info=error)
-            response.data = jsonify(
+            response = jsonify(
                 {
                     "message": error.description,
                 }
             )
         # 401 error
         elif isinstance(error, Unauthorized):
-            response.data = jsonify(
+            response = jsonify(
                 {
                     "message": error.description,
                     "error": (
@@ -66,11 +66,11 @@ def error_handle(app):
             )
         # 그 외 40x, 50x error
         else:
-            response.data = jsonify(
+            response = jsonify(
                 {
                     "message": error.description,
                 }
             )
 
         conn.rollback()
-        return response
+        return response, error.code

@@ -20,7 +20,7 @@ def add_routes(app):
         title="tea42",
         # prefix="/sw",
         contact_email="tea42fourtwo@gmail.com",
-        # doc=False #swagger 표시 안하겠당!
+        # doc=False,  # swagger 표시 안하겠당!
     )
 
     api.init_app(app)
