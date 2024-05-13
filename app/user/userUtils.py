@@ -192,16 +192,16 @@ def get_my_profile(id):
 
     # 유저 정보 및 이미지 파일을 포함한 응답 생성
     return {
-        "id": id["id"],
-        "name": id["name"],
-        "last_name": id["last_name"],
-        "age": id["age"],
-        "tags": decode_bit(id["tags"]),
-        "hate_tags": decode_bit(id["hate_tags"]),
-        "emoji": decode_bit(id["emoji"]),
-        "hate_emoji": decode_bit(id["hate_emoji"]),
-        "gender": id["gender"],
-        "taste": id["taste"],
+        "id": user["id"],
+        "name": user["name"],
+        "last_name": user["last_name"],
+        "age": user["age"],
+        "tags": decode_bit(user["tags"]),
+        "hate_tags": decode_bit(user["hate_tags"]),
+        "emoji": decode_bit(user["emoji"]),
+        "hate_emoji": decode_bit(user["hate_emoji"]),
+        "gender": user["gender"],
+        "taste": user["taste"],
         "pictures": images,
     }
 

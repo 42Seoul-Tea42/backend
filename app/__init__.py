@@ -8,9 +8,6 @@ import redis
 from .utils.routes import add_routes
 from dotenv import load_dotenv
 
-# from flask_socketio import SocketIO
-
-
 # 환경변수 로드
 load_dotenv()
 
@@ -30,24 +27,17 @@ redis_jwt_blocklist = redis.StrictRedis(
 )
 
 
-# jwt
-
-
-# socket io
-# socket_io = SocketIO()
-
-
 def create_app():
 
     app = Flask(__name__)
-    CORS(app, origins="*", supports_credentials=True)
-    # CORS(
-    #     app,
-    #     resources={r"/*": {"origins": "*"}},
-    #     headers=["Content-Type"],
-    #     expose_headers=["Access-Control-Allow-Origin"],
-    #     supports_credentials=True,
-    # )
+    CORS(
+        app,
+        origins="*",
+        # resources={r"/*": {"origins": "*"}},
+        # headers=["Content-Type"],
+        expose_headers=["Access-Control-Allow-Origin"],
+        supports_credentials=True,
+    )
 
     # routes setting
     add_routes(app)
@@ -64,8 +54,6 @@ def create_app():
         @app.before_request
         def log_request_info():
             app.logger.info(f"Request to {request.path} received")
-
-    # socket_io.init_app(app)
 
     jwt = JWTManager(app)
 
