@@ -1,35 +1,33 @@
-from flask import request
-from ...app import socket_io
 from ..chat import chatUtils as chatUtils
 from . import socketService as socketServ
 from flask_jwt_extended import jwt_required
+from wsgi import socket_io
 
 
 #### connect && disconnect ####
-@jwt_required()
+# @jwt_required()
 @socket_io.on("connect")
-def handle_connect():
-    # id = get_jwt_identity()
+def handle_connect(sid, environ, auth):
+    # TODO auth에서 token으로 JWT 검증, id 가져오기
+    # if not auth:
+    #     return False
+
     # [JWT] delete below
     id = 1
-    user_sid = request.sid
-    socketServ.handle_connect(id, user_sid)
+    socketServ.handle_connect(id, sid)
 
 
 @socket_io.on("disconnect")
-def handle_disconnect():
-    user_sid = request.sid
-    socketServ.handle_disconnect(user_sid)
+def handle_disconnect(sid):
+    socketServ.handle_disconnect(sid)
 
 
-#### chat ####
+# #### chat ####
 @socket_io.on("send_message")
-def send_message(data):
-    user_sid = request.sid
-    socketServ.send_message(data, user_sid)
+def send_message(sid, data):
+    socketServ.send_message(data, sid)
 
 
 @socket_io.on("read_message")
-def read_message(data):
-    user_sid = request.sid
-    socketServ.read_message(data, user_sid)
+def read_message(sid, data):
+    socketServ.read_message(data, sid)

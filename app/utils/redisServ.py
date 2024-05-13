@@ -81,15 +81,3 @@ def get_socket_id_by_id(id):
 
 def delete_socket_id_by_id(id):
     redis_client.hdel(str(id), "socket_id")
-
-
-def set_socket_info(socket_id, id):
-    redis_client.set(socket_id, id)
-
-
-def get_id_by_socket_id(socket_id):
-    return redis_client.get(socket_id)
-
-
-def delete_socket_info(socket_id):
-    redis_client.delete(socket_id)

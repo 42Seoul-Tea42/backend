@@ -3,12 +3,10 @@ from flask_cors import CORS
 from .db.db import conn
 import os
 from flask_jwt_extended import JWTManager
-from flask_socketio import SocketIO
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 import redis
 from .utils.routes import add_routes
 from dotenv import load_dotenv
-
 
 # 환경변수 로드
 load_dotenv()
@@ -29,18 +27,17 @@ redis_jwt_blocklist = redis.StrictRedis(
 )
 
 
-# jwt
-jwt = JWTManager()
-
-
-# socket io
-socket_io = SocketIO()
-
-
 def create_app():
 
     app = Flask(__name__)
-    CORS(app)
+    CORS(
+        app,
+        origins="*",
+        # resources={r"/*": {"origins": "*"}},
+        # headers=["Content-Type"],
+        expose_headers=["Access-Control-Allow-Origin"],
+        supports_credentials=True,
+    )
 
     # routes setting
     add_routes(app)
@@ -58,8 +55,7 @@ def create_app():
         def log_request_info():
             app.logger.info(f"Request to {request.path} received")
 
-    socket_io.init_app(app)
-    jwt.init_app(app)
+    jwt = JWTManager(app)
 
     @jwt.token_in_blocklist_loader
     def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
@@ -101,7 +97,7 @@ def create_app():
 
     error_handle(app)
 
-    @app.route("/hello")
+    @app.route("/")
     def welcome():
         return "Hello there, welcome to Tea42"
 

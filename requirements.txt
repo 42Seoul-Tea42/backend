@@ -1,5 +1,5 @@
 uwsgi
-Flask
+Flask>=3.0.0
 Flask-Restx
 Flask-Cors
 pytz
@@ -7,8 +7,9 @@ psycopg2-binary
 bcrypt
 PyJWT
 Flask-JWT-Extended
-Flask-SocketIO
+Flask-SocketIO>=5.0.0
 requests
 python-dotenv
 redis
 pymongo
+# gevent
