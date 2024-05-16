@@ -13,8 +13,8 @@ socket_io = socketio.Server(
 )
 
 
+application = create_app()
+application = socketio.WSGIApp(socket_io, application)
 if __name__ == "__main__":
-    application = create_app()
-    application = socketio.WSGIApp(socket_io, application)
 
     socket_io.run(application, debug=application.config["DEBUG"])

@@ -1,7 +1,8 @@
 # 프로젝트 위치
-chdir = "/usr/app/srcs/wsgi"
+chdir = "/usr/app/srcs"
 
 # 워커 프로세스 수
+# workers = 4
 workers = 1
 
 # 소켓 접근 권한
