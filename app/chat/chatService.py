@@ -1,4 +1,4 @@
-from ..utils.const import MAX_CHAT, Fancy, StatusCode, RedisOpt
+from ..utils.const import MAX_CHAT, Fancy, StatusCode, RedisOpt, Authorization
 from . import chatUtils
 from ..history import historyUtils as hisUtils
 from ..socket import socketService as socketServ
@@ -11,10 +11,13 @@ from ..utils import redisServ
 
 
 def chat_list(id):
-    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if user is None:
+    # 유저 API 접근 권한 확인
+    userUtils.check_authorization(id, Authorization.EMOJI)
+
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+    if redis_user is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
-    long, lat = user["longitude"], user["latitude"]
+    long, lat = redis_user["longitude"], redis_user["latitude"]
 
     # id와 매칭된 상대들의 리스트를 가져옴
     chat_target = chatUtils.get_match_user_list(id)
@@ -44,6 +47,9 @@ def chat_list(id):
 
 
 def get_msg(id, target_id, time):
+    # 유저 API 접근 권한 확인
+    userUtils.check_authorization(id, Authorization.EMOJI)
+
     if userUtils.get_user(target_id) is None:
         raise BadRequest("유저 정보를 찾을 수 없습니다.")
 

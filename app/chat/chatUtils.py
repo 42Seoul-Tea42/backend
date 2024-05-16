@@ -8,8 +8,8 @@ from werkzeug.exceptions import Unauthorized
 
 
 def get_match_user_list(id) -> set:
-    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if user is None:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+    if redis_user is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     # id와 매칭된 상대들의 리스트를 가져옴

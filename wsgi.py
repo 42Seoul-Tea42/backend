@@ -12,9 +12,9 @@ socket_io = socketio.Server(
     logger=True,
 )
 
+
 application = create_app()
 application = socketio.WSGIApp(socket_io, application)
-
-
 if __name__ == "__main__":
+
     socket_io.run(application, debug=application.config["DEBUG"])

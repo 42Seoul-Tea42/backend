@@ -1,4 +1,4 @@
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from datetime import datetime
 
 from ..utils.const import (
@@ -8,6 +8,7 @@ from ..utils.const import (
     Fancy,
     StatusCode,
     FancyOpt,
+    Authorization,
 )
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
@@ -17,6 +18,10 @@ from werkzeug.exceptions import BadRequest
 
 
 def view_history(id, time_limit, opt):
+    # 유저 API 접근 권한 확인
+    userUtils.check_authorization(id, Authorization.EMOJI)
+
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         if opt == History.FANCY:
@@ -43,6 +48,9 @@ def view_history(id, time_limit, opt):
 
 
 def fancy(data, id):
+    # 유저 API 접근 권한 확인
+    userUtils.check_authorization(id, Authorization.EMOJI)
+
     target_id = data["target_id"]
     try:
         target_id = int(target_id)
@@ -57,6 +65,7 @@ def fancy(data, id):
 
     now_kst = datetime.now(KST)
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'

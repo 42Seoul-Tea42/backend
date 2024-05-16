@@ -1,5 +1,5 @@
 from flask import make_response, jsonify, request
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
 from . import userUtils as utils
 from ..utils.const import (
@@ -19,7 +19,10 @@ from ..utils.const import (
     MAX_PICTURE_AMOUNT,
     StatusCode,
     RedisOpt,
-    DEFAULT_PICTURE
+    DEFAULT_PICTURE,
+    RedisSetOpt,
+    Authorization,
+    EncodeOpt
 )
 from datetime import datetime, timedelta
 import app.history.historyUtils as historyUtils
@@ -72,14 +75,17 @@ def login(data):
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=user["id"])
     refresh_token = create_refresh_token(identity=user["id"])
-    set_access_cookies(response, access_token, samesite='Strict', httponly=True)
-    set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
+    set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
+    set_refresh_cookies(response, refresh_token, max_age=int(os.getenv("REFRESH_TIME"))*60*60*24)
 
-    #IP기반 위치 정보 업데이트
-    user["latitude"], user["longitude"] = utils.get_location_by_ip(
-        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
-    )
-    utils.update_location(user["id"], user["latitude"], user["longitude"])
+    if os.getenv("PYTEST") == "True":
+        user["latitude"], user["longitude"] = 37.488405, 127.065527
+    else:
+        #IP기반 위치 정보 업데이트
+        user["latitude"], user["longitude"] = utils.get_location_by_ip(
+            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+        )
+        utils.update_location(user["id"], user["latitude"], user["longitude"])
 
     #Redis에 유저 정보 저장
     user["refresh_jti"] = get_jti(refresh_token)
@@ -89,17 +95,17 @@ def login(data):
 
 def login_check(id):
     #Redis에서 유저 정보 가져오기
-    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     
-    if user is None:
+    if redis_user is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     response = make_response(
         jsonify(
             {
-                "email_check": user["email_check"],
-                "profile_check": True if user["gender"] else False,
-                "emoji_check": True if user["emoji"] is not None else False,
+                "email_check": True if redis_user["email_check"] == RedisSetOpt.SET else False,
+                "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
+                "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False
             }
         ),
         StatusCode.OK,
@@ -132,14 +138,17 @@ def login_kakao(login_id):
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=user["id"])
     refresh_token = create_refresh_token(identity=user["id"])
-    set_access_cookies(response, access_token, samesite='Strict', httponly=True)
-    set_refresh_cookies(response, refresh_token, samesite='Strict', httponly=True)
+    set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
+    set_refresh_cookies(response, refresh_token, max_age=int(os.getenv("REFRESH_TIME"))*60*60*24)
     
-    #IP기반 위치 정보 업데이트
-    user["latitude"], user["longitude"] = utils.get_location_by_ip(
-        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
-    )
-    utils.update_location(user["id"], user["latitude"], user["longitude"])
+    if os.getenv("PYTEST") == "True":
+        user["latitude"], user["longitude"] = 37.488405, 127.065527
+    else:
+        #IP기반 위치 정보 업데이트
+        user["latitude"], user["longitude"] = utils.get_location_by_ip(
+            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+        )
+        utils.update_location(user["id"], user["latitude"], user["longitude"])
 
     #Redis에 유저 정보 저장
     user["refresh_jti"] = get_jti(refresh_token)
@@ -157,6 +166,7 @@ def check_id(login_id):
     if not utils.is_valid_login_id(login_id):
         raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
@@ -172,6 +182,7 @@ def check_email(email):
     if not utils.is_valid_email(email):
         raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         sql = 'SELECT * FROM "User" WHERE "email" = %s;'
@@ -196,42 +207,64 @@ def check_email(email):
 
 
 def get_email(id):
-    user = utils.get_user(id)
-    if not user:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")
+    
+    if redis_user["email_check"] == RedisSetOpt.SET:
+        raise BadRequest("이미 인증된 메일입니다.")
 
-    return {"email": user["email"]}, StatusCode.OK
+    return {"email": redis_user["email"]}, StatusCode.OK
 
 
 def change_email(data, id):
     if not utils.is_valid_email(data["email"]):
         raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
-    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not user:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
-    if user["email_check"]:
+    if redis_user["email_check"] == RedisSetOpt.SET:
         raise BadRequest("이미 인증된 메일입니다.")
+    
+    if redis_user["email"] == data["email"]:
+        raise BadRequest("기존과 동일한 이메일입니다.")
 
-    email_key = utils.create_email_key(user["login_id"], Key.EMAIL)
+    email_key = utils.create_email_key(redis_user["login_id"], Key.EMAIL)
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         # update
         sql = 'UPDATE "User" SET "email" = %s, "email_key" = %s WHERE "id" = %s;'
         cursor.execute(sql, (data["email"], email_key, id))
         conn.commit()
-
+        
+    if os.getenv("PYTEST") == "True":
+        return {
+            "email_check": False,
+            "profile_check": redis_user["profile_check"],
+            "emoji_check": redis_user["emoji_check"],
+            "key": email_key,
+        }, StatusCode.OK
+        
     # send verify email
     utils.send_email(data["email"], email_key, Key.EMAIL)
 
     return {
         "email_check": False,
-        "profile_check": user["profile_check"],
-        "emoji_check": user["emoji_check"],
+        "profile_check": redis_user["profile_check"],
+        "emoji_check": redis_user["emoji_check"],
     }, StatusCode.OK
 
 
 def resend_email(id):
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if not redis_user:
+        raise Unauthorized("존재하지 않는 유저입니다.")
+    
+    if redis_user["email_check"] == RedisSetOpt.SET:
+        raise BadRequest("이미 인증된 메일입니다.")
+    
     user = utils.get_user(id)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
@@ -240,11 +273,19 @@ def resend_email(id):
     if user["email_check"]:
         raise BadRequest("이미 인증된 메일입니다.")
 
+    if os.getenv("PYTEST") == "True":
+        return {
+            "email_check": False,
+            "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
+            "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False,
+            "key": user["email_key"],
+        }, StatusCode.OK
+
     utils.send_email(email, user["email_key"], Key.EMAIL)
     return {
-        "email_check": user["email_check"],
-        "profile_check": True if user["gender"] else False,
-        "emoji_check": True if user["emoji"] is not None else False,
+        "email_check": False,
+        "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
+        "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False,
     }, StatusCode.OK
 
 
@@ -252,13 +293,23 @@ def verify_email(key):
     if key[-1] != str(Key.EMAIL):
         raise Forbidden("유효하지 않은 인증키입니다.")
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT "id" FROM "User" WHERE "email_key" = %s;'
+        cursor.execute(sql, (key,))
+        user = cursor.fetchone()
+        if not user:
+            raise Forbidden("유효하지 않은 인증키입니다.")
+
+        id = user["id"]
+        
         sql = 'UPDATE "User" SET "email_check" = %s, "email_key" = %s WHERE "email_key" = %s;'
         cursor.execute(sql, (True, None, key))
         num_rows_updated = cursor.rowcount
         conn.commit()
 
     if num_rows_updated:
+        redisServ.update_user_info(id, {"email_check": 1})
         return StatusCode.OK
 
     raise Forbidden("유효하지 않은 인증키입니다.")
@@ -269,6 +320,9 @@ def setting(data, id, images):
     user = utils.get_user(id)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
+
+    if not user["email_check"]:
+        raise Forbidden("이메일 인증이 필요합니다.")
 
     # 업데이트할 항목 정리
     update_fields = {}
@@ -285,21 +339,25 @@ def setting(data, id, images):
     if data.get("name", None):
         update_fields["name"] = data["name"]
     if data.get("age", None):
+        if data["age"] < MIN_AGE or MAX_AGE < data["age"]:
+            raise BadRequest("유효하지 않은 나이입니다.")
         update_fields["age"] = data["age"]
     if data.get("gender", None):
+        utils.is_valid_gender(data["gender"])
         update_fields["gender"] = data["gender"]
     if data.get("taste", None):
+        utils.is_valid_taste(data["taste"])
         update_fields["taste"] = data["taste"]
     if data.get("bio", None):
         update_fields["bio"] = data["bio"]
     if data.get("tags", None):
-        update_fields["tags"] = utils.encode_bit(data["tags"])
+        update_fields["tags"] = utils.encode_bit(data["tags"], EncodeOpt.TAGS)
     if data.get("hate_tags", None):
-        update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"])
+        update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"], EncodeOpt.TAGS)
     if data.get("prefer_emoji", None):
-        update_fields["emoji"] = utils.encode_bit(data["prefer_emoji"])
+        update_fields["emoji"] = utils.encode_bit(data["prefer_emoji"], EncodeOpt.EMOJI)
     if data.get("hate_emoji", None):
-        update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"])
+        update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"], EncodeOpt.EMOJI)
     if data.get("similar", None):
         update_fields["similar"] = data["similar"]
     if images:
@@ -318,6 +376,7 @@ def setting(data, id, images):
     if not update_fields:
         raise BadRequest("업데이트 내용이 없습니다.")
     
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         set_statements = ", ".join(
             [f'"{key}" = %s' for key in update_fields.keys()]
@@ -327,7 +386,7 @@ def setting(data, id, images):
 
         if "email" in update_fields:
             sql = f'UPDATE "User" SET "email_check" = %s WHERE "id" = %s;'
-            cursor.execute(sql, tuple(update_fields.values()) + (False, id))
+            cursor.execute(sql, (False, id))
 
         conn.commit()
 
@@ -338,7 +397,9 @@ def setting(data, id, images):
     #Redis 업데이트
     redisServ.update_user_info(id, update_fields)
 
-    return StatusCode.OK
+    return {
+       "email_check": False if "email" in update_fields else True
+    }, StatusCode.OK
 
 
 # TODO [TEST] dummy data
@@ -347,6 +408,7 @@ def register_dummy(data):
     now_kst = datetime.now(KST)
     pictures = [DEFAULT_PICTURE]
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (login_id, password, oauth, \
                                     email, email_check, name, last_name, pictures, \
@@ -371,14 +433,14 @@ def register_dummy(data):
                 now_kst,
                 data["longitude"],
                 data["latitude"],
-                Gender.FEMALE,
-                Gender.ALL,
+                data["gender"],
+                data["taste"],
                 "자기소개입니다",
-                98,
-                2024,
-                33296,
-                16384,
-                True,
+                utils.encode_bit(data["tags"], EncodeOpt.TAGS),
+                utils.encode_bit(data["hate_tags"], EncodeOpt.TAGS),
+                utils.encode_bit(data["emoji"], EncodeOpt.EMOJI),
+                utils.encode_bit(data["hate_emoji"], EncodeOpt.EMOJI),
+                data["similar"]
             ),
         )
         conn.commit()
@@ -429,11 +491,21 @@ def register(data):
 
     if not utils.is_valid_login_id(data["login_id"]):
         raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
+    
+    if not utils.is_valid_new_password(data["pw"]):
+        raise BadRequest("안전하지 않은 비밀번호입니다.")
+
+    if len(data["name"]) == 0:
+        raise BadRequest("이름을 입력해주세요.")
+    
+    if len(data["last_name"]) == 0:
+        raise BadRequest("성을 입력해주세요.")
 
     login_id = data["login_id"].lower()
     hashed_pw = utils.hashing(data["pw"])
     email_key = utils.create_email_key(login_id, Key.EMAIL)
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
                                     name, last_name, oauth, pictures) \
@@ -454,12 +526,17 @@ def register(data):
         )
         conn.commit()
 
+    if os.getenv("PYTEST") == "True":
+        return {
+            "key": email_key,
+        }, StatusCode.OK
+        
     utils.send_email(data["email"], email_key, Key.EMAIL)
-
     return StatusCode.OK
 
 
 def register_kakao(data):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (email, email_check, login_id, name, oauth) \
                             VALUES (%s, %s, %s, %s, %s)'
@@ -470,6 +547,9 @@ def register_kakao(data):
 
 
 def profile_detail(id, target_id):
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
+    
     target = utils.get_user(target_id)
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
@@ -494,7 +574,7 @@ def logout(id):
 
     # 유저의 토큰을 redis 블록리스트에 추가
     jti = get_jwt()["jti"]
-    refresh_jti = redisServ.get_refresh_jti(id)
+    refresh_jti = redisServ.get_refresh_jti_by_id(id)
     redisBlockList.update_block_list(jti, refresh_jti)
     
     #redis 정보 삭제
@@ -508,6 +588,7 @@ def logout(id):
 
 
 def find_login_id(email):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         sql = 'SELECT * FROM "User" WHERE "email" = %s;'
@@ -534,13 +615,19 @@ def request_reset(login_id):
 
     email_key = utils.create_email_key(login_id, Key.PASSWORD)
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET "email_key" = %s WHERE "login_id" = %s;'
         cursor.execute(sql, (email_key, login_id))
         conn.commit()
 
-    utils.send_email(user["email"], email_key, Key.PASSWORD)
+    if os.getenv("PYTEST") == "True":
+        return {
+            "email_check": True,
+            "key": email_key,
+        }, StatusCode.OK
 
+    utils.send_email(user["email"], email_key, Key.PASSWORD)
     return {"email_check": True}, StatusCode.OK
 
 
@@ -551,6 +638,10 @@ def reset_pw(data, key):
     if not data["pw"]:
         raise BadRequest("변경할 비밀번호를 입력해주세요.")
 
+    if not utils.is_valid_new_password(data["pw"]):
+        raise BadRequest("안전하지 않은 비밀번호입니다.")
+
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
         cursor.execute(sql, (key,))
@@ -568,12 +659,15 @@ def reset_pw(data, key):
 
 
 def unregister(id):
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
 
     logout(id)
     socketServ.unregister(id)
     redisServ.delete_user_info(id)
 
     # TODO 모두 잘 삭제되는지 및 채팅창 에러 안뜨는지 확인 필요
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'DELETE FROM "User" WHERE "id" = %s CASCADE;'
         cursor.execute(sql, (id,))
@@ -585,11 +679,17 @@ def unregister(id):
 
 # ##### search
 def get_profile(id):
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
+    
     return utils.get_my_profile(id), StatusCode.OK
     
     
 def search(data, id):
-    tags = utils.encode_bit(data["tags"]) if data.get("tags", None) else Tags.ALL
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
+    
+    tags = utils.encode_bit(data["tags"], EncodeOpt.TAGS) if data.get("tags", None) else Tags.ALL
     distance = (
         int(data["distance"]) * DISTANCE if data.get("distance", None) else MAX_DISTANCE
     )
@@ -597,12 +697,15 @@ def search(data, id):
     min_age = data["min_age"] if data.get("min_age", None) else MIN_AGE
     max_age = data["max_age"] if data.get("max_age", None) else MAX_AGE
 
-    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if not user:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+    if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")
-    long, lat = user["longitude"], user["latitude"]
+    long, lat = redis_user["longitude"], redis_user["latitude"]
 
+    user = utils.get_user(id)
+    find_gender = Gender.ALL if user["taste"] & Gender.OTHER else user["taste"]
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM ( \
                             SELECT *, \
@@ -614,10 +717,11 @@ def search(data, id):
                                 SELECT "target_id" \
                                 FROM "Block" \
                                 WHERE "user_id" = %s ) \
-                        AND "emoji" IS NOT NULL \
                         AND "age" BETWEEN %s AND %s \
+                        AND "emoji" IS NOT NULL \
+                        AND "tags" & %s = %s \
+                        AND "gender" & %s > 0 \
                         AND "count_fancy"::float / COALESCE("count_view", 1) * %s >= %s \
-                        AND "tags" & %s > 0 \
                         AND distance <= %s \
                 ORDER BY "last_online" DESC, distance ASC \
                 LIMIT %s;'
@@ -631,9 +735,11 @@ def search(data, id):
                 id,
                 min_age,
                 max_age,
+                tags,
+                tags,
+                find_gender,
                 MAX_FAME,
                 fame,
-                tags,
                 distance,
                 MAX_SEARCH,
             ),
@@ -648,7 +754,9 @@ def search(data, id):
 
 # ##### report && block
 def report(data, id):
-
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
+    
     if id == int(data["target_id"]):
         raise Forbidden("스스로를 신고할 수 없습니다.")
 
@@ -665,6 +773,7 @@ def report(data, id):
     if not target_id or not reason:
         raise BadRequest("신고할 대상과 사유를 입력해주세요.")
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "Report" WHERE "user_id" = %s AND "target_id" = %s'
         cursor.execute(sql, (id, data["target_id"]))
@@ -680,6 +789,9 @@ def report(data, id):
 
 
 def block(data, id):
+    # 유저 API 접근 권한 확인
+    utils.check_authorization(id, Authorization.EMOJI)
+    
     if id == int(data["target_id"]):
         raise Forbidden("스스로를 block할 수 없습니다.")
 
@@ -687,6 +799,7 @@ def block(data, id):
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "Block" WHERE "user_id" = %s AND "target_id" = %s'
         cursor.execute(sql, (id, data["target_id"]))
@@ -712,14 +825,14 @@ def block(data, id):
 
 
 def reset_token(id):
-    user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not user:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if not redis_user:
         raise Unauthorized("인증정보가 없습니다. 로그인해주세요.")
 
     response = make_response("", StatusCode.OK)
     
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=id)
-    set_access_cookies(response, access_token, samesite='Strict', httponly=True)
+    set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
     
     return response

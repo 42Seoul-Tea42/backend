@@ -12,15 +12,11 @@ id_match = dict()
 
 ### connect && disconnect ###
 def handle_connect(id, user_sid):
-    user = redisServ.get_login_check(id)
-    if user is None:
-        # DB에서 유저 정보 가져와서 redis에 저장
-        user = userUtils.get_user(id)
-        if user is None:
-            socket_io.emit(
-                "conn_fail", {"message": "존재하지 않는 유저입니다."}, room=user_sid
-            )
-        redisServ.save_user_info(user)
+    redis_user = redisServ.get_login_check(id)
+    if redis_user is None:
+        socket_io.emit(
+            "conn_fail", {"message": "존재하지 않는 유저입니다."}, room=user_sid
+        )
 
     # (redis) user_info 업데이트
     redisServ.update_user_info(id, {"socket_id": user_sid})

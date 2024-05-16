@@ -1,4 +1,4 @@
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from ..utils.const import (
     MAX_SUGGEST,
     AGE_GAP,
@@ -6,6 +6,7 @@ from ..utils.const import (
     AREA_DISTANCE,
     MIN_AGE,
     StatusCode,
+    Authorization,
 )
 import app.user.userUtils as userUtils
 from psycopg2.extras import DictCursor
@@ -13,6 +14,8 @@ from werkzeug.exceptions import Unauthorized
 
 
 def suggest(id):
+    # 유저 API 접근 권한 확인
+    userUtils.check_authorization(id, Authorization.EMOJI)
 
     # 성적 취향이 서로 맞고
     # 싫은게 하나도 없고 (hate_tag, hate_emoji)
@@ -38,6 +41,8 @@ def suggest(id):
     find_gender = Gender.ALL if user["taste"] & Gender.OTHER else user["taste"]
 
     db_data = []
+    conn = PostgreSQLFactory.get_connection()
+
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM ( \
                             SELECT *, \
@@ -49,6 +54,7 @@ def suggest(id):
                             SELECT "target_id" \
                             FROM "Block" \
                             WHERE "user_id" = %s ) \
+                    AND "age" BETWEEN %s AND %s \
                     AND "emoji" IS NOT NULL \
                     AND "taste" & %s > 0 \
                     AND "gender" & %s > 0 \
@@ -60,7 +66,6 @@ def suggest(id):
                     AND CASE WHEN %s THEN "emoji" & %s > 0 \
                             ELSE "emoji" & %s = 0 \
                         END \
-                    AND "age" BETWEEN %s AND %s \
                     AND "distance" <= %s \
                 ORDER BY CASE WHEN %s THEN "emoji" & %s \
                         END DESC, \
@@ -75,6 +80,8 @@ def suggest(id):
                 lat,
                 id,
                 id,
+                min_age,
+                max_age,
                 find_taste,
                 find_gender,
                 tags,
@@ -85,8 +92,6 @@ def suggest(id):
                 similar,
                 emoji,
                 emoji,
-                min_age,
-                max_age,
                 AREA_DISTANCE,
                 similar,
                 emoji,

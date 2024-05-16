@@ -1,5 +1,5 @@
 # 프로젝트 위치
-chdir = "/usr/app/srcs/"
+chdir = "/usr/app/srcs"
 
 # 워커 프로세스 수
 # workers = 4

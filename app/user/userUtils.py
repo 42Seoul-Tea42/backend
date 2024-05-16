@@ -6,7 +6,7 @@ from datetime import datetime
 import math
 
 import base64
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
 
 from ..history import historyUtils
@@ -21,8 +21,16 @@ from ..utils.const import (
     FancyOpt,
     DEFAULT_PICTURE,
     RedisOpt,
+    RedisSetOpt,
+    Gender,
+    Authorization,
+    LOGIN_ID_BLUR_SIZE,
+    LOGIN_ID_MIN_LENGTH,
+    EncodeOpt,
+    Tags,
+    Emoji,
 )
-from werkzeug.exceptions import Unauthorized, BadRequest
+from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 
 def create_email_key(login_id, key):
@@ -34,12 +42,15 @@ def create_email_key(login_id, key):
     return random_key
 
 
-def encode_bit(data) -> int:
-    result = 0
+def encode_bit(data, opt) -> int:
+    MIN = Tags.MIN  # 1, Emoji.MIN 과 동일
+    MAX = Tags.MAX if opt == EncodeOpt.TAGS else Emoji.MAX
 
-    # TODO logic 체크
+    result = 0
     for n in list(data):
-        result |= n
+        if n < MIN or MAX < n:
+            raise BadRequest("올바르지 않은 태그/이모티콘 값입니다.")
+        result |= 1 << n - 1
 
     return result
 
@@ -113,6 +124,7 @@ def allowed_file(filename, id):
 
 
 def get_user(id):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         cursor.execute(sql, (id,))
@@ -122,17 +134,18 @@ def get_user(id):
 
 
 def get_user_by_login_id(login_id):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
         cursor.execute(sql, (login_id,))
         user = cursor.fetchone()
 
-    return user
+    return dict(user) if user else None
 
 
 def is_valid_login_id(login_id):
     if (
-        len(login_id) < 5
+        len(login_id) < LOGIN_ID_MIN_LENGTH
         or login_id.startswith("kakao")
         or login_id.startswith("google")
         or login_id.startswith("default")
@@ -145,7 +158,7 @@ def is_valid_login_id(login_id):
 
 
 def blur_login_id(login_id):
-    return login_id[:3] + "*" * (len(login_id) - 3)
+    return login_id[: len(login_id) - LOGIN_ID_BLUR_SIZE] + "*" * LOGIN_ID_BLUR_SIZE
 
 
 def get_extension(image_info):
@@ -207,8 +220,8 @@ def get_my_profile(id):
 
 
 def get_profile(id, target_id):
-    user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if not user:
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+    if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     target = get_user(target_id)
@@ -224,7 +237,10 @@ def get_profile(id, target_id):
         "name": target["name"],
         "last_name": target["last_name"],
         "distance": get_distance(
-            user["latitude"], user["longitude"], target["latitude"], target["longitude"]
+            float(redis_user["latitude"]),
+            float(redis_user["longitude"]),
+            target["latitude"],
+            target["longitude"],
         ),
         "fancy": historyUtils.get_fancy(id, target_id),
         "age": target["age"],
@@ -240,6 +256,7 @@ def get_profile(id, target_id):
 
 
 def update_last_online(id):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM "User" WHERE "id" = %s;'
         cursor.execute(sql, (id,))
@@ -251,6 +268,7 @@ def update_last_online(id):
 
 
 def update_count_view(target_id):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET count_view = COALESCE("count_view", 0) + 1 \
                     WHERE "id" = %s'
@@ -259,6 +277,7 @@ def update_count_view(target_id):
 
 
 def update_fancy_view(target_id, opt):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         if opt == FancyOpt.ADD:
             sql = 'UPDATE "User" SET fancy_view = COALESCE("fancy_view", 0) + 1 \
@@ -310,7 +329,36 @@ def get_distance(lat1, long1, lat2, long2):
 
 # 위치 정보 DB에 저장
 def update_location(id, lat, long):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET "longitude" = %s, "latitude" = %s WHERE "id" = %s;'
         cursor.execute(sql, (long, lat, id))
         conn.commit()
+
+
+def is_valid_gender(gender):
+    if gender not in (Gender.OTHER, Gender.FEMALE, Gender.MALE):
+        raise BadRequest("잘못된 성별입니다.")
+
+
+def is_valid_taste(taste):
+    if taste not in (Gender.ALL, Gender.FEMALE, Gender.MALE):
+        raise BadRequest("잘못된 취향입니다.")
+
+
+def check_authorization(id, opt):
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if not redis_user:
+        raise Unauthorized("존재하지 않는 유저입니다.")
+
+    if Authorization.EMAIL <= opt and redis_user["email_check"] == RedisSetOpt.UNSET:
+        raise Forbidden("이메일 인증이 필요합니다.")
+
+    if (
+        Authorization.PROFILE <= opt
+        and redis_user["profile_check"] == RedisSetOpt.UNSET
+    ):
+        raise Forbidden("프로필 작성이 필요합니다.")
+
+    if Authorization.EMOJI <= opt and redis_user["emoji_check"] == RedisSetOpt.UNSET:
+        raise Forbidden("이모지 선택이 필요합니다.")

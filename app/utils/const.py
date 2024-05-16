@@ -28,7 +28,7 @@ MAX_SEARCH = 16  # max result limit
 DAYS = 365  # age calculation
 EARTH_RADIUS = 6_371_000  # (m)
 DISTANCE = 1_000  # distance(km)
-MIN_AGE = 19
+MIN_AGE = 1
 MAX_AGE = 100
 MAX_DISTANCE = 1_000
 MIN_FAME = 0
@@ -39,12 +39,28 @@ IGNORE_MOVE = 1000  # 1km 이하의 움직임 무시
 MIN_PASSWORD_SIZE = 8
 MAX_PICTURE_AMOUNT = 5
 
+# Login Id
+LOGIN_ID_BLUR_SIZE = 3
+LOGIN_ID_MIN_LENGTH = 5
+
 
 # Redis
 class RedisOpt:
     LOCATION = 0
     SOCKET = 1
     LOGIN = 2
+
+
+class RedisSetOpt:
+    UNSET = "0"
+    SET = "1"
+
+
+class Authorization:
+    NONE = 0
+    EMAIL = 1
+    PROFILE = 2
+    EMOJI = 3
 
 
 # Oauth
@@ -121,42 +137,51 @@ class Gender:
     ALL = 7
 
 
+class EncodeOpt:
+    TAGS = 0
+    EMOJI = 1
+
+
 class Tags:
+    ALL = 0
+    MIN = 1
+    MAX = 13
     NONE = 0
-    SPORTS = 1
-    TRAVEL = 1 << 1
-    FOOD = 1 << 2
-    GAME = 1 << 3
-    BOOK = 1 << 4
-    IT = 1 << 5
-    VIDEO = 1 << 6
-    LANGUE = 1 << 7
-    FASHION = 1 << 8
-    PETS = 1 << 9
-    ART = 1 << 10
-    SMOKE = 1 << 11
-    DRINK = 1 << 12
-    ALL = -1
+    FOOD = 1
+    VIDEO = 2
+    BOOK = 3
+    TRAVEL = 4
+    LANGUE = 5
+    PETS = 6
+    DRINK = 7
+    FASHION = 8
+    SPORTS = 9
+    ART = 10
+    IT = 11
+    GAME = 12
+    SMOKE = 13
 
 
 class Emoji:
     NONE = 0
+    MIN = 1
+    MAX = 16
     EMOJI1 = 1  # 카카오프렌즈
-    EMOJI2 = 1 << 1  # 곰식이
-    EMOJI3 = 1 << 2  # 옴팡이
-    EMOJI4 = 1 << 3  # 토심이
-    EMOJI5 = 1 << 4  # 로버트 곽철이 주니어
-    EMOJI6 = 1 << 5  # 안아줘요
-    EMOJI7 = 1 << 6  # 망그러진곰
-    EMOJI8 = 1 << 7  # 입이삐뚫어진오리
-    EMOJI9 = 1 << 8  # 오구
-    EMOJI10 = 1 << 9  # 대학일기
-    EMOJI11 = 1 << 10  # 잔망루피
-    EMOJI12 = 1 << 11  # 문상훈
-    EMOJI13 = 1 << 12  # 오늘의짤
-    EMOJI14 = 1 << 13  # 내시 이모티콘
-    EMOJI15 = 1 << 14  # 빵빵이
-    EMOJI16 = 1 << 15  # 이과티콘
+    EMOJI2 = 2  # 곰식이
+    EMOJI3 = 3  # 옴팡이
+    EMOJI4 = 4  # 토심이
+    EMOJI5 = 5  # 로버트 곽철이 주니어
+    EMOJI6 = 6  # 안아줘요
+    EMOJI7 = 7  # 망그러진곰
+    EMOJI8 = 8  # 입이삐뚫어진오리
+    EMOJI9 = 9  # 오구
+    EMOJI10 = 10  # 대학일기
+    EMOJI11 = 11  # 잔망루피
+    EMOJI12 = 12  # 문상훈
+    EMOJI13 = 13  # 오늘의짤
+    EMOJI14 = 14  # 내시 이모티콘
+    EMOJI15 = 15  # 빵빵이
+    EMOJI16 = 16  # 이과티콘
 
 
 # Report

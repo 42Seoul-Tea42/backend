@@ -28,13 +28,17 @@ class Config(object):
     # production이 아닐 경우 secure를 해제
     JWT_COOKIE_SECURE = False
     # csrf 보호 활성화
-    JWT_COOKIE_CSRF_PROTECT = True
-    # CSRF에 대해 검사하는 메소드 지정
-    JWT_CSRF_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
-    # form에 대한 csrf 체크
-    JWT_CSRF_CHECK_FORM = True
-    # 이중 제출 토큰이 쿠키에 추가 저장되는지 여부를 제어
-    JWT_CSRF_IN_COOKIES = True
+
+    # JWT_COOKIE_CSRF_PROTECT = True
+    JWT_COOKIE_CSRF_PROTECT = False
+    # # CSRF에 대해 검사하는 메소드 지정
+    # JWT_CSRF_METHODS = ["POST", "PUT", "PATCH", "DELETE"]
+    # # form에 대한 csrf 체크
+    # JWT_CSRF_CHECK_FORM = True
+    # # 이중 제출 토큰이 쿠키에 추가 저장되는지 여부를 제어
+    # JWT_CSRF_IN_COOKIES = True
+
+    COOKIE_SAMESITE = "Lax"
 
 
 class DevelopmentConfig(Config):
