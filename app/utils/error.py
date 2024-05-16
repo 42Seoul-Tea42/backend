@@ -1,13 +1,15 @@
 from werkzeug.exceptions import InternalServerError, Unauthorized, HTTPException
 import psycopg2
 from flask import jsonify, request
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from .const import TokenError, StatusCode
 
 
 # TODO socket error 처리하기?
 # Error handling
 def error_handle(app):
+    conn = PostgreSQLFactory.get_connection()
+
     @app.errorhandler(Exception)
     def handle_exception(error):
         app.logger.error(f"[Exception] {request.path}: ", exc_info=error)

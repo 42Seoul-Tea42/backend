@@ -64,21 +64,21 @@ class _ResponseSchema:
 
 @ns.route("/list")
 class ChatList(Resource):
-    # @jwt_required()
+    @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     def get(self):
         """채팅리스트를 드립니다!"""
-        # id = get_jwt_identity()
+        id = get_jwt_identity()
         # [JWT] delete below
-        id = 1
+        # id = 1
         return serv.chat_list(id)
 
 
 @ns.route("/msg")
 class GetMsg(Resource):
-    # @jwt_required()
+    @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
@@ -87,9 +87,9 @@ class GetMsg(Resource):
     )
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
-        # id = get_jwt_identity()
+        id = get_jwt_identity()
         # [JWT] delete below
-        id = 1
+        # id = 1
         target_id, time_str = request.args.get("target_id"), request.args.get("time")
         if not target_id or not time_str:
             raise BadRequest("유저 id와 기준 시간을 확인해주세요.")

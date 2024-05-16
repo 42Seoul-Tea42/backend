@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from .db.db import conn
+from .db.db import PostgreSQLFactory
 import os
 from flask_jwt_extended import JWTManager
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
@@ -27,7 +27,7 @@ redis_jwt_blocklist = redis.StrictRedis(
 )
 
 
-def create_app():
+def create_app(test=False):
 
     app = Flask(__name__)
     CORS(
@@ -46,7 +46,7 @@ def create_app():
     config = os.getenv("FLASK_ENV")
     if config == "prod":
         app.config.from_object(ProductionConfig)
-    elif config == "testing":
+    elif test == True:
         app.config.from_object(TestingConfig)
     else:
         app.config.from_object(DevelopmentConfig)
@@ -65,6 +65,7 @@ def create_app():
 
     ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
     # # Create a cursor
+    # conn = PostgreSQLFactory.get_connection()
     # cursor = conn.cursor()
     # # Read the content of db_schema.sql
     # with open("./app/db/db_schema.sql") as f:

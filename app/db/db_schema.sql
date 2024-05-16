@@ -19,7 +19,7 @@ CREATE TABLE "User" (
 	"longitude"	FLOAT,
 	"latitude"	FLOAT,
 	"count_view" INTEGER,
-	"count_fancy" INTEGER,
+	"count_fancy" INTEGER DEFAULT 0,
 	"gender"	  INTEGER,
 	"pictures"	TEXT[],
 	"taste"	    INTEGER,

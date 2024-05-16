@@ -5,7 +5,7 @@ from wsgi import socket_io
 
 
 #### connect && disconnect ####
-# @jwt_required()
+@jwt_required()
 @socket_io.on("connect")
 def handle_connect(sid, environ, auth):
     # TODO auth에서 token으로 JWT 검증, id 가져오기
@@ -13,7 +13,7 @@ def handle_connect(sid, environ, auth):
     #     return False
 
     # [JWT] delete below
-    id = 1
+    # id = 1
     socketServ.handle_connect(id, sid)
 
 

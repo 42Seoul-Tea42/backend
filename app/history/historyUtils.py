@@ -1,4 +1,4 @@
-from ..db.db import conn
+from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
 from ..utils.const import Fancy, KST
 from datetime import datetime
@@ -6,6 +6,7 @@ from datetime import datetime
 
 def update_fancy_check(id):
     # 전달할 fancy 리스트 fancyCheck = True 처리하기
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "History" SET "fancy_check" = True \
                 WHERE "target_id" = %s AND "fancy" = True;'
@@ -16,6 +17,7 @@ def update_fancy_check(id):
 def get_fancy(id, target_id) -> int:
     fancy = 0
 
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT "fancy" FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (id, target_id))
@@ -35,6 +37,7 @@ def get_fancy(id, target_id) -> int:
 
 
 def update_last_view(id, target_id):
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         now_kst = datetime.now(KST)
 
@@ -60,6 +63,7 @@ def update_last_view(id, target_id):
 
 
 def get_match_list(id) -> set:
+    conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT "target_id" \
                 FROM "History" \

@@ -45,13 +45,13 @@ class _ResponseSchema:
 
 @ns.route("/")
 class Suggest(Resource):
-    # @jwt_required()
+    @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_tea)
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
     def get(self):
         """get tea suggestions for you!"""
-        # id = get_jwt_identity()
+        id = get_jwt_identity()
         # [JWT] delete below
-        id = 1
+        # id = 1
         return serv.suggest(id)
