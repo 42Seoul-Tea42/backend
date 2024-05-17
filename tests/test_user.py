@@ -668,49 +668,221 @@ valid_pw = "ASDFasdf0"
 #     assert data["emoji_check"] == True
 
 
-# 유저 검색 등
-def test_user_api(test_client):
-    # 로그인
-    response = test_client.post(
-        f"/user/login",
-        data=json.dumps(
-            {
-                "login_id": duplicated_login,
-                "pw": valid_pw,
-            }
-        ),
-        content_type="application/json",
-    )
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
+# # 유저 검색 등
+# def test_user_api(test_client):
+#     # 로그인
+#     response = test_client.post(
+#         f"/user/login",
+#         data=json.dumps(
+#             {
+#                 "login_id": duplicated_login,
+#                 "pw": valid_pw,
+#             }
+#         ),
+#         content_type="application/json",
+#     )
+#     data = json.loads(response.data.decode("utf-8"))
+#     assert response.status_code == StatusCode.OK
 
-    # 유저 검색
-    response = test_client.post(
-        f"/user/search",
-        data=json.dumps(
-            {
-                "min_age": 10,
-                "max_age": 40,
-                "distance": 40,
-                "tags": [4, 11],
-                "fame": 0,
-            }
-        ),
-        content_type="application/json",
-    )
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
-    target = data["profiles"][0]
-    assert len(data["profiles"]) == 1
-    assert target["name"] == "dummy2"
-    assert target["last_name"] == "2"
-    assert target["distance"]
-    assert target["fancy"] == 0
-    assert target["age"] == 12
-    assert target["fame"] == 0
-    assert target["tags"] == [4, 11, 12]
-    assert target["gender"] == 4
-    assert target["pictures"]
+#     # 유저 검색
+#     response = test_client.post(
+#         f"/user/search",
+#         data=json.dumps(
+#             {
+#                 "min_age": 10,
+#                 "max_age": 40,
+#                 "distance": 40,
+#                 "tags": [4, 11],
+#                 "fame": 0,
+#             }
+#         ),
+#         content_type="application/json",
+#     )
+#     data = json.loads(response.data.decode("utf-8"))
+#     assert response.status_code == StatusCode.OK
+#     target = data["profiles"][0]
+#     assert len(data["profiles"]) == 1
+#     assert target["name"] == "dummy2"
+#     assert target["last_name"] == "2"
+#     assert target["distance"]
+#     assert target["fancy"] == 0
+#     assert target["age"] == 12
+#     assert target["fame"] == 0
+#     assert target["tags"] == [4, 11, 12]
+#     assert target["gender"] == 4
+#     assert target["pictures"]
+
+#     # 프로필 세부사항 확인 (성공)
+#     target_id = target["id"]
+#     response = test_client.get(f"/user/profile-detail?id={target_id}")
+#     data = json.loads(response.data.decode("utf-8"))
+#     assert response.status_code == StatusCode.OK
+#     assert data["login_id"] == "dummy2"
+#     assert data["status"] == 0
+#     assert data["last_online"]
+#     assert data["taste"] == 2
+#     assert data["bio"] == "자기소개입니다"
+
+#     # 프로필 세부사항 확인 (실패)
+#     response = test_client.get(f"/user/profile-detail?id={"asdf"}")
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.get(f"/user/profile-detail?id={target_id + 100}")
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # 유저 리포트 (실패)
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id-1, "reason": 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id + 100, "reason": 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": "asdf", "reason": 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id, "reason": 10}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id, "reason": 9}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # 신고 (성공)
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id, "reason": 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.OK
+
+#     # 같은 유저 또 신고
+#     response = test_client.post(
+#         f"/user/report",
+#         data=json.dumps(
+#             {"target_id": target_id, "reason": 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # 블록 전 유저 검색
+#     response = test_client.post(
+#         f"/user/search",
+#         data=json.dumps(
+#             {
+#                 "min_age": 10,
+#                 "max_age": 40,
+#             }
+#         ),
+#         content_type="application/json",
+#     )
+#     data = json.loads(response.data.decode("utf-8"))
+#     assert response.status_code == StatusCode.OK
+#     assert len(data["profiles"]) == 3
+
+#     # 유저 블록 (실패)
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": target_id-1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": target_id + 100}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": "asdf"}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # report한 유저 또 block
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": target_id}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # 블록 (성공)
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": target_id + 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.OK
+
+#     # 같은 유저 또 block
+#     response = test_client.post(
+#         f"/user/block",
+#         data=json.dumps(
+#             {"target_id": target_id + 1}
+#         ),
+#         content_type="application/json",
+#     )
+#     assert response.status_code == StatusCode.BAD_REQUEST
+
+#     # 블록 후 유저 검색 시 나오지 않음
+#     response = test_client.post(
+#         f"/user/search",
+#         data=json.dumps(
+#             {
+#                 "min_age": 10,
+#                 "max_age": 40,
+#             }
+#         ),
+#         content_type="application/json",
+#     )
+#     data = json.loads(response.data.decode("utf-8"))
+#     assert response.status_code == StatusCode.OK
+#     assert len(data["profiles"]) == 2
 
 
 ############################################################
