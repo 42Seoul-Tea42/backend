@@ -276,14 +276,14 @@ def update_count_view(target_id):
         conn.commit()
 
 
-def update_fancy_view(target_id, opt):
+def update_count_fancy(target_id, opt):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         if opt == FancyOpt.ADD:
-            sql = 'UPDATE "User" SET fancy_view = COALESCE("fancy_view", 0) + 1 \
+            sql = 'UPDATE "User" SET count_fancy = COALESCE("count_fancy", 0) + 1 \
                         WHERE "id" = %s'
         else:
-            sql = 'UPDATE "User" SET fancy_view = COALESCE("fancy_view", 0) - 1 \
+            sql = 'UPDATE "User" SET count_fancy = COALESCE("count_fancy", 0) - 1 \
                         WHERE "id" = %s'
         cursor.execute(sql, (target_id,))
         conn.commit()
@@ -362,3 +362,23 @@ def check_authorization(id, opt):
 
     if Authorization.EMOJI <= opt and redis_user["emoji_check"] == RedisSetOpt.UNSET:
         raise Forbidden("이모지 선택이 필요합니다.")
+
+
+def get_block_list(id):
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT "target_id" FROM "Block" WHERE "user_id" = %s;'
+        cursor.execute(sql, (id,))
+        block = cursor.fetchall()
+
+    return [row["target_id"] for row in block]
+
+
+def get_ban_list(id):
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT "user_id" FROM "Block" WHERE "target_id" = %s;'
+        cursor.execute(sql, (id,))
+        ban = cursor.fetchall()
+
+    return [row["user_id"] for row in ban]

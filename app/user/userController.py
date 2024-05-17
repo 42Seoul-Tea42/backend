@@ -13,48 +13,26 @@ class _RequestSchema:
     field_post_login = ns.model(
         "로그인 시 필요 데이터",
         {
-            "login_id": fields.String(description="유저 아이디"),
-            "pw": fields.String(description="유저 비밀번호"),
+            "login_id": fields.String(required=True, description="유저 아이디"),
+            "pw": fields.String(required=True, description="유저 비밀번호"),
         },
     )
 
     field_post_profile = ns.model(
         "회원가입 필요 데이터",
         {
-            "email": fields.String(description="이메일"),
-            "login_id": fields.String(description="아이디"),
-            "pw": fields.String(description="패스워드"),
-            "last_name": fields.String(description="성"),
-            "name": fields.String(description="이름"),
+            "email": fields.String(required=True, description="이메일"),
+            "login_id": fields.String(required=True, description="아이디"),
+            "pw": fields.String(required=True, description="패스워드"),
+            "last_name": fields.String(required=True, description="성"),
+            "name": fields.String(required=True, description="이름"),
         },
     )
 
     field_patch_email = ns.model(
         "(인증 전) 이메일 변경 시 필요 데이터",
         {
-            "email": fields.String(description="이메일"),
-        },
-    )
-
-    field_patch_profile = ns.model(
-        "(최초 1회) 프로필 설정 필요 데이터",
-        {
-            "age": fields.Integer(description="유저 나이"),
-            "gender": fields.Integer(description="유저 성별"),
-            "taste": fields.Integer(description="유저 성적 취향"),
-            "bio": fields.String(description="자기소개"),
-            "tags": fields.List(fields.Integer, description="취미 태그"),
-            "hate_tags": fields.List(fields.Integer, description="싫어하는 취미 태그"),
-            "pictures": fields.List(fields.String, description="프로필 이미지 파일"),
-        },
-    )
-
-    field_patch_emoji = ns.model(
-        "emoji 필요 데이터",
-        {
-            "prefer_emoji": fields.List(fields.Integer, description="유저 취향 이모지"),
-            "hate_emoji": fields.List(fields.Integer, description="싫어하는 이모지"),
-            "similar": fields.Boolean(description="비슷한 사람 좋아요"),
+            "email": fields.String(required=True, description="이메일"),
         },
     )
 
@@ -91,8 +69,8 @@ class _RequestSchema:
     field_post_report = ns.model(
         "report 필요 데이터",
         {
-            "target_id": fields.Integer(description="신고 대상 유저"),
-            "reason": fields.Integer(description="신고 이유"),
+            "target_id": fields.Integer(required=True, description="신고 대상 유저"),
+            "reason": fields.Integer(required=True, description="신고 이유"),
             "reason_opt": fields.String(description="신고 이유 디테일"),
         },
     )
@@ -100,12 +78,13 @@ class _RequestSchema:
     field_post_block = ns.model(
         "block 필요 데이터",
         {
-            "target_id": fields.Integer(description="블록 대상 유저"),
+            "target_id": fields.Integer(required=True, description="블록 대상 유저"),
         },
     )
 
     field_post_resetPw = ns.model(
-        "resetPw 필요 데이터", {"pw": fields.String(description="변경할 비밀번호")}
+        "resetPw 필요 데이터",
+        {"pw": fields.String(required=True, description="변경할 비밀번호")},
     )
 
 

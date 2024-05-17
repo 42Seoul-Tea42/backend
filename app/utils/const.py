@@ -3,6 +3,7 @@ import pytz
 
 # General
 KST = pytz.timezone("Asia/Seoul")
+TIME_STR_TYPE = "%Y-%m-%d %H:%M:%S.%f%z"
 PICTURE_DIR = "/usr/app/srcs/app/profile/"
 DEFAULT_PICTURE = "default.png"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
@@ -49,6 +50,8 @@ class RedisOpt:
     LOCATION = 0
     SOCKET = 1
     LOGIN = 2
+    BLOCK = 3
+    BAN = 4
 
 
 class RedisSetOpt:
@@ -187,6 +190,8 @@ class Emoji:
 # Report
 class Report:
     NONE = 0
+    MIN = 1
+    MAX = 9
     BULLY = 1
     CONTENT = 2
     FAKE = 3

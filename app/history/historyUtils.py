@@ -24,13 +24,13 @@ def get_fancy(id, target_id) -> int:
         send = cursor.fetchone()
 
         # TODO send, recv: True, False 대로 처리되는지 확인 필요
-        if send:
+        if send and send["fancy"]:
             fancy |= Fancy.SEND
 
         sql = 'SELECT "fancy" FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (target_id, id))
         recv = cursor.fetchone()
-        if recv:
+        if recv and recv["fancy"]:
             fancy |= Fancy.RECV
 
     return fancy

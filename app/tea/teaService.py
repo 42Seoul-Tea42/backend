@@ -54,6 +54,10 @@ def suggest(id):
                             SELECT "target_id" \
                             FROM "Block" \
                             WHERE "user_id" = %s ) \
+                    AND "id" NOT IN ( \
+                            SELECT "user_id" \
+                            FROM "Block" \
+                            WHERE "target_id" = %s ) \
                     AND "age" BETWEEN %s AND %s \
                     AND "emoji" IS NOT NULL \
                     AND "taste" & %s > 0 \
@@ -78,6 +82,7 @@ def suggest(id):
             (
                 long,
                 lat,
+                id,
                 id,
                 id,
                 min_age,

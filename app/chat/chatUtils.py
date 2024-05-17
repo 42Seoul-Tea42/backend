@@ -101,3 +101,17 @@ def is_new_chat(recver_id, sender_id):
         if chat["messages"][0]["target_id"] == recver_id
         else False
     )
+
+
+def delete_chat_by_block(id, target_id):
+    chat_collection = MongoDBFactory.get_collection("tea42", "chat")
+    chat = chat_collection.find_one(
+        {
+            "participants": {"$all": [id, target_id]},
+        },
+        {
+            "_id": 1,
+        },
+    )
+    if chat:
+        chat_collection.delete_one({"_id": chat["_id"]})

@@ -9,12 +9,14 @@ from ..utils.const import (
     StatusCode,
     FancyOpt,
     Authorization,
+    RedisOpt,
 )
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
 from psycopg2.extras import DictCursor
 from ..socket import socketService as socketServ
 from werkzeug.exceptions import BadRequest
+from ..utils import redisServ
 
 
 def view_history(id, time_limit, opt):
@@ -41,7 +43,13 @@ def view_history(id, time_limit, opt):
         cursor.execute(sql, (id, time_limit, MAX_HISTORY))
         histories = cursor.fetchall()
 
-    result = [userUtils.get_profile(id, history["target_id"]) for history in histories]
+    result = [
+        userUtils.get_profile(
+            id, history["target_id" if opt == History.HISTORY else "user_id"]
+        )
+        for history in histories
+    ]
+
     return {
         "profiles": result,
     }, StatusCode.OK
@@ -63,6 +71,16 @@ def fancy(data, id):
     if userUtils.get_user(target_id) is None:
         raise BadRequest("존재하지 않는 유저입니다.")
 
+    # block check
+    block_set = redisServ.get_user_info(id, RedisOpt.BLOCK)
+    if target_id in block_set:
+        raise BadRequest("차단한 유저입니다.")
+
+    # ban check
+    ban_set = redisServ.get_user_info(id, RedisOpt.BAN)
+    if target_id in ban_set:
+        return StatusCode.OK
+
     now_kst = datetime.now(KST)
 
     conn = PostgreSQLFactory.get_connection()
@@ -82,13 +100,10 @@ def fancy(data, id):
             sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, fancy_check, last_view) \
                                 VALUES (%s, %s, %s, %s, %s, %s)'
             cursor.execute(sql, (id, target_id, True, now_kst, False, now_kst))
-            # sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-            # cursor.execute(sql, (id, target_id))
-            # history = cursor.fetchone()
 
         # TODO unfancy 잘 돌아가는지 확인 필요
         if history is None or history["fancy"] is None:  # fancy
-            userUtils.update_fancy_view(target_id, FancyOpt.ADD)
+            userUtils.update_count_fancy(target_id, FancyOpt.ADD)
 
             if history is None:
                 userUtils.update_count_view(target_id)
@@ -99,7 +114,7 @@ def fancy(data, id):
                 socketServ.new_fancy(id, target_id)
 
         else:  # unfancy
-            userUtils.update_fancy_view(target_id, FancyOpt.DEL)
+            userUtils.update_count_fancy(target_id, FancyOpt.DEL)
 
             if utils.get_fancy(id, target_id) == Fancy.RECV:
                 socketServ.unmatch(id, target_id)

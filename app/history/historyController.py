@@ -5,6 +5,7 @@ from ..utils.const import History
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 from datetime import datetime
+from ..utils.const import KST, TIME_STR_TYPE
 
 # from ..wrapper.location import check_location
 
@@ -17,7 +18,9 @@ class _RequestSchema:
     field_patch_fancy = ns.model(
         "fancy / unfancy 시 필요 데이터",
         {
-            "target_id": fields.Integer(description="팬시/un팬시할 target id"),
+            "target_id": fields.Integer(
+                required=True, description="팬시/un팬시할 target id"
+            ),
         },
     )
 
@@ -70,14 +73,15 @@ class CheckFancy(Resource):
         id = get_jwt_identity()
         # [JWT] delete below
         # id = 1
-        time_str = request.args.get("time")
-        if time_str is None:
-            raise BadRequest("검색 기준 일시가 필요합니다.")
 
         try:
-            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
+            time_str = request.args.get("time")
+            if time_str is None:
+                time = datetime.now(KST)
+            else:
+                time = datetime.strptime(time_str, TIME_STR_TYPE)
         except ValueError:
-            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
+            raise BadRequest("기준 시간이 유효하지 않습니다.")
 
         return serv.view_history(id, time, History.FANCY)
 
@@ -109,13 +113,14 @@ class ViewHistory(Resource):
         id = get_jwt_identity()
         # [JWT] delete below
         # id = 1
-        time_str = request.args.get("time")
-        if time_str is None:
-            raise BadRequest("검색 기준 일시가 필요합니다.")
 
         try:
-            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
+            time_str = request.args.get("time")
+            if time_str is None:
+                time = datetime.now(KST)
+            else:
+                time = datetime.strptime(time_str, TIME_STR_TYPE)
         except ValueError:
-            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
+            raise BadRequest("기준 시간이 유효하지 않습니다.")
 
         return serv.view_history(id, time, History.HISTORY)

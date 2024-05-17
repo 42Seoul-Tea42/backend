@@ -1,7 +1,16 @@
 from flask import make_response, jsonify, request
-from ..db.db import PostgreSQLFactory
-from psycopg2.extras import DictCursor
-from . import userUtils as utils
+from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
+import os, base64
+from datetime import datetime, timedelta
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies,
+    get_jwt,
+    get_jti,
+)
 from ..utils.const import (
     MAX_SEARCH,
     DISTANCE,
@@ -22,24 +31,17 @@ from ..utils.const import (
     DEFAULT_PICTURE,
     RedisSetOpt,
     Authorization,
-    EncodeOpt
+    EncodeOpt, 
+    Report
 )
-from datetime import datetime, timedelta
+from ..db.db import PostgreSQLFactory
+from psycopg2.extras import DictCursor
+from . import userUtils as utils
 import app.history.historyUtils as historyUtils
-import os
 from ..socket import socketService as socketServ
-from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token,
-    set_access_cookies,
-    set_refresh_cookies,
-    unset_jwt_cookies,
-    get_jwt,
-    get_jti,
-)
-import base64
 from ..utils import redisServ, redisBlockList
-from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
+from ..chat import chatUtils
+
 
 # TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
@@ -550,6 +552,16 @@ def profile_detail(id, target_id):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
+    # block check
+    block_set = redisServ.get_user_info(id, RedisOpt.BLOCK)
+    if target_id in block_set:
+        raise BadRequest("차단한 유저입니다.")
+
+    # ban check
+    ban_set = redisServ.get_user_info(id, RedisOpt.BAN)
+    if target_id in ban_set:
+        return BadRequest("잘못된 접근입니다.")
+    
     target = utils.get_user(target_id)
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
@@ -717,6 +729,10 @@ def search(data, id):
                                 SELECT "target_id" \
                                 FROM "Block" \
                                 WHERE "user_id" = %s ) \
+                        AND "id" NOT IN ( \
+                                SELECT "user_id" \
+                                FROM "Block" \
+                                WHERE "target_id" = %s ) \
                         AND "age" BETWEEN %s AND %s \
                         AND "emoji" IS NOT NULL \
                         AND "tags" & %s = %s \
@@ -731,6 +747,7 @@ def search(data, id):
             (
                 long,
                 lat,
+                id,
                 id,
                 id,
                 min_age,
@@ -758,28 +775,28 @@ def report(data, id):
     utils.check_authorization(id, Authorization.EMOJI)
     
     if id == int(data["target_id"]):
-        raise Forbidden("스스로를 신고할 수 없습니다.")
+        raise BadRequest("스스로를 신고할 수 없습니다.")
 
-    target = utils.get_user(data["target_id"])
+    target_id = data.get("target_id")
+    target = utils.get_user(target_id)
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
 
+    reason = data.get("reason")
+    if reason < Report.MIN or Report.MAX < reason:
+        raise BadRequest("유효하지 않은 신고 사유입니다.")
+    
+    reason_opt = None
+    if reason == Report.OTHER:
+        reason_opt = data.get("reason_opt", None)
+        if reason_opt is None:
+            raise BadRequest("사유를 입력해주세요.")
+    
     # report시 자동 block 처리
     block(data, id)
 
-    target_id = data.get("target_id", None)
-    reason = data.get("reason", None)
-    reason_opt = data.get("reason_opt", None)
-    if not target_id or not reason:
-        raise BadRequest("신고할 대상과 사유를 입력해주세요.")
-
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'SELECT * FROM "Report" WHERE "user_id" = %s AND "target_id" = %s'
-        cursor.execute(sql, (id, data["target_id"]))
-        if cursor.fetchone():
-            raise BadRequest("이미 신고한 유저입니다.")
-
         sql = 'INSERT INTO "Report" (user_id, target_id, reason, reason_opt) \
                             VALUES (%s, %s, %s, %s)'
         cursor.execute(sql, (id, target_id, reason, reason_opt))
@@ -792,34 +809,55 @@ def block(data, id):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
-    if id == int(data["target_id"]):
-        raise Forbidden("스스로를 block할 수 없습니다.")
+    if id == data["target_id"]:
+        raise BadRequest("스스로를 block할 수 없습니다.")
 
     target = utils.get_user(data["target_id"])
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
 
+    # block check
+    block_set = redisServ.get_user_info(id, RedisOpt.BLOCK)
+    if data["target_id"] in block_set:
+        raise BadRequest("이미 블록한 유저입니다.")
+
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'SELECT * FROM "Block" WHERE "user_id" = %s AND "target_id" = %s'
-        cursor.execute(sql, (id, data["target_id"]))
-        if cursor.fetchone():
-            raise BadRequest("이미 블록한 유저입니다.")
-
         sql = 'INSERT INTO "Block" (user_id, target_id) VALUES (%s, %s)'
         cursor.execute(sql, (id, data["target_id"]))
 
-        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s AND "fancy" = True;'
+        # user -> target
+        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
         cursor.execute(sql, (id, data["target_id"]))
-        history = cursor.fetchone()
-        # TODO 하기 ["fancy"] 잘 되는지 확인 필요
-        if history:
-            sql = 'UPDATE "History" SET "fancy" = False WHERE "user_id" = %s AND "target_id" = %s;'
+        user_history = cursor.fetchone()
+        if user_history:
+            if user_history["fancy"]:
+                sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
+                cursor.execute(sql, (data["target_id"],))
+            #TODO [Later] soft delete
+            sql = 'DELETE FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (id, data["target_id"]))
-            sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
-            cursor.execute(sql, (data["target_id"],))
+        
+        # target -> user
+        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+        cursor.execute(sql, (data["target_id"], id))
+        target_history = cursor.fetchone()
+        if target_history:
+            if target_history["fancy"]:
+                sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
+                cursor.execute(sql, (id,))
+            #TODO [Later] soft delete
+            sql = 'DELETE FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+            cursor.execute(sql, (data["target_id"], id))
 
         conn.commit()
+        
+    #redis update
+    redisServ.update_user_info(id, {"block": data["target_id"]})
+    redisServ.update_user_info(data["target_id"], {"ban": id})
+    
+    #delete chat
+    chatUtils.delete_chat_by_block(id, data["target_id"])
 
     return StatusCode.OK
 
