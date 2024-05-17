@@ -4,6 +4,7 @@ from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 from datetime import datetime
+from ..utils.const import KST, TIME_STR_TYPE
 
 # from ..wrapper.location import check_location
 
@@ -90,15 +91,22 @@ class GetMsg(Resource):
         id = get_jwt_identity()
         # [JWT] delete below
         # id = 1
-        target_id, time_str = request.args.get("target_id"), request.args.get("time")
-        if not target_id or not time_str:
-            raise BadRequest("유저 id와 기준 시간을 확인해주세요.")
+
+        str_target_id = request.args.get("target_id")
+        if not str_target_id:
+            raise BadRequest("유저 id가 필요합니다.")
+        try:
+            target_id = int(str_target_id)
+        except ValueError:
+            raise BadRequest("유저 id를 확인해주세요.")
 
         try:
-            target_id = int(target_id)
-            # TODO 하기 내용 확인 필요
-            time = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S.%f%z")
+            time_str = request.args.get("time")
+            if time_str is None:
+                time = datetime.now(KST)
+            else:
+                time = datetime.strptime(time_str, TIME_STR_TYPE)
         except ValueError:
-            raise BadRequest("유저 id와 기준 시간의 타입을 확인해주세요.")
+            raise BadRequest("기준 시간이 유효하지 않습니다.")
 
         return serv.get_msg(id, target_id, time)
