@@ -25,7 +25,10 @@ def check_location(f):
         # 기존 위치와 거리 비교 => DB & Redis 업데이트
         if (
             userUtils.get_distance(
-                redis_user["latitude"], redis_user["longitude"], lat, long
+                float(redis_user["latitude"]),
+                float(redis_user["longitude"]),
+                lat,
+                long,
             )
             < IGNORE_MOVE
         ):

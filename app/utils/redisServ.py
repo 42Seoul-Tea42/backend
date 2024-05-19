@@ -44,8 +44,12 @@ def get_user_info(id, opt):
     elif opt == RedisOpt.SOCKET:
         check_fields = ["socket_id"]
     elif opt == RedisOpt.BLOCK:
+        if redis_client.hget(str(id), "block") is None:
+            return set()
         return set(json.loads(redis_client.hget(str(id), "block")))
     elif opt == RedisOpt.BAN:
+        if redis_client.hget(str(id), "ban") is None:
+            return set()
         return set(json.loads(redis_client.hget(str(id), "ban")))
     else:
         return None

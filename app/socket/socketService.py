@@ -1,9 +1,11 @@
-from ..utils.const import UserStatus, RedisOpt
+from datetime import datetime
+from ..db.mongo import MongoDBFactory
+from wsgi import socket_io
+from ..utils.const import UserStatus, RedisOpt, KST, TIME_STR_TYPE
 from ..user import userUtils
 from ..utils import redisServ
 from ..history import historyUtils
 from ..chat import chatUtils as chatUtils
-from wsgi import socket_io
 
 
 # match된 유저 저장용 id: set()
@@ -62,10 +64,12 @@ def _update_status(id, status, id_match):
 
 
 ### chat ###
-def send_message(data, user_sid):
-    sender_id = socket_io.get_session(user_sid).get("id", None)
+def send_message(data, user_sid=None, sender_id=None):
+    # [Test]
     if sender_id is None:
-        return
+        sender_id = socket_io.get_session(user_sid).get("id", None)
+        if sender_id is None:
+            return
 
     # TODO type 검사
     recver_id = data.get("recver_id")  # int
@@ -103,6 +107,10 @@ def new_match(id, target_id):
     user_sid = redisServ.get_socket_id_by_id(id)
     target_sid = redisServ.get_socket_id_by_id(target_id)
 
+    # MongoDB에 신규 대화 생성
+    chatUtils.save_chat(id, target_id, "")
+
+    # socket alarm 발생
     if user_sid:
         id_match.get(id, set()).add(target_id)
         socket_io.emit("new_match", {"target_id": target_id}, room=user_sid)

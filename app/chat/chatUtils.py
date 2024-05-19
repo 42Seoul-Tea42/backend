@@ -1,13 +1,11 @@
 from datetime import datetime
 from ..utils.const import KST, RedisOpt
-
-# from app import chat_collection
 from ..db.mongo import MongoDBFactory
 from ..utils import redisServ
 from werkzeug.exceptions import Unauthorized
 
 
-def get_match_user_list(id) -> set:
+def get_match_user_list(id) -> list[int]:
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
     if redis_user is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
@@ -21,23 +19,25 @@ def get_match_user_list(id) -> set:
         {
             "_id": 0,
             "participants": 1,
+            "latest_msg_time": 1,
         },
-    )
+    ).sort("latest_msg_time", -1)
 
-    user_list = set()
+    user_list = list()
     for c in chat:
         target_id = (
             c["participants"][0] if c["participants"][0] != id else c["participants"][1]
         )
-        user_list.add(target_id)
+        user_list.append(target_id)
 
     return user_list
 
 
 def save_chat(id, target_id, message):
-    now_kst = datetime.now(KST)
 
-    # MongoDB에서 해당 사용자들 간의 대화를 검색합니다.
+    kst_iso_now = datetime.now(KST).isoformat()
+
+    # MongoDB에서 해당 사용자들 간의 대화 검색
     chat_collection = MongoDBFactory.get_collection("tea42", "chat")
     chat = chat_collection.find_one(
         {"participants": {"$all": [id, target_id]}},
@@ -45,26 +45,28 @@ def save_chat(id, target_id, message):
     )
 
     new_message = {
-        "user_id": id,
-        "target_id": target_id,
+        "sender_id": id,
         "msg": message,
-        "msg_time": now_kst,
+        "msg_time": kst_iso_now,
         "msg_new": True,
     }
 
-    if chat:
-        # 대화 문서가 이미 존재하면 메시지를 추가합니다.
+    if chat:  # 대화 문서에 메시지를 추가
         chat_collection.update_one(
             {"_id": chat["_id"]},
-            {"$push": {"messages": new_message}},
+            {
+                "$push": {"messages": new_message},
+                "$set": {"latest_msg_time": kst_iso_now},
+            },
         )
-    else:
-        # 대화 문서가 존재하지 않으면 새로운 대화 문서를 생성합니다.
-        chat_document = {
-            "participants": [id, target_id],
-            "messages": [new_message],
-        }
-        chat_collection.insert_one(chat_document)
+    else:  # 대화 문서 생성
+        chat_collection.insert_one(
+            {
+                "participants": [id, target_id],
+                "latest_msg_time": kst_iso_now,
+                "messages": [new_message],
+            }
+        )
 
 
 def read_chat(recver_id, sender_id):
@@ -78,10 +80,11 @@ def read_chat(recver_id, sender_id):
             "messages": {"$slice": -1},
         },
     )
-    if chat["messages"][0]["target_id"] == recver_id and chat["messages"][0]["msg_new"]:
-        chat_collection.update_many(
+    if chat["messages"][0]["msg_new"] and chat["messages"][0]["sender_id"] == sender_id:
+        chat_collection.update_one(
             {"_id": chat["_id"]},
-            {"$set": {"messages.$.msg_new": False}},
+            {"$set": {"messages.$[elem].msg_new": False}},
+            array_filters=[{"elem.msg_new": True}],
         )
 
 
@@ -98,7 +101,7 @@ def is_new_chat(recver_id, sender_id):
     )
     return (
         chat["messages"][0]["msg_new"]
-        if chat["messages"][0]["target_id"] == recver_id
+        if chat["messages"][0]["sender_id"] == sender_id
         else False
     )
 
