@@ -63,10 +63,14 @@ class _ResponseSchema:
 
 @ns.route("/fancy-list")
 class CheckFancy(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
     def get(self):
         """나를 팬시한 사람 그 누구냐!"""
@@ -88,10 +92,14 @@ class CheckFancy(Resource):
 
 @ns.route("/fancy")
 class Fancy(Resource):
+
     @jwt_required()
     @ns.expect(_RequestSchema.field_patch_fancy, validate=True)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def patch(self):
         """fancy/unfancy 했음!"""
@@ -103,10 +111,14 @@ class Fancy(Resource):
 
 @ns.route("/history-list")
 class ViewHistory(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
     def get(self):
         """내가 본 사람들"""

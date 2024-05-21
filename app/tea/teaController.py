@@ -45,10 +45,14 @@ class _ResponseSchema:
 
 @ns.route("/")
 class Suggest(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_tea)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """get tea suggestions for you!"""
         id = get_jwt_identity()

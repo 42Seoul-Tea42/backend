@@ -217,10 +217,14 @@ class _ResponseSchema:
 ##### login
 @ns.route("/login")
 class Login(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_login)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """login 확인"""
         id = get_jwt_identity()
@@ -272,8 +276,11 @@ class GetEmail(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_email)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """이메일 주소 확인"""
         id = get_jwt_identity()
@@ -284,8 +291,11 @@ class GetEmail(Resource):
     @jwt_required()
     @ns.expect(_RequestSchema.field_patch_email, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_email)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def patch(self):
         """(기존 메일 인증 전) 신규 이메일 등록"""
         id = get_jwt_identity()
@@ -296,10 +306,14 @@ class GetEmail(Resource):
 
 @ns.route("/send-email")
 class SendEmail(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_sendEmail)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """인증 메일 다시 보내기"""
         id = get_jwt_identity()
@@ -334,8 +348,11 @@ class Profile(Resource):
     @jwt_required()
     @ns.expect(_RequestSchema.field_patch_setting, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_patch_setting)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def patch(self):
         """설정 업데이트"""
@@ -358,8 +375,11 @@ class Profile(Resource):
     # 프로필 하나 요청하는 상황 == 자기 자신 정보 보기
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """프로필 확인"""
         id = get_jwt_identity()
@@ -370,10 +390,14 @@ class Profile(Resource):
 
 @ns.route("/profile-detail")
 class ProfileDetail(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profileDetail)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.doc(params={"id": "프로필 확인할 id"})
     def get(self):
         """상세 프로필 확인"""
@@ -394,9 +418,13 @@ class ProfileDetail(Resource):
 
 @ns.route("/logout")
 class Logout(Resource):
+
     @jwt_required()
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     # @check_location()
     def post(self):
         """logout"""
@@ -447,8 +475,11 @@ class ResetPw(Resource):
 # @ns.route("/unregister")
 # class Unregister(Resource):
 #     @jwt_required()
-#     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-#     @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+#     @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+# @ns.response(
+#     401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+# )
+# @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
 #     def delete(self):
 #         """회원 탈퇴"""
 #         #id = get_jwt_identity()
@@ -464,8 +495,11 @@ class Search(Resource):
     @jwt_required()
     @ns.expect(_RequestSchema.field_post_search, validate=True)
     @ns.response(200, "api요청 성공", _ResponseSchema.field_post_search)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def post(self):
         """유저 검색 기능"""
@@ -481,8 +515,11 @@ class Report(Resource):
 
     @jwt_required()
     @ns.expect(_RequestSchema.field_post_report, validate=True)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def post(self):
         """리포트 하기"""
@@ -494,10 +531,14 @@ class Report(Resource):
 
 @ns.route("/block")
 class Block(Resource):
+
     @jwt_required()
     @ns.expect(_RequestSchema.field_post_block, validate=True)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def post(self):
         """블록하기"""

@@ -90,7 +90,6 @@ def fancy(data, id):
         cursor.execute(sql, (id, target_id))
         history = cursor.fetchone()
 
-        # TODO 업데이트 잘 되는지 (True <-> False) 확인 필요
         if history:  # update
             sql = 'UPDATE "History" \
                     SET "fancy" = not "fancy", "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \

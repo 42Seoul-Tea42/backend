@@ -65,10 +65,14 @@ class _ResponseSchema:
 
 @ns.route("/list")
 class ChatList(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     def get(self):
         """채팅리스트를 드립니다!"""
         id = get_jwt_identity()
@@ -79,10 +83,14 @@ class ChatList(Resource):
 
 @ns.route("/msg")
 class GetMsg(Resource):
+
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
-    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
-    @ns.response(403, "Forbidden(권한없음)", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.doc(
         params={"target_id": "메시지 상대 id", "time": "확인할 메시지 기준 timestamp"}
     )
