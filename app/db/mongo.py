@@ -42,3 +42,23 @@ class MongoDBFactory:
 # 사용 예시
 # chat_collection = MongoDBFactory.get_collection("tea42", "chat")
 # MongoDBFactory.release_collection(chat_collection)
+
+
+# # MongoDB chat collection schema
+# {
+#     # MongoDB에서 자동 생성되는 ObjectId
+#     "_id": "ObjectId",
+#     # 대화 참여자들의 id
+#     "participants": ["string", "string"],
+#     # 가장 최근 메시지의 시간
+#     "latest_msg_time": "string (ISO 8601 datetime)",
+#     # 대화 내용 (리스트)
+#     "messages": [
+#         {
+#             "sender_id": "string",  # 메시지를 보낸 유저의 id
+#             "msg": "string",  # 메시지 내용
+#             "msg_time": "string (ISO 8601 datetime)",  # 메시지 보낸 시간
+#             "msg_new": "boolean",  # 상대방이 메시지를 읽었는지 여부
+#         }
+#     ],
+# }

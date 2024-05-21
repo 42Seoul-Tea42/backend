@@ -121,3 +121,27 @@ def get_socket_id_by_id(id):
 
 def delete_socket_id_by_id(id):
     redis_client.hdel(str(id), "socket_id")
+
+
+# # Redis user schema (db=0)
+# {
+#     "user_id": {
+#         # 유저 위치 정보
+#         "longitude": "string",
+#         "latitude": "string",
+#         # 유저 설정 정보 (서비스 이용 권한 확인용)
+#         "email_check": "integer (0 or 1)",
+#         "profile_check": "integer (0 or 1)",
+#         "emoji_check": "integer (0 or 1)",
+#         # 유저 refresh token 정보
+#         "refresh_jti": "string",
+#         # 유저 정보
+#         "login_id": "string",
+#         "email": "string",
+#         # 유저 차단 및 차단된 정보
+#         "block": "JSON string (array of blocked user IDs)",
+#         "ban": "JSON string (array of banned user IDs)",
+#         # 유저 소켓 아이디 (소켓 통신용)
+#         "socket_id": "string",
+#     }
+# }
