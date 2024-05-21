@@ -8,10 +8,10 @@ from .const import TokenError, StatusCode
 # TODO socket error 처리하기?
 # Error handling
 def error_handle(app):
-    conn = PostgreSQLFactory.get_connection()
 
     @app.errorhandler(Exception)
     def handle_exception(error):
+        conn = PostgreSQLFactory.get_connection()
         app.logger.error(f"[Exception] {request.path}: ", exc_info=error)
         response = jsonify(
             {
@@ -24,6 +24,7 @@ def error_handle(app):
 
     @app.errorhandler(psycopg2.Error)
     def handle_database_error(error):
+        conn = PostgreSQLFactory.get_connection()
         if isinstance(error, psycopg2.errors.UniqueViolation):
             response = jsonify(
                 {
@@ -44,6 +45,7 @@ def error_handle(app):
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(error):
+        conn = PostgreSQLFactory.get_connection()
         response = error.get_response()
 
         # 500 error
