@@ -25,7 +25,7 @@ class Config(object):
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.getenv("ACCESS_TIME")))
     # JWT refresh token의 만료 기간
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.getenv("REFRESH_TIME")))
-    # production이 아닐 경우 secure를 해제
+    # https로만 받을건지 체크
     JWT_COOKIE_SECURE = False
     # csrf 보호 활성화
 
@@ -38,7 +38,10 @@ class Config(object):
     # # 이중 제출 토큰이 쿠키에 추가 저장되는지 여부를 제어
     # JWT_CSRF_IN_COOKIES = True
 
-    COOKIE_SAMESITE = "Lax"
+    # Default: None, which is treated as "Lax" by browsers.
+    JWT_COOKIE_SAMESITE = "Lax"
+
+    JWT_REFRESH_COOKIE_PATH = "/user/reset-token"
 
 
 class DevelopmentConfig(Config):
