@@ -80,14 +80,11 @@ def login(data):
     set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
     set_refresh_cookies(response, refresh_token, max_age=int(os.getenv("REFRESH_TIME"))*60*60*24)
 
-    if os.getenv("PYTEST") == "True":
-        user["latitude"], user["longitude"] = 37.488405, 127.065527
-    else:
-        #IP기반 위치 정보 업데이트
-        user["latitude"], user["longitude"] = utils.get_location_by_ip(
-            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
-        )
-        utils.update_location(user["id"], user["latitude"], user["longitude"])
+    #IP기반 위치 정보 업데이트
+    user["latitude"], user["longitude"] = utils.get_location_by_ip(
+        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+    )
+    utils.update_location(user["id"], user["latitude"], user["longitude"])
 
     #Redis에 유저 정보 저장
     user["refresh_jti"] = get_jti(refresh_token)
@@ -143,14 +140,11 @@ def login_kakao(login_id):
     set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
     set_refresh_cookies(response, refresh_token, max_age=int(os.getenv("REFRESH_TIME"))*60*60*24)
     
-    if os.getenv("PYTEST") == "True":
-        user["latitude"], user["longitude"] = 37.488405, 127.065527
-    else:
-        #IP기반 위치 정보 업데이트
-        user["latitude"], user["longitude"] = utils.get_location_by_ip(
-            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
-        )
-        utils.update_location(user["id"], user["latitude"], user["longitude"])
+    #IP기반 위치 정보 업데이트
+    user["latitude"], user["longitude"] = utils.get_location_by_ip(
+        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+    )
+    utils.update_location(user["id"], user["latitude"], user["longitude"])
 
     #Redis에 유저 정보 저장
     user["refresh_jti"] = get_jti(refresh_token)

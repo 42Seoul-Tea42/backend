@@ -292,7 +292,10 @@ def update_count_fancy(target_id, opt):
 ### location & distance ###
 
 
-def get_location_by_ip(ip_address):
+def get_location_by_ip(ip_address=None):
+    if ip_address is None:
+        return 37.5660, 126.9784
+
     # API로 위도ㅡ경도 받아오기
     api_uri = os.getenv("IP_API_URI")
     api_key = os.getenv("IP_API_KEY")
@@ -302,10 +305,11 @@ def get_location_by_ip(ip_address):
     response = requests.get(url)
     data = response.json()
 
+    if "bogon" in data:
+        return get_location_by_ip()
+
     # 위도와 경도 추출
     lat, long = [float(i) for i in data["loc"].split(",")]
-    # TEST
-    print("IP_API:", lat, long)
 
     return lat, long
 
