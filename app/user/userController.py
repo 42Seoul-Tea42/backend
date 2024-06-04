@@ -6,7 +6,7 @@ from . import userService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest, InternalServerError
 
-ns = Namespace(name="user", description="유저 정보 관련 API", path="/user")
+ns = Namespace(name="user", description="유저 정보 관련 API", path="/api/user")
 
 
 class _RequestSchema:
@@ -362,7 +362,7 @@ class Profile(Resource):
         try:
             images = (
                 serv.save_pictures(id, request.json["pictures"])
-                if "pictures" in request.json and 1 < len(request.json["pictures"][0])
+                if "pictures" in request.json and 0 < len(request.json["pictures"]) and 1 < len(request.json["pictures"][0])
                 else []
             )
         except ValueError:

@@ -8,7 +8,7 @@ from ..utils.const import KST, TIME_STR_TYPE
 
 # from ..wrapper.location import check_location
 
-ns = Namespace(name="chat", description="채팅창 관련 API", path="/chat")
+ns = Namespace(name="chat", description="채팅창 관련 API", path="/api/chat")
 
 
 class _ResponseSchema:

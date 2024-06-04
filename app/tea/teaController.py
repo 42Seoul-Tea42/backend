@@ -4,7 +4,7 @@ from . import teaService as serv
 # from ..wrapper.location import check_location
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-ns = Namespace(name="tea", description="추천 관련 API", path="/tea")
+ns = Namespace(name="tea", description="추천 관련 API", path="/api/tea")
 
 
 class _ResponseSchema:

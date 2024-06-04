@@ -176,10 +176,11 @@ def get_extension(image_info):
 
 def get_picture(filename):
     image_path = os.path.join(PICTURE_DIR, filename)
+    extension = filename.split(".")[-1]
 
     with open(image_path, "rb") as image_file:
-        image_data = base64.b64encode(image_file.read()).decode("utf-8")
-
+        image_data = f"data:image/{extension};base64,{base64.b64encode(image_file.read()).decode("utf-8")}"
+        
     return image_data
 
 

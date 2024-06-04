@@ -10,7 +10,7 @@ from ..utils.const import KST, TIME_STR_TYPE
 # from ..wrapper.location import check_location
 
 ns = Namespace(
-    name="history", description="fancy 및 히스토리 관련 API", path="/history"
+    name="history", description="fancy 및 히스토리 관련 API", path="/api/history"
 )
 
 

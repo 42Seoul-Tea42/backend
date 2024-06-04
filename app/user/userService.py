@@ -360,12 +360,15 @@ def setting(data, id, images):
         # 이전 프로필 사진 지우기
         pictures = user["pictures"]
         for file_to_delete in pictures:
+            if file_to_delete == DEFAULT_PICTURE:
+                continue
             file_path = os.path.join(PICTURE_DIR, file_to_delete)
             try:
                 os.remove(file_path)
             except Exception as e:
-                from app import app
-                app.logger.error(f"사진 삭제 시 에러 발생(setting): {e}")
+                # import app
+                print(f"사진 삭제 시 에러 발생(setting): {e}")
+                # app.logger.error(f"사진 삭제 시 에러 발생(setting): {e}")
                 pass
         update_fields["pictures"] = images
 
@@ -469,12 +472,15 @@ def save_pictures(id, files):
     except Exception as e:
         #저장된 사진 삭제하기
         for image_to_delete in images:
+            if image_to_delete == DEFAULT_PICTURE:
+                continue
             file_path = os.path.join(PICTURE_DIR, image_to_delete)
             try:
                 os.remove(file_path)
             except Exception as e:
-                from app import app
-                app.logger.error(f"사진 삭제 시 에러 발생(save_pictures): {e}")
+                # import app
+                print(f"사진 삭제 시 에러 발생(save_pictures): {e}")
+                # app.logger.error(f"사진 삭제 시 에러 발생(save_pictures): {e}")
                 pass
         raise e
 

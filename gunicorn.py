@@ -6,13 +6,21 @@ chdir = "/usr/app/srcs"
 workers = 1
 
 # 소켓 접근 권한
-bind = ["0.0.0.0:5000", "0.0.0.0:5001", "0.0.0.0:5002"]
+bind = "0.0.0.0:5000"
+# bind = ["0.0.0.0:5000", "0.0.0.0:5001", "0.0.0.0:5002"]
 
 # 접속 대기 큐 사이즈
 backlog = 2048
 
 # 접속 대기 큐 사이즈 default 30초
-# timeout = 60
+timeout = 60
+
+# graceful timeout 설정
+graceful_timeout = 30
+
+# gevent 워커 설정
+worker_class = 'gevent'
+worker_connections = 1000
 
 # 로깅 설정
 accesslog = None
