@@ -102,11 +102,30 @@ class Fancy(Resource):
     @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
     @ns.header("content-type", "application/json")
     def patch(self):
-        """fancy/unfancy 했음!"""
+        """타겟을 fancy 합니다"""
         id = get_jwt_identity()
         # [JWT] delete below
         # id = 1
         return serv.fancy(request.json, id)
+
+
+@ns.route("/unfancy")
+class Unfancy(Resource):
+
+    @jwt_required()
+    @ns.expect(_RequestSchema.field_patch_fancy, validate=True)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.header("content-type", "application/json")
+    def patch(self):
+        """타겟을 unfancy 합니다"""
+        id = get_jwt_identity()
+        # [JWT] delete below
+        # id = 1
+        return serv.unfancy(request.json, id)
 
 
 @ns.route("/history-list")

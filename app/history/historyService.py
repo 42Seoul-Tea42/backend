@@ -10,6 +10,7 @@ from ..utils.const import (
     FancyOpt,
     Authorization,
     RedisOpt,
+    TIME_STR_TYPE,
 )
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
@@ -45,7 +46,16 @@ def view_history(id, time_limit, opt):
 
     result = [
         userUtils.get_profile(
-            id, history["target_id" if opt == History.HISTORY else "user_id"]
+            id,
+            history["target_id" if opt == History.HISTORY else "user_id"],
+            datetime.strptime(
+                (
+                    history["last_view"]
+                    if opt == History.HISTORY
+                    else history["fancy_time"]
+                ),
+                "%Y-%m-%dT%H:%M:%S.%f%z",
+            ).strftime(TIME_STR_TYPE),
         )
         for history in histories
     ]
@@ -55,7 +65,7 @@ def view_history(id, time_limit, opt):
     }, StatusCode.OK
 
 
-def fancy(data, id):
+def check_before_service(id, data):
     # 유저 API 접근 권한 확인
     userUtils.check_authorization(id, Authorization.EMOJI)
 
@@ -76,10 +86,11 @@ def fancy(data, id):
     if target_id in block_set:
         raise BadRequest("차단한 유저입니다.")
 
-    # ban check
-    ban_set = redisServ.get_user_info(id, RedisOpt.BAN)
-    if target_id in ban_set:
-        return StatusCode.OK
+    return target_id
+
+
+def fancy(data, id):
+    target_id = check_before_service(id, data)
 
     now_kst = datetime.now(KST)
 
@@ -92,32 +103,52 @@ def fancy(data, id):
 
         if history:  # update
             sql = 'UPDATE "History" \
-                    SET "fancy" = not "fancy", "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    SET "fancy" = True, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (now_kst, now_kst, id, target_id))
         else:  # create
             sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, fancy_check, last_view) \
                                 VALUES (%s, %s, %s, %s, %s, %s)'
             cursor.execute(sql, (id, target_id, True, now_kst, False, now_kst))
-
-        # TODO unfancy 잘 돌아가는지 확인 필요
-        if history is None or history["fancy"] is None:  # fancy
-            userUtils.update_count_fancy(target_id, FancyOpt.ADD)
-
-            if history is None:
-                userUtils.update_count_view(target_id)
-
-            if utils.get_fancy(id, target_id) == Fancy.CONN:
-                socketServ.new_match(id, target_id)
-            else:
-                socketServ.new_fancy(id, target_id)
-
-        else:  # unfancy
-            userUtils.update_count_fancy(target_id, FancyOpt.DEL)
-
-            if utils.get_fancy(id, target_id) == Fancy.RECV:
-                socketServ.unmatch(id, target_id)
-
         conn.commit()
+
+        userUtils.update_count_fancy(target_id, FancyOpt.ADD)
+
+        if history is None:
+            userUtils.update_count_view(target_id)
+
+        if utils.get_fancy(id, target_id) == Fancy.CONN:
+            socketServ.new_match(id, target_id)
+        else:
+            socketServ.new_fancy(id, target_id)
+
+    return StatusCode.OK
+
+
+def unfancy(data, id):
+    target_id = check_before_service(id, data)
+
+    now_kst = datetime.now(KST)
+
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+
+        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+        cursor.execute(sql, (id, target_id))
+        history = cursor.fetchone()
+
+        if history:
+            sql = 'UPDATE "History" \
+                    SET "fancy" = False, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    WHERE "user_id" = %s AND "target_id" = %s;'
+            cursor.execute(sql, (now_kst, now_kst, id, target_id))
+        else:
+            raise BadRequest("잘못된 접근입니다. (fancy기록 없음)")
+        conn.commit()
+
+        userUtils.update_count_fancy(target_id, FancyOpt.DEL)
+
+        if utils.get_fancy(id, target_id) == Fancy.RECV:
+            socketServ.unmatch(id, target_id)
 
     return StatusCode.OK
