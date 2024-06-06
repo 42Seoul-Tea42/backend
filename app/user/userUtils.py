@@ -233,8 +233,8 @@ def get_profile(id, target_id):
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
 
-    # 이미지 파일 생성
-    images = get_pictures(target["pictures"])
+    # 첫 이미지 파일 생성
+    image = get_picture(target["pictures"][0])
 
     # 유저 정보 및 이미지 파일을 포함한 응답 생성
     return {
@@ -249,14 +249,7 @@ def get_profile(id, target_id):
         ),
         "fancy": historyUtils.get_fancy(id, target_id),
         "age": target["age"],
-        "fame": (
-            (target["count_fancy"] / target["count_view"] * MAX_FAME)
-            if target["count_view"]
-            else 0
-        ),
-        "tags": decode_bit(target["tags"]),
-        "gender": target["gender"],
-        "pictures": images,
+        "picture": image,
     }
 
 
