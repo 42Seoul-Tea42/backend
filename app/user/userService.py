@@ -708,7 +708,7 @@ def get_profile(id):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
-    return utils.get_my_profile(id), StatusCode.OK
+    return utils.get_user_profile(id), StatusCode.OK
     
     
 def search(data, id):
@@ -777,7 +777,7 @@ def search(data, id):
         )
         db_data = cursor.fetchall()
         
-        result = [utils.get_profile(id, target["id"]) for target in db_data]
+        result = [utils.get_target_profile(id, target["id"]) for target in db_data]
         return {
             "profile_list": result,
         }, StatusCode.OK

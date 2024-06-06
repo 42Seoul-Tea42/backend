@@ -196,7 +196,7 @@ def get_pictures(filenames):
     return images
 
 
-def get_my_profile(id):
+def get_user_profile(id):
     user = get_user(id)
     if not user:
         raise Unauthorized("존재하지 않는 유저입니다.")
@@ -206,7 +206,6 @@ def get_my_profile(id):
 
     # 유저 정보 및 이미지 파일을 포함한 응답 생성
     return {
-        "id": user["id"],
         "login_id": user["login_id"],
         "name": user["name"],
         "last_name": user["last_name"],
@@ -224,7 +223,7 @@ def get_my_profile(id):
     }
 
 
-def get_profile(id, target_id):
+def get_target_profile(id, target_id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
     if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")

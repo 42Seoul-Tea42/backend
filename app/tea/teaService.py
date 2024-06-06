@@ -105,7 +105,7 @@ def suggest(id):
         )
         db_data = cursor.fetchall()
 
-        result = [userUtils.get_profile(id, target["id"]) for target in db_data]
+        result = [userUtils.get_target_profile(id, target["id"]) for target in db_data]
         return {
             "profile_list": result,
         }, StatusCode.OK
