@@ -8,7 +8,7 @@ ns = Namespace(name="tea", description="추천 관련 API", path="/api/tea")
 
 
 class _ResponseSchema:
-    field_get_profile = ns.model(
+    field_get_target_profile = ns.model(
         "profile 확인 응답 데이터",
         {
             "id": fields.Integer(description="유저 id"),
@@ -29,8 +29,8 @@ class _ResponseSchema:
     field_get_tea = ns.model(
         "tea 추천 응답 데이터",
         {
-            "profiles": fields.List(
-                fields.Nested(field_get_profile), description="profile JSON list"
+            "profile_list": fields.List(
+                fields.Nested(field_get_target_profile), description="profile JSON list"
             ),
         },
     )

@@ -161,14 +161,40 @@ class _ResponseSchema:
     )
 
     field_patch_setting = ns.model(
-        "setting 필요 데이터",
+        "setting 응답 데이터",
         {
             "email_check": fields.Boolean(description="이메일 인증 여부"),
         },
     )
 
-    field_get_profile = ns.model(
-        "profile 확인 응답 데이터",
+    field_get_user_profile = ns.model(
+        "자신의 profile 기존 설정 확인 응답 데이터",
+        {
+            "login_id": fields.String(description="유저 로그인 id"),
+            "name": fields.String(description="유저 이름"),
+            "last_name": fields.String(description="유저 성"),
+            "email": fields.String(description="유저 이메일 주소"),
+            "age": fields.Integer(description="유저 나이"),
+            "gender": fields.Integer(description="유저 성별"),
+            "taste": fields.Integer(description="유저 취향"),
+            "bio": fields.String(description="유저 자기소개"),
+            "tags": fields.List(fields.Integer, description="설정한 관심사 태그"),
+            "hate_tags": fields.List(
+                fields.Integer, description="설정한 싫어하는 관심사 태그"
+            ),
+            "emoji": fields.List(fields.Integer, description="설정한 이모티콘 태그"),
+            "hate_emoji": fields.List(
+                fields.Integer, description="설정한 싫어하는 이모티콘 태그"
+            ),
+            "similar": fields.Boolean(description="비슷한 사람과 만나고 싶어요"),
+            "pictures": fields.List(
+                fields.String, description="유저 프로필 사진 데이터"
+            ),
+        },
+    )
+
+    field_get_target_profile = ns.model(
+        "target의 profile 응답 데이터",
         {
             "id": fields.Integer(description="유저 id"),
             "name": fields.String(description="유저 이름"),
@@ -176,20 +202,16 @@ class _ResponseSchema:
             "distance": fields.Float(description="거리"),
             "fancy": fields.Integer(description="유저와의 fancy 관계"),
             "age": fields.Integer(description="유저 나이"),
-            "fame": fields.Float(description="fame 지수"),
-            "tags": fields.List(fields.Integer, description="설정한 관심사 태그"),
-            "gender": fields.Integer(description="유저 성별"),
-            "picture": fields.List(
-                fields.String, description="유저 프로필 사진 데이터"
-            ),
+            "picture": fields.String(description="유저 프로필 사진 데이터"),
+            "time": fields.String(description="무한로딩용 기준점"),
         },
     )
 
     field_post_search = ns.model(
         "search 응답 데이터",
         {
-            "profiles": fields.List(
-                fields.Nested(field_get_profile), description="profile JSON list"
+            "profile_list": fields.List(
+                fields.Nested(field_get_target_profile), description="profile JSON list"
             ),
         },
     )
@@ -200,8 +222,20 @@ class _ResponseSchema:
             "login_id": fields.String(description="로그인 아이디"),
             "status": fields.Integer(description="접속 상태"),
             "last_online": fields.DateTime(description="마지막 접속 일시"),
+            "fame": fields.Float(description="fame 지수"),
+            "gender": fields.Integer(description="유저 성별"),
             "taste": fields.Integer(description="유저 성적 취향"),
             "bio": fields.String(description="자기소개"),
+            "tags": fields.List(fields.Integer, description="설정한 관심사 태그"),
+            "hate_tags": fields.List(
+                fields.Integer, description="설정한 싫어하는 관심사 태그"
+            ),
+            "emoji": fields.List(fields.Integer, description="설정한 이모티콘 태그"),
+            "hate_emoji": fields.List(
+                fields.Integer, description="설정한 싫어하는 이모티콘 태그"
+            ),
+            "similar": fields.Boolean(description="비슷한 사람과 만나고 싶어요"),
+            "pictures": fields.List(fields.String, description="프로필 사진 데이터"),
         },
     )
 
@@ -362,7 +396,9 @@ class Profile(Resource):
         try:
             images = (
                 serv.save_pictures(id, request.json["pictures"])
-                if "pictures" in request.json and 0 < len(request.json["pictures"]) and 1 < len(request.json["pictures"][0])
+                if "pictures" in request.json
+                and 0 < len(request.json["pictures"])
+                and 1 < len(request.json["pictures"][0])
                 else []
             )
         except ValueError:
@@ -374,7 +410,7 @@ class Profile(Resource):
 
     # 프로필 하나 요청하는 상황 == 자기 자신 정보 보기
     @jwt_required()
-    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile)
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_user_profile)
     @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed

@@ -26,7 +26,7 @@ class _RequestSchema:
 
 
 class _ResponseSchema:
-    field_get_profile = ns.model(
+    field_get_target_profile = ns.model(
         "profile 확인 응답 데이터",
         {
             "id": fields.Integer(description="유저 id"),
@@ -35,20 +35,16 @@ class _ResponseSchema:
             "distance": fields.Float(description="거리"),
             "fancy": fields.Integer(description="유저와의 fancy 관계"),
             "age": fields.Integer(description="유저 나이"),
-            "fame": fields.Float(description="fame 지수"),
-            "tags": fields.List(fields.Integer, description="설정한 관심사 태그"),
-            "gender": fields.Integer(description="유저 성별"),
-            "picture": fields.List(
-                fields.String, description="유저 프로필 사진 데이터"
-            ),
+            "picture": fields.String(description="유저 프로필 사진 데이터"),
+            "time": fields.String(description="무한로딩용 기준점"),
         },
     )
 
     field_get_profile_list = ns.model(
-        "profile 리스트",
+        "search 응답 데이터",
         {
-            "profiles": fields.List(
-                fields.Nested(field_get_profile), description="profile JSON list"
+            "profile_list": fields.List(
+                fields.Nested(field_get_target_profile), description="profile JSON list"
             ),
         },
     )
