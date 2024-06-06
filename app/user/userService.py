@@ -572,12 +572,26 @@ def profile_detail(id, target_id):
     ## (socket) history update alarm
     socketServ.new_history(id)
 
+    images = utils.get_pictures(target["pictures"])
+
     return {
         "login_id": target["login_id"],
         "status": socketServ.check_status(target_id),
-        "last_online": (target["last_online"]+timedelta(hours=9)).strftime("%Y-%m-%d-%H-%M"),
+        "last_online": (target["last_online"]+timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S.%f%z"),
+        "fame": (
+            (target["count_fancy"] / target["count_view"] * MAX_FAME)
+            if target["count_view"]
+            else 0
+        ),
+        "gender": target["gender"],
         "taste": target["taste"],
         "bio": target["bio"],
+        "tags": utils.decode_bit(target["tags"]),
+        "hate_tags": utils.decode_bit(target["hate_tags"]),
+        "emoji": utils.decode_bit(target["emoji"]),
+        "hate_emoji": utils.decode_bit(target["hate_emoji"]),
+        "similar": target["similar"],
+        "pictures": images,
     }, StatusCode.OK
 
 
