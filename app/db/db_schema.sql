@@ -53,6 +53,8 @@ CREATE TABLE "Block" (
   FOREIGN KEY (user_id) REFERENCES "User" (id) ON DELETE CASCADE,
   FOREIGN KEY (target_id) REFERENCES "User" (id) ON DELETE CASCADE
 );
+-- index 추가
+CREATE INDEX idx_block_target_id ON "Block" (target_id);
 
 CREATE TABLE "Report" (
 	"user_id"	  INTEGER	NOT NULL,
