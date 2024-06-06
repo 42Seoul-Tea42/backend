@@ -207,15 +207,19 @@ def get_my_profile(id):
     # 유저 정보 및 이미지 파일을 포함한 응답 생성
     return {
         "id": user["id"],
+        "login_id": user["login_id"],
         "name": user["name"],
         "last_name": user["last_name"],
+        "email": user["email"],
         "age": user["age"],
+        "gender": user["gender"],
+        "taste": user["taste"],
+        "bio": user["bio"],
         "tags": decode_bit(user["tags"]),
         "hate_tags": decode_bit(user["hate_tags"]),
         "emoji": decode_bit(user["emoji"]),
         "hate_emoji": decode_bit(user["hate_emoji"]),
-        "gender": user["gender"],
-        "taste": user["taste"],
+        "similar": user["similar"],
         "pictures": images,
     }
 
