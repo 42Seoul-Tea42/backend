@@ -6,7 +6,7 @@ from ..utils.const import Kakao, StatusCode
 import psycopg2
 from werkzeug.exceptions import BadRequest
 
-ns = Namespace(name='kakao', description='카카오 회원가입/로그인 관련 API', path='/kakao')
+ns = Namespace(name='kakao', description='카카오 회원가입/로그인 관련 API', path='/api/kakao')
 
 domain = os.getenv('DOMAIN')
 client_id = os.getenv('KAKAO_API_KEY')
