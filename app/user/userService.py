@@ -779,7 +779,7 @@ def search(data, id):
         
         result = [utils.get_profile(id, target["id"]) for target in db_data]
         return {
-            "profiles": result,
+            "profile_list": result,
         }, StatusCode.OK
 
 

@@ -61,7 +61,7 @@ def view_history(id, time_limit, opt):
     ]
 
     return {
-        "profiles": result,
+        "profile_list": result,
     }, StatusCode.OK
 
 

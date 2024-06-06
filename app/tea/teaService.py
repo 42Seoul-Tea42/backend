@@ -107,5 +107,5 @@ def suggest(id):
 
         result = [userUtils.get_profile(id, target["id"]) for target in db_data]
         return {
-            "profiles": result,
+            "profile_list": result,
         }, StatusCode.OK
