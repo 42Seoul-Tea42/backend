@@ -37,17 +37,17 @@ def test_user_api(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 1
-    target_id = data["profiles"][0]["id"]
+    assert len(data["profile_list"]) == 1
+    target_id = data["profile_list"][0]["id"]
 
     # tea 추천
     response = test_client.get(f"/tea/")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 3
-    assert data["profiles"][0]["name"] == "dummy4"
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][2]["name"] == "dummy3"
+    assert len(data["profile_list"]) == 3
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][2]["name"] == "dummy3"
 
     # 신고 (성공)
     response = test_client.post(
@@ -61,9 +61,9 @@ def test_user_api(test_client):
     response = test_client.get(f"/tea/")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy4"
-    assert data["profiles"][1]["name"] == "dummy3"
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][1]["name"] == "dummy3"
 
 
 ############################################################

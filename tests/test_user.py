@@ -700,8 +700,8 @@ def test_user_api(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    target = data["profiles"][0]
-    assert len(data["profiles"]) == 1
+    target = data["profile_list"][0]
+    assert len(data["profile_list"]) == 1
     assert target["name"] == "dummy2"
     assert target["last_name"] == "2"
     assert target["distance"]
@@ -809,7 +809,7 @@ def test_user_api(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 3
+    assert len(data["profile_list"]) == 3
 
     # 유저 블록 (실패)
     response = test_client.post(
@@ -882,7 +882,7 @@ def test_user_api(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
+    assert len(data["profile_list"]) == 2
 
 
 # 유저 검색 등

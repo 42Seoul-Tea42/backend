@@ -33,12 +33,12 @@ def test_view_history(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     response = test_client.get(f"/history/history-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
@@ -81,44 +81,44 @@ def test_view_history(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 4
-    assert data["profiles"][0]["name"] == "dummy5"
-    assert data["profiles"][0]["fancy"] == 0
-    assert data["profiles"][1]["name"] == "dummy4"
-    assert data["profiles"][1]["fancy"] == 2
-    assert data["profiles"][2]["name"] == "dummy3"
-    assert data["profiles"][2]["fancy"] == 3
-    assert data["profiles"][3]["name"] == "dummy2"
-    assert data["profiles"][3]["fancy"] == 1
+    assert len(data["profile_list"]) == 4
+    assert data["profile_list"][0]["name"] == "dummy5"
+    assert data["profile_list"][0]["fancy"] == 0
+    assert data["profile_list"][1]["name"] == "dummy4"
+    assert data["profile_list"][1]["fancy"] == 2
+    assert data["profile_list"][2]["name"] == "dummy3"
+    assert data["profile_list"][2]["fancy"] == 3
+    assert data["profile_list"][3]["name"] == "dummy2"
+    assert data["profile_list"][3]["fancy"] == 1
 
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 4
-    assert data["profiles"][0]["name"] == "dummy5"
-    assert data["profiles"][0]["fancy"] == 0
-    assert data["profiles"][1]["name"] == "dummy4"
-    assert data["profiles"][1]["fancy"] == 2
-    assert data["profiles"][2]["name"] == "dummy3"
-    assert data["profiles"][2]["fancy"] == 3
-    assert data["profiles"][3]["name"] == "dummy2"
-    assert data["profiles"][3]["fancy"] == 1
+    assert len(data["profile_list"]) == 4
+    assert data["profile_list"][0]["name"] == "dummy5"
+    assert data["profile_list"][0]["fancy"] == 0
+    assert data["profile_list"][1]["name"] == "dummy4"
+    assert data["profile_list"][1]["fancy"] == 2
+    assert data["profile_list"][2]["name"] == "dummy3"
+    assert data["profile_list"][2]["fancy"] == 3
+    assert data["profile_list"][3]["name"] == "dummy2"
+    assert data["profile_list"][3]["fancy"] == 1
 
     # history 목록 보기 (middle)
     response = test_client.get(f"/history/history-list?time={second_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy3"
-    assert data["profiles"][0]["fancy"] == 3
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][1]["fancy"] == 1
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy3"
+    assert data["profile_list"][0]["fancy"] == 3
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][1]["fancy"] == 1
 
     # history 목록 보기 (empty)
     response = test_client.get(f"/history/history-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     # profile_detail 체크 (확인 시간 업데이트)
     response = test_client.get(f"/user/profile-detail?id={id + 1}")
@@ -130,15 +130,15 @@ def test_view_history(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 4
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 1
-    assert data["profiles"][1]["name"] == "dummy5"
-    assert data["profiles"][1]["fancy"] == 0
-    assert data["profiles"][2]["name"] == "dummy4"
-    assert data["profiles"][2]["fancy"] == 2
-    assert data["profiles"][3]["name"] == "dummy3"
-    assert data["profiles"][3]["fancy"] == 3
+    assert len(data["profile_list"]) == 4
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 1
+    assert data["profile_list"][1]["name"] == "dummy5"
+    assert data["profile_list"][1]["fancy"] == 0
+    assert data["profile_list"][2]["name"] == "dummy4"
+    assert data["profile_list"][2]["fancy"] == 2
+    assert data["profile_list"][3]["name"] == "dummy3"
+    assert data["profile_list"][3]["fancy"] == 3
 
 
 # fancy 받은 목록 확인
@@ -165,12 +165,12 @@ def test_fancy_history(test_client):
     response = test_client.get(f"/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     response = test_client.get(f"/history/fancy-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
@@ -213,28 +213,28 @@ def test_fancy_history(test_client):
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy4"
-    assert data["profiles"][0]["fancy"] == 2
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][1]["fancy"] == 3
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][0]["fancy"] == 2
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][1]["fancy"] == 3
 
     response = test_client.get(f"/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy4"
-    assert data["profiles"][0]["fancy"] == 2
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][1]["fancy"] == 3
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][0]["fancy"] == 2
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][1]["fancy"] == 3
 
     # fancy 받은 목록 보기 (middle)
     response = test_client.get(f"/history/fancy-list?time={second_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 1
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 3
+    assert len(data["profile_list"]) == 1
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 3
 
     # unfancy 하기
     response = test_client.patch(
@@ -249,11 +249,11 @@ def test_fancy_history(test_client):
     response = test_client.get(f"/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy4"
-    assert data["profiles"][0]["fancy"] == 2
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][1]["fancy"] == 2
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][0]["fancy"] == 2
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][1]["fancy"] == 2
 
     # unfancy 받기
     fancy({"target_id": id}, id + 3)
@@ -262,9 +262,9 @@ def test_fancy_history(test_client):
     response = test_client.get(f"/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 1
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 2
+    assert len(data["profile_list"]) == 1
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 2
 
 
 # fancy 테스트
@@ -288,7 +288,7 @@ def test_fancy(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 0
+    assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
@@ -311,11 +311,11 @@ def test_fancy(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy3"
-    assert data["profiles"][0]["fancy"] == 1
-    assert data["profiles"][1]["name"] == "dummy2"
-    assert data["profiles"][1]["fancy"] == 1
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy3"
+    assert data["profile_list"][0]["fancy"] == 1
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][1]["fancy"] == 1
 
     # 유저 unfancy 하기
     response = test_client.patch(
@@ -330,11 +330,11 @@ def test_fancy(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 0
-    assert data["profiles"][1]["name"] == "dummy3"
-    assert data["profiles"][1]["fancy"] == 1
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 0
+    assert data["profile_list"][1]["name"] == "dummy3"
+    assert data["profile_list"][1]["fancy"] == 1
 
     # 유저 다시 fancy 하기
     response = test_client.patch(
@@ -349,11 +349,11 @@ def test_fancy(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 2
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 1
-    assert data["profiles"][1]["name"] == "dummy3"
-    assert data["profiles"][1]["fancy"] == 1
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 1
+    assert data["profile_list"][1]["name"] == "dummy3"
+    assert data["profile_list"][1]["fancy"] == 1
 
     # 없는 유저 fancy 하기
     response = test_client.patch(
@@ -375,9 +375,9 @@ def test_fancy(test_client):
     response = test_client.get(f"/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["profiles"]) == 1
-    assert data["profiles"][0]["name"] == "dummy2"
-    assert data["profiles"][0]["fancy"] == 1
+    assert len(data["profile_list"]) == 1
+    assert data["profile_list"][0]["name"] == "dummy2"
+    assert data["profile_list"][0]["fancy"] == 1
 
     # block한 유저 fancy
     response = test_client.patch(
