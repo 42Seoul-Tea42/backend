@@ -223,7 +223,7 @@ def get_user_profile(id):
     }
 
 
-def get_target_profile(id, target_id):
+def get_target_profile(id, target_id, time=None):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
     if not redis_user:
         raise Unauthorized("존재하지 않는 유저입니다.")
@@ -249,6 +249,7 @@ def get_target_profile(id, target_id):
         "fancy": historyUtils.get_fancy(id, target_id),
         "age": target["age"],
         "picture": image,
+        "time": time,
     }
 
 
@@ -290,7 +291,7 @@ def update_count_fancy(target_id, opt):
 
 
 def get_location_by_ip(ip_address=None):
-    if ip_address is None:
+    if ip_address is None or os.getenv("PYTEST"):
         return 37.5660, 126.9784
 
     # API로 위도ㅡ경도 받아오기

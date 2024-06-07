@@ -48,13 +48,10 @@ def view_history(id, time_limit, opt):
         userUtils.get_target_profile(
             id,
             history["target_id" if opt == History.HISTORY else "user_id"],
-            datetime.strptime(
-                (
-                    history["last_view"]
-                    if opt == History.HISTORY
-                    else history["fancy_time"]
-                ),
-                "%Y-%m-%dT%H:%M:%S.%f%z",
+            (
+                history["last_view"]
+                if opt == History.HISTORY
+                else history["fancy_time"]
             ).strftime(TIME_STR_TYPE),
         )
         for history in histories
