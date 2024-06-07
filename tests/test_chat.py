@@ -13,7 +13,7 @@ valid_pw = "ASDFasdf0"
 def test_empty_chat_list(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -27,27 +27,31 @@ def test_empty_chat_list(test_client):
     id = data["id"]
 
     # chat 목록 보기 (empty)
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 0
 
     # 채팅방 내용 확인하기 (fail)
-    response = test_client.get(f"/chat/msg?target_id={id+1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
     assert response.status_code == StatusCode.BAD_REQUEST
 
-    response = test_client.get(f"/chat/msg?target_id={id}")
+    response = test_client.get(f"/api/chat/msg?target_id={id}")
     assert response.status_code == StatusCode.BAD_REQUEST
 
-    response = test_client.get(f"/chat/msg?target_id={id-1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id-1}")
     assert response.status_code == StatusCode.BAD_REQUEST
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
 
 
 # chat list 확인
 def test_chat_list_order(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -66,7 +70,7 @@ def test_chat_list_order(test_client):
     # match case (1): 상대방이 매치 (new_msg == True)
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -77,7 +81,7 @@ def test_chat_list_order(test_client):
     fancy({"target_id": id}, id + 1)
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -90,7 +94,7 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][0]["new"] == True
 
     # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/chat/msg?target_id={id+1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -100,7 +104,7 @@ def test_chat_list_order(test_client):
     assert data["msg_list"][0]["msg_new"] == False
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -118,7 +122,7 @@ def test_chat_list_order(test_client):
 
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
@@ -126,7 +130,7 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 2
@@ -146,13 +150,13 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][1]["new"] == False
 
     # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/chat/msg?target_id={id+1}&time={first_kst}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}&time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 0
 
     # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/chat/msg?target_id={id+1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -162,7 +166,7 @@ def test_chat_list_order(test_client):
     assert data["msg_list"][0]["msg_new"] == False
 
     # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/chat/msg?target_id={id+2}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+2}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -177,7 +181,7 @@ def test_chat_list_order(test_client):
     send_message({"recver_id": id, "message": "hello"}, sender_id=id + 1)
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 2
@@ -197,7 +201,7 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][1]["new"] == False
 
     # 채팅방 내용 확인하기
-    response = test_client.get(f"/chat/msg?target_id={id+1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 2
@@ -211,7 +215,7 @@ def test_chat_list_order(test_client):
     assert data["msg_list"][1]["msg_new"] == False
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 2
@@ -224,12 +228,16 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][0]["new"] == False
     assert data["chat_list"][1]["id"] == id + 2
 
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
+
 
 # chat msg 확인
 def test_chat_msg(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -244,7 +252,7 @@ def test_chat_msg(test_client):
 
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -260,7 +268,7 @@ def test_chat_msg(test_client):
     send_message({"recver_id": id, "message": "hello"}, sender_id=id + 1)
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -276,7 +284,7 @@ def test_chat_msg(test_client):
     send_message({"recver_id": id + 1, "message": "hello dummy"}, sender_id=id)
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -294,7 +302,7 @@ def test_chat_msg(test_client):
     send_message({"recver_id": id, "message": "3"}, sender_id=id + 1)
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -307,7 +315,7 @@ def test_chat_msg(test_client):
     assert data["chat_list"][0]["new"] == True
 
     # 채팅방 내용 확인하기 (최신)
-    response = test_client.get(f"/chat/msg?target_id={id+1}")
+    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 6
@@ -332,7 +340,7 @@ def test_chat_msg(test_client):
 
     # 채팅방 내용 확인하기 (중간1)
     response = test_client.get(
-        f"/chat/msg?target_id={id+1}&time={quote(data['msg_list'][2]['msg_time'])}"
+        f"/api/chat/msg?target_id={id+1}&time={quote(data['msg_list'][2]['msg_time'])}"
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
@@ -349,7 +357,7 @@ def test_chat_msg(test_client):
 
     # 채팅방 내용 확인하기 (중간2)
     response = test_client.get(
-        f"/chat/msg?target_id={id+1}&time={quote(data['msg_list'][0]['msg_time'])}"
+        f"/api/chat/msg?target_id={id+1}&time={quote(data['msg_list'][0]['msg_time'])}"
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
@@ -362,7 +370,7 @@ def test_chat_msg(test_client):
     assert data["msg_list"][1]["msg_new"] == False
 
     # chat 목록 보기
-    response = test_client.get(f"/chat/list")
+    response = test_client.get(f"/api/chat/list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["chat_list"]) == 1
@@ -373,6 +381,10 @@ def test_chat_msg(test_client):
     assert data["chat_list"][0]["distance"]
     assert data["chat_list"][0]["fancy"] == 3
     assert data["chat_list"][0]["new"] == False
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
 
 
 ############################################################

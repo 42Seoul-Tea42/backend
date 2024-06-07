@@ -9,8 +9,8 @@ sys.path.insert(0, project_root)
 import pytest
 
 
-def pytest_configure(config):
-    os.environ["PYTEST"] = "True"
+# def pytest_configure(config):
+#     os.environ["PYTEST"] = "True"
 
 
 @pytest.fixture(scope="session")

@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from app.utils.const import StatusCode, KST, TIME_STR_TYPE
 from urllib.parse import quote
-from app.history.historyService import fancy
+from app.history.historyService import fancy, unfancy
 
 
 duplicated_login = "dummy1"
@@ -13,7 +13,7 @@ valid_pw = "ASDFasdf0"
 def test_view_history(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -30,19 +30,19 @@ def test_view_history(test_client):
     first_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # history 목록 보기 (empty)
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
-    response = test_client.get(f"/history/history-list?time={first_kst}")
+    response = test_client.get(f"/api/history/history-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -50,7 +50,7 @@ def test_view_history(test_client):
     assert response.status_code == StatusCode.OK
 
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
@@ -65,19 +65,19 @@ def test_view_history(test_client):
     second_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # profile_detail 체크
-    response = test_client.get(f"/user/profile-detail?id={id + 3}")
+    response = test_client.get(f"/api/user/profile-detail?id={id + 3}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert data["login_id"] == "dummy4"
 
-    response = test_client.get(f"/user/profile-detail?id={id + 4}")
+    response = test_client.get(f"/api/user/profile-detail?id={id + 4}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert data["login_id"] == "dummy5"
 
     # history 목록 보기 (all)
     response = test_client.get(
-        f"/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
@@ -90,8 +90,16 @@ def test_view_history(test_client):
     assert data["profile_list"][2]["fancy"] == 3
     assert data["profile_list"][3]["name"] == "dummy2"
     assert data["profile_list"][3]["fancy"] == 1
+    target = data["profile_list"][3]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 4
@@ -103,9 +111,17 @@ def test_view_history(test_client):
     assert data["profile_list"][2]["fancy"] == 3
     assert data["profile_list"][3]["name"] == "dummy2"
     assert data["profile_list"][3]["fancy"] == 1
+    target = data["profile_list"][3]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # history 목록 보기 (middle)
-    response = test_client.get(f"/history/history-list?time={second_kst}")
+    response = test_client.get(f"/api/history/history-list?time={second_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -113,21 +129,41 @@ def test_view_history(test_client):
     assert data["profile_list"][0]["fancy"] == 3
     assert data["profile_list"][1]["name"] == "dummy2"
     assert data["profile_list"][1]["fancy"] == 1
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # history 목록 보기 (empty)
-    response = test_client.get(f"/history/history-list?time={first_kst}")
+    response = test_client.get(f"/api/history/history-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
     # profile_detail 체크 (확인 시간 업데이트)
-    response = test_client.get(f"/user/profile-detail?id={id + 1}")
+    response = test_client.get(f"/api/user/profile-detail?id={id + 1}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert data["login_id"] == "dummy2"
+    assert data["status"] == 0
+    assert data["last_online"]
+    assert data["fame"]
+    assert data["gender"] == 4
+    assert data["taste"] == 2
+    assert data["bio"] == "자기소개입니다"
+    assert data["tags"] == [4, 11, 12]
+    assert data["hate_tags"] == [13]
+    assert data["emoji"] == [16]
+    assert data["hate_emoji"] == []
+    assert data["similar"] == True
+    assert data["pictures"]
 
     # history 목록 보기 (all)
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 4
@@ -139,13 +175,25 @@ def test_view_history(test_client):
     assert data["profile_list"][2]["fancy"] == 2
     assert data["profile_list"][3]["name"] == "dummy3"
     assert data["profile_list"][3]["fancy"] == 3
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
 
 
 # fancy 받은 목록 확인
 def test_fancy_history(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -162,19 +210,19 @@ def test_fancy_history(test_client):
     first_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # fancy 받은 목록 보기 (empty)
-    response = test_client.get(f"/history/fancy-list")
+    response = test_client.get(f"/api/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
-    response = test_client.get(f"/history/fancy-list?time={first_kst}")
+    response = test_client.get(f"/api/history/fancy-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -182,7 +230,7 @@ def test_fancy_history(test_client):
     assert response.status_code == StatusCode.OK
 
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
@@ -191,7 +239,7 @@ def test_fancy_history(test_client):
 
     # 스스로 fancy 하기 (실패)
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id}),
         content_type="application/json",
     )
@@ -209,7 +257,7 @@ def test_fancy_history(test_client):
 
     # fancy 받은 목록 보기 (all)
     response = test_client.get(
-        f"/history/fancy-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+        f"/api/history/fancy-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
     )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
@@ -218,8 +266,16 @@ def test_fancy_history(test_client):
     assert data["profile_list"][0]["fancy"] == 2
     assert data["profile_list"][1]["name"] == "dummy2"
     assert data["profile_list"][1]["fancy"] == 3
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 3
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
-    response = test_client.get(f"/history/fancy-list")
+    response = test_client.get(f"/api/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -227,18 +283,34 @@ def test_fancy_history(test_client):
     assert data["profile_list"][0]["fancy"] == 2
     assert data["profile_list"][1]["name"] == "dummy2"
     assert data["profile_list"][1]["fancy"] == 3
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 3
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # fancy 받은 목록 보기 (middle)
-    response = test_client.get(f"/history/fancy-list?time={second_kst}")
+    response = test_client.get(f"/api/history/fancy-list?time={second_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 1
     assert data["profile_list"][0]["name"] == "dummy2"
     assert data["profile_list"][0]["fancy"] == 3
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 3
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # unfancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/unfancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -246,7 +318,7 @@ def test_fancy_history(test_client):
     assert response.status_code == StatusCode.OK
 
     # fancy 받은 목록 보기 (all)
-    response = test_client.get(f"/history/fancy-list")
+    response = test_client.get(f"/api/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -254,24 +326,44 @@ def test_fancy_history(test_client):
     assert data["profile_list"][0]["fancy"] == 2
     assert data["profile_list"][1]["name"] == "dummy2"
     assert data["profile_list"][1]["fancy"] == 2
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 2
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # unfancy 받기
-    fancy({"target_id": id}, id + 3)
+    unfancy({"target_id": id}, id + 3)
 
     # fancy 받은 목록 보기 (all)
-    response = test_client.get(f"/history/fancy-list")
+    response = test_client.get(f"/api/history/fancy-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 1
     assert data["profile_list"][0]["name"] == "dummy2"
     assert data["profile_list"][0]["fancy"] == 2
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 2
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
 
 
 # fancy 테스트
 def test_fancy(test_client):
     # 로그인
     response = test_client.post(
-        f"/user/login",
+        f"/api/user/login",
         data=json.dumps(
             {
                 "login_id": duplicated_login,
@@ -285,14 +377,14 @@ def test_fancy(test_client):
     id = data["id"]
 
     # history 목록 보기
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
 
     # 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -300,7 +392,7 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
@@ -308,7 +400,7 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -316,10 +408,18 @@ def test_fancy(test_client):
     assert data["profile_list"][0]["fancy"] == 1
     assert data["profile_list"][1]["name"] == "dummy2"
     assert data["profile_list"][1]["fancy"] == 1
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # 유저 unfancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/unfancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -327,7 +427,7 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -335,10 +435,18 @@ def test_fancy(test_client):
     assert data["profile_list"][0]["fancy"] == 0
     assert data["profile_list"][1]["name"] == "dummy3"
     assert data["profile_list"][1]["fancy"] == 1
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 0
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # 유저 다시 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 1}),
         content_type="application/json",
     )
@@ -346,7 +454,7 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -354,10 +462,18 @@ def test_fancy(test_client):
     assert data["profile_list"][0]["fancy"] == 1
     assert data["profile_list"][1]["name"] == "dummy3"
     assert data["profile_list"][1]["fancy"] == 1
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # 없는 유저 fancy 하기
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 100}),
         content_type="application/json",
     )
@@ -365,27 +481,39 @@ def test_fancy(test_client):
 
     # 유저 block 하기
     response = test_client.post(
-        f"/user/block",
+        f"/api/user/block",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/history/history-list")
+    response = test_client.get(f"/api/history/history-list")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 1
     assert data["profile_list"][0]["name"] == "dummy2"
     assert data["profile_list"][0]["fancy"] == 1
+    target = data["profile_list"][0]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 1
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"]
 
     # block한 유저 fancy
     response = test_client.patch(
-        f"/history/fancy",
+        f"/api/history/fancy",
         data=json.dumps({"target_id": id + 2}),
         content_type="application/json",
     )
     assert response.status_code == StatusCode.BAD_REQUEST
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
 
 
 ############################################################
