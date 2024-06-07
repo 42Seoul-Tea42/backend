@@ -216,6 +216,15 @@ class _ResponseSchema:
         },
     )
 
+    field_get_tea = ns.model(
+        "tea 추천 응답 데이터",
+        {
+            "profile_list": fields.List(
+                fields.Nested(field_get_target_profile), description="profile JSON list"
+            ),
+        },
+    )
+
     field_get_profileDetail = ns.model(
         "profileDetail 확인 응답 데이터",
         {
@@ -524,7 +533,7 @@ class ResetPw(Resource):
 #         return serv.unregister(id)
 
 
-# ##### search
+##### search
 @ns.route("/search")
 class Search(Resource):
 
@@ -543,6 +552,25 @@ class Search(Resource):
         # [JWT] delete below
         # id = 1
         return serv.search(request.json, id)
+
+
+##### tea suggest
+@ns.route("/tea")
+class Suggest(Resource):
+
+    @jwt_required()
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_tea)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    def get(self):
+        """get tea suggestions for you!"""
+        id = get_jwt_identity()
+        # [JWT] delete below
+        # id = 1
+        return serv.suggest(id)
 
 
 # ##### report && block

@@ -467,7 +467,7 @@ def test_unauthrized_email(test_client):
     assert data["email_check"] == True
     assert data["profile_check"] == True
     assert data["emoji_check"] == True
-    
+
     # 로그아웃
     response = test_client.post(f"/api/user/logout")
     assert response.status_code == StatusCode.OK
@@ -540,7 +540,7 @@ def test_change_email(test_client):
     assert data["profile_check"] == True
     assert data["emoji_check"] == True
     assert data["oauth"] == 0
-    
+
     # 로그아웃
     response = test_client.post(f"/api/user/logout")
     assert response.status_code == StatusCode.OK
@@ -677,7 +677,7 @@ def test_after_authorize_email(test_client):
     assert data["email_check"] == True
     assert data["profile_check"] == True
     assert data["emoji_check"] == True
-    
+
     # 로그아웃
     response = test_client.post(f"/api/user/logout")
     assert response.status_code == StatusCode.OK
@@ -904,7 +904,61 @@ def test_user_api(test_client):
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
-    
+
+    # 로그아웃
+    response = test_client.post(f"/api/user/logout")
+    assert response.status_code == StatusCode.OK
+
+
+# 유저 티 추천
+def test_tea_suggest_api(test_client):
+    # 로그인
+    response = test_client.post(
+        f"/api/user/login",
+        data=json.dumps(
+            {
+                "login_id": duplicated_login,
+                "pw": valid_pw,
+            }
+        ),
+        content_type="application/json",
+    )
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+
+    # tea 추천
+    response = test_client.get(f"/api/user/tea")
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert len(data["profile_list"]) == 3
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][1]["name"] == "dummy2"
+    assert data["profile_list"][2]["name"] == "dummy3"
+    target = data["profile_list"][1]
+    assert target["name"] == "dummy2"
+    assert target["last_name"] == "2"
+    assert target["distance"]
+    assert target["fancy"] == 0
+    assert target["age"] == 18
+    assert target["picture"]
+    assert target["time"] is None
+
+    # 신고 (성공)
+    response = test_client.post(
+        f"/api/user/report",
+        data=json.dumps({"target_id": target["id"], "reason": 1}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.OK
+
+    # (신고, 블록 후) tea 추천
+    response = test_client.get(f"/api/user/tea")
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert len(data["profile_list"]) == 2
+    assert data["profile_list"][0]["name"] == "dummy4"
+    assert data["profile_list"][1]["name"] == "dummy3"
+
     # 로그아웃
     response = test_client.post(f"/api/user/logout")
     assert response.status_code == StatusCode.OK
