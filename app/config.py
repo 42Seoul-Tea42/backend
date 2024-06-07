@@ -41,7 +41,7 @@ class Config(object):
     # Default: None, which is treated as "Lax" by browsers.
     JWT_COOKIE_SAMESITE = "Lax"
 
-    JWT_REFRESH_COOKIE_PATH = "/user/reset-token"
+    JWT_REFRESH_COOKIE_PATH = "/api/user/reset-token"
 
 
 class DevelopmentConfig(Config):
