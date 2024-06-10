@@ -248,6 +248,12 @@ def get_target_profile(id, target_id, time=None):
         ),
         "fancy": historyUtils.get_fancy(id, target_id),
         "age": target["age"],
+        "tags": utils.decode_bit(target["tags"]),
+        "fame": (
+            (target["count_fancy"] / target["count_view"] * MAX_FAME)
+            if target["count_view"]
+            else 0
+        ),
         "picture": image,
         "time": time,
     }

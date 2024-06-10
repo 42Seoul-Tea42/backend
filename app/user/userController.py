@@ -202,6 +202,8 @@ class _ResponseSchema:
             "distance": fields.Float(description="거리"),
             "fancy": fields.Integer(description="유저와의 fancy 관계"),
             "age": fields.Integer(description="유저 나이"),
+            "tags": fields.List(fields.Integer, description="설정한 관심사 태그"),
+            "fame": fields.Integer(description="유저 fame 지수"),
             "picture": fields.String(description="유저 프로필 사진 데이터"),
             "time": fields.String(description="무한로딩용 기준점"),
         },
