@@ -46,7 +46,7 @@ def save_chat(id, target_id, message):
 
     new_message = {
         "sender_id": id,
-        "msg": message,
+        "message": message,
         "msg_time": kst_iso_now,
         "msg_new": True,
     }
