@@ -129,7 +129,7 @@ AREA_DISTANCE = 500  # 500m
 
 # Chat / Socket
 FIRST_CHAT = 0
-MAX_CHAT = 10
+MAX_CHAT = 5
 
 
 # Taste
