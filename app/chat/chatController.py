@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 from datetime import datetime
 from ..utils.const import KST, TIME_STR_TYPE
+import pytz
 
 # from ..wrapper.location import check_location
 
@@ -40,7 +41,7 @@ class _ResponseSchema:
         {
             "msg_id": fields.Integer(description="메시지 id"),
             "sender": fields.Integer(description="메시지 보낸 사람 id"),
-            "msg": fields.String(description="메시지 내용"),
+            "message": fields.String(description="메시지 내용"),
             "msg_time": fields.DateTime(description="메시지 보낸 시간"),
             "checked": fields.Boolean(description="상대방이 확인했는지 여부"),
         },
@@ -113,7 +114,7 @@ class GetMsg(Resource):
             if str_time is None:
                 time = datetime.now(KST)
             else:
-                time = datetime.strptime(str_time, TIME_STR_TYPE)
+                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
         except ValueError:
             raise BadRequest("기준 시간이 유효하지 않습니다.")
 

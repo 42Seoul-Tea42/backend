@@ -77,11 +77,11 @@ class CheckFancy(Resource):
         # id = 1
 
         try:
-            time_str = request.args.get("time")
-            if time_str is None:
+            str_time = request.args.get("time")
+            if str_time is None:
                 time = datetime.now(KST)
             else:
-                time = datetime.strptime(time_str, TIME_STR_TYPE)
+                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
         except ValueError:
             raise BadRequest("기준 시간이 유효하지 않습니다.")
 
@@ -144,11 +144,11 @@ class ViewHistory(Resource):
         # id = 1
 
         try:
-            time_str = request.args.get("time")
-            if time_str is None:
+            str_time = request.args.get("time")
+            if str_time is None:
                 time = datetime.now(KST)
             else:
-                time = datetime.strptime(time_str, TIME_STR_TYPE)
+                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
         except ValueError:
             raise BadRequest("기준 시간이 유효하지 않습니다.")
 
