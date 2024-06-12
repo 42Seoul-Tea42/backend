@@ -60,7 +60,7 @@ class _RequestSchema:
             "bio": fields.String(description="자기소개"),
             "tags": fields.List(fields.Integer, description="취미 태그"),
             "hate_tags": fields.List(fields.Integer, description="싫어하는 취미 태그"),
-            "prefer_emoji": fields.List(fields.Integer, description="유저 취향 이모지"),
+            "emoji": fields.List(fields.Integer, description="유저 취향 이모지"),
             "hate_emoji": fields.List(fields.Integer, description="싫어하는 이모지"),
             "similar": fields.Boolean(description="비슷한 사람 좋아요"),
         },

@@ -56,7 +56,7 @@ class MongoDBFactory:
 #     "messages": [
 #         {
 #             "sender_id": "string",  # 메시지를 보낸 유저의 id
-#             "msg": "string",  # 메시지 내용
+#             "message": "string",  # 메시지 내용
 #             "msg_time": "string (ISO 8601 datetime)",  # 메시지 보낸 시간
 #             "msg_new": "boolean",  # 상대방이 메시지를 읽었는지 여부
 #         }
