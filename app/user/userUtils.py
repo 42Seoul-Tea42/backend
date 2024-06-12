@@ -266,8 +266,8 @@ def update_last_online(id):
         cursor.execute(sql, (id,))
         user = cursor.fetchone()
         if user:
-            sql = 'UPDATE "User" SET "refresh" = %s, last_online = %s WHERE "id" = %s;'
-            cursor.execute(sql, (None, datetime.now(KST), id))
+            sql = 'UPDATE "User" SET last_online = %s WHERE "id" = %s;'
+            cursor.execute(sql, (datetime.now(KST), id))
             conn.commit()
 
 
@@ -310,10 +310,13 @@ def get_location_by_ip(ip_address=None):
     data = response.json()
 
     if "bogon" in data:
-        return get_location_by_ip()
+        return 37.5660, 126.9784
 
     # 위도와 경도 추출
     lat, long = [float(i) for i in data["loc"].split(",")]
+    if lat is None or long is None:
+        print('[ERROR] get_location_by_ip (None) =>', data["loc"])
+        return 37.5660, 126.9784
 
     return lat, long
 
@@ -390,3 +393,10 @@ def get_ban_list(id):
         ban = cursor.fetchall()
 
     return [row["user_id"] for row in ban]
+
+def validation(value, func):
+    try:
+        func(value)
+        return True
+    except Exception as e:
+        return False
