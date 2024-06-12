@@ -106,7 +106,7 @@ def send_message(data, user_sid=None):
 
         error_flag += 1
         if recver_id and message.strip():
-            chatUtils.save_chat(sender_id, recver_id, message)
+            msg_time = chatUtils.save_chat(sender_id, recver_id, message)
 
             error_flag += 1
             recver_sid = redisServ.get_socket_id_by_id(recver_id)
@@ -117,8 +117,12 @@ def send_message(data, user_sid=None):
                 error_flag += 1
                 with socket_lock:
                     socket_io.emit(
-                        "send_message",
-                        {"sender_id": sender_id, "message": message},
+                        "send_message", {
+                            "sender_id": sender_id, 
+                            "message": message, 
+                            "msg_time": msg_time,
+                            "msg_new": True
+                        },
                         room=recver_sid,
                     )
         else:  # [TEST]

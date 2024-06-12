@@ -67,6 +67,8 @@ def save_chat(id, target_id, message):
                 "messages": [new_message],
             }
         )
+        
+    return kst_iso_now
 
 
 def read_chat(recver_id, sender_id):

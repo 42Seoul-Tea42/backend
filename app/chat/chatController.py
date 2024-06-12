@@ -39,11 +39,10 @@ class _ResponseSchema:
     field_json_msg = ns.model(
         "채팅 하나에 대한 정보",
         {
-            "msg_id": fields.Integer(description="메시지 id"),
-            "sender": fields.Integer(description="메시지 보낸 사람 id"),
+            "sender_id": fields.Integer(description="메시지 보낸 사람 id"),
             "message": fields.String(description="메시지 내용"),
             "msg_time": fields.DateTime(description="메시지 보낸 시간"),
-            "checked": fields.Boolean(description="상대방이 확인했는지 여부"),
+            "msg_new": fields.Boolean(description="상대방이 확인했는지 여부"),
         },
     )
 
