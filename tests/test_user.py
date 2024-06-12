@@ -444,12 +444,12 @@ def test_unauthrized_email(test_client):
     assert response.status_code == StatusCode.OK
     assert data["email_check"] == True
 
-    # 프로필 설정 (prefer_emoji, hate_emoji)
+    # 프로필 설정 (emoji, hate_emoji)
     response = test_client.patch(
         "/api/user/profile",
         data=json.dumps(
             {
-                "prefer_emoji": [1, 2, 14],
+                "emoji": [1, 2, 14],
                 "hate_emoji": [15],
                 "similar": False,
             }
@@ -654,12 +654,12 @@ def test_after_authorize_email(test_client):
     assert response.status_code == StatusCode.OK
     assert data["email_check"] == True
 
-    # 프로필 설정 (prefer_emoji, hate_emoji)
+    # 프로필 설정 (emoji, hate_emoji)
     response = test_client.patch(
         "/api/user/profile",
         data=json.dumps(
             {
-                "prefer_emoji": [1, 2, 14],
+                "emoji": [1, 2, 14],
                 "hate_emoji": [15],
                 "similar": False,
             }
@@ -1042,7 +1042,7 @@ def teardown_function():
         conn.commit()
 
     except Exception as e:
-        print(e)
+        # print(e)
         # 롤백 및 예외 처리
         conn.rollback()
         # raise e

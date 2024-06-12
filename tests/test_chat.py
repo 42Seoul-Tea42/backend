@@ -99,7 +99,7 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
     assert data["msg_list"][0]["sender_id"] == id + 1
-    assert data["msg_list"][0]["msg"] == ""
+    assert data["msg_list"][0]["message"] == ""
     assert data["msg_list"][0]["msg_time"]
     assert data["msg_list"][0]["msg_new"] == False
 
@@ -161,7 +161,7 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
     assert data["msg_list"][0]["sender_id"] == id + 1
-    assert data["msg_list"][0]["msg"] == ""
+    assert data["msg_list"][0]["message"] == ""
     assert data["msg_list"][0]["msg_time"]
     assert data["msg_list"][0]["msg_new"] == False
 
@@ -171,7 +171,7 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
     assert data["msg_list"][0]["sender_id"] == id
-    assert data["msg_list"][0]["msg"] == ""
+    assert data["msg_list"][0]["message"] == ""
     assert data["msg_list"][0]["msg_time"]
     assert data["msg_list"][0]["msg_new"] == False
 
@@ -206,11 +206,11 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 2
     assert data["msg_list"][0]["sender_id"] == id + 1
-    assert data["msg_list"][0]["msg"] == "hello"
+    assert data["msg_list"][0]["message"] == "hello"
     assert data["msg_list"][0]["msg_time"]
     assert data["msg_list"][0]["msg_new"] == False
     assert data["msg_list"][1]["sender_id"] == id + 1
-    assert data["msg_list"][1]["msg"] == ""
+    assert data["msg_list"][1]["message"] == ""
     assert data["msg_list"][1]["msg_time"]
     assert data["msg_list"][1]["msg_new"] == False
 
@@ -320,22 +320,22 @@ def test_chat_msg(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 6
     assert data["msg_list"][0]["sender_id"] == id + 1
-    assert data["msg_list"][0]["msg"] == "3"
+    assert data["msg_list"][0]["message"] == "3"
     assert data["msg_list"][0]["msg_new"] == False
     assert data["msg_list"][1]["sender_id"] == id + 1
-    assert data["msg_list"][1]["msg"] == "2"
+    assert data["msg_list"][1]["message"] == "2"
     assert data["msg_list"][1]["msg_new"] == False
     assert data["msg_list"][2]["sender_id"] == id + 1
-    assert data["msg_list"][2]["msg"] == "1"
+    assert data["msg_list"][2]["message"] == "1"
     assert data["msg_list"][2]["msg_new"] == False
     assert data["msg_list"][3]["sender_id"] == id
-    assert data["msg_list"][3]["msg"] == "hello dummy"
+    assert data["msg_list"][3]["message"] == "hello dummy"
     assert data["msg_list"][3]["msg_new"] == False
     assert data["msg_list"][4]["sender_id"] == id + 1
-    assert data["msg_list"][4]["msg"] == "hello"
+    assert data["msg_list"][4]["message"] == "hello"
     assert data["msg_list"][4]["msg_new"] == False
     assert data["msg_list"][5]["sender_id"] == id + 1
-    assert data["msg_list"][5]["msg"] == ""
+    assert data["msg_list"][5]["message"] == ""
     assert data["msg_list"][5]["msg_new"] == False
 
     # 채팅방 내용 확인하기 (중간1)
@@ -346,13 +346,13 @@ def test_chat_msg(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 3
     assert data["msg_list"][0]["sender_id"] == id
-    assert data["msg_list"][0]["msg"] == "hello dummy"
+    assert data["msg_list"][0]["message"] == "hello dummy"
     assert data["msg_list"][0]["msg_new"] == False
     assert data["msg_list"][1]["sender_id"] == id + 1
-    assert data["msg_list"][1]["msg"] == "hello"
+    assert data["msg_list"][1]["message"] == "hello"
     assert data["msg_list"][1]["msg_new"] == False
     assert data["msg_list"][2]["sender_id"] == id + 1
-    assert data["msg_list"][2]["msg"] == ""
+    assert data["msg_list"][2]["message"] == ""
     assert data["msg_list"][2]["msg_new"] == False
 
     # 채팅방 내용 확인하기 (중간2)
@@ -363,10 +363,10 @@ def test_chat_msg(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 2
     assert data["msg_list"][0]["sender_id"] == id + 1
-    assert data["msg_list"][0]["msg"] == "hello"
+    assert data["msg_list"][0]["message"] == "hello"
     assert data["msg_list"][0]["msg_new"] == False
     assert data["msg_list"][1]["sender_id"] == id + 1
-    assert data["msg_list"][1]["msg"] == ""
+    assert data["msg_list"][1]["message"] == ""
     assert data["msg_list"][1]["msg_new"] == False
 
     # chat 목록 보기
