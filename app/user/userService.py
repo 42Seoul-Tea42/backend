@@ -35,7 +35,8 @@ from ..utils.const import (
     Report,
     AGE_GAP,
     AREA_DISTANCE,
-    MAX_SUGGEST
+    MAX_SUGGEST,
+    TIME_STR_TYPE
 )
 from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
@@ -329,6 +330,7 @@ def setting(data, id, images):
         if not utils.is_valid_email(data["email"]):
             raise BadRequest("유효하지 않은 이메일 형식입니다.")
         update_fields["email"] = data["email"]
+        update_fields["email_key"] = utils.create_email_key(user["login_id"], Key.EMAIL)
     if user["oauth"] == Oauth.NONE and data.get("pw", None):
         if not utils.is_valid_new_password(data["pw"]):
             raise BadRequest("안전하지 않은 비밀번호입니다.")
@@ -353,8 +355,8 @@ def setting(data, id, images):
         update_fields["tags"] = utils.encode_bit(data["tags"], EncodeOpt.TAGS)
     if data.get("hate_tags", None):
         update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"], EncodeOpt.TAGS)
-    if data.get("prefer_emoji", None):
-        update_fields["emoji"] = utils.encode_bit(data["prefer_emoji"], EncodeOpt.EMOJI)
+    if data.get("emoji", None):
+        update_fields["emoji"] = utils.encode_bit(data["emoji"], EncodeOpt.EMOJI)
     if data.get("hate_emoji", None):
         update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"], EncodeOpt.EMOJI)
     if data.get("similar", None):
@@ -378,6 +380,8 @@ def setting(data, id, images):
     if not update_fields:
         raise BadRequest("업데이트 내용이 없습니다.")
     
+    # print(update_fields, flush=True)
+
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         set_statements = ", ".join(
@@ -394,6 +398,7 @@ def setting(data, id, images):
 
 
     if "email" in update_fields:
+        utils.send_email(update_fields["email"], update_fields["email_key"], Key.EMAIL)
         logout(id)
         
     #Redis 업데이트
@@ -580,7 +585,7 @@ def profile_detail(id, target_id):
     return {
         "login_id": target["login_id"],
         "status": socketServ.check_status(target_id),
-        "last_online": (target["last_online"]+timedelta(hours=9)).strftime("%Y-%m-%d %H:%M:%S.%f%z"),
+        "last_online": (target["last_online"]+timedelta(hours=9)).strftime(TIME_STR_TYPE),
         "fame": (
             (target["count_fancy"] / target["count_view"] * MAX_FAME)
             if target["count_view"]
@@ -604,6 +609,8 @@ def logout(id):
     # 유저의 토큰을 redis 블록리스트에 추가
     jti = get_jwt()["jti"]
     refresh_jti = redisServ.get_refresh_jti_by_id(id)
+    print("logout", refresh_jti, flush=True)
+
     redisBlockList.update_block_list(jti, refresh_jti)
     
     #redis 정보 삭제
