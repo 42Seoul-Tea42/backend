@@ -39,7 +39,7 @@ def handle_connect(id, user_sid):
         _update_status(socket_io, socket_lock, id, UserStatus.ONLINE, id_match)
 
     except Exception as e:
-        print("handle_connect" + ("🔥" * error_flag))
+        print("handle_connect" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -68,7 +68,7 @@ def handle_disconnect(user_sid):
         userUtils.update_last_online(id)
 
     except Exception as e:
-        print("handle_disconnect" + ("🔥" * error_flag))
+        print("handle_disconnect" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -117,11 +117,12 @@ def send_message(data, user_sid=None):
                 error_flag += 1
                 with socket_lock:
                     socket_io.emit(
-                        "send_message", {
-                            "sender_id": sender_id, 
-                            "message": message, 
+                        "send_message",
+                        {
+                            "sender_id": sender_id,
+                            "message": message,
                             "msg_time": msg_time,
-                            "msg_new": True
+                            "msg_new": True,
                         },
                         room=recver_sid,
                     )
@@ -130,7 +131,7 @@ def send_message(data, user_sid=None):
             sys.stdout.flush()
 
     except Exception as e:
-        print("send_message" + ("🔥" * error_flag))
+        print("send_message" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -162,7 +163,7 @@ def read_message(data, user_sid):
         chatUtils.read_chat(recver_id, sender_id)
 
     except Exception as e:
-        print("read_message" + ("🔥" * error_flag))
+        print("read_message" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -196,7 +197,7 @@ def new_match(id, target_id):
                 socket_io.emit("new_match", {"target_id": id}, room=target_sid)
 
     except Exception as e:
-        print("new_match" + ("🔥" * error_flag))
+        print("new_match" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -211,7 +212,7 @@ def new_fancy(id, target_id):
                 socket_io.emit("new_fancy", {"target_id": id}, room=target_sid)
 
     except Exception as e:
-        print("new_fancy" + ("🔥" * error_flag))
+        print("new_fancy" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -226,7 +227,7 @@ def new_history(id):
                 socket_io.emit("new_history", room=user_sid)
 
     except Exception as e:
-        print("new_history" + ("🔥" * error_flag))
+        print("new_history" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -259,7 +260,7 @@ def update_distance(id, lat, long):
                         room=target_sid,
                     )
     except Exception as e:
-        print("update_distance" + ("🔥" * error_flag))
+        print("update_distance" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -282,7 +283,7 @@ def unmatch(id, target_id):
                 socket_io.emit("unmatch", {"target_id": id}, room=target_sid)
 
     except Exception as e:
-        print("unmatch" + ("🔥" * error_flag))
+        print("unmatch" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
@@ -300,7 +301,7 @@ def unregister(id):
                     socket_io.emit("unregister", {"target_id": id}, room=target_sid)
 
     except Exception as e:
-        print("unregister" + ("🔥" * error_flag))
+        print("unregister" + ("🔥" * error_flag), flush=True)
         sys.stdout.flush()
 
 
