@@ -89,6 +89,9 @@ def check_before_service(id, data):
 def fancy(data, id):
     target_id = check_before_service(id, data)
 
+    if utils.get_fancy(id, target_id) & 1:
+        return StatusCode.OK
+
     now_kst = datetime.now(KST)
 
     conn = PostgreSQLFactory.get_connection()
@@ -124,6 +127,9 @@ def fancy(data, id):
 
 def unfancy(data, id):
     target_id = check_before_service(id, data)
+
+    if not utils.get_fancy(id, target_id) & 1:
+        return StatusCode.OK
 
     now_kst = datetime.now(KST)
 
