@@ -980,7 +980,7 @@ def block(data, id):
     redisServ.update_user_info(data["target_id"], {"ban": id})
     
     #delete chat
-    chatUtils.delete_chat_by_block(id, data["target_id"])
+    chatUtils.delete_chat(id, data["target_id"])
 
     return StatusCode.OK
 

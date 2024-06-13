@@ -51,15 +51,7 @@ def save_chat(id, target_id, message):
         "msg_new": True,
     }
 
-    if chat:  # 대화 문서에 메시지를 추가
-        chat_collection.update_one(
-            {"_id": chat["_id"]},
-            {
-                "$push": {"messages": new_message},
-                "$set": {"latest_msg_time": kst_iso_now},
-            },
-        )
-    else:  # 대화 문서 생성
+    if not chat:  # 대화 문서 생성
         chat_collection.insert_one(
             {
                 "participants": [id, target_id],
@@ -67,7 +59,15 @@ def save_chat(id, target_id, message):
                 "messages": [new_message],
             }
         )
-        
+    elif message:  # 대화 문서에 메시지를 추가
+        chat_collection.update_one(
+            {"_id": chat["_id"]},
+            {
+                "$push": {"messages": new_message},
+                "$set": {"latest_msg_time": kst_iso_now},
+            },
+        )
+
     return kst_iso_now
 
 
@@ -108,7 +108,7 @@ def is_new_chat(recver_id, sender_id):
     )
 
 
-def delete_chat_by_block(id, target_id):
+def delete_chat(id, target_id):
     chat_collection = MongoDBFactory.get_collection("tea42", "chat")
     chat = chat_collection.find_one(
         {

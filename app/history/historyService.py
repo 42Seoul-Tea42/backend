@@ -14,6 +14,7 @@ from ..utils.const import (
 )
 import app.user.userUtils as userUtils
 from . import historyUtils as utils
+from app.chat import chatUtils
 from psycopg2.extras import DictCursor
 from ..socket import socketService as socketServ
 from werkzeug.exceptions import BadRequest
@@ -29,7 +30,6 @@ def view_history(id, time_limit, opt):
 
         if opt == History.FANCY:
             utils.update_fancy_check(id)
-
             sql = 'SELECT * FROM "History" \
                     WHERE "target_id" = %s AND "fancy" = True AND "fancy_time" < %s \
                     ORDER BY "fancy_time" DESC \
@@ -119,6 +119,7 @@ def fancy(data, id):
 
         if utils.get_fancy(id, target_id) == Fancy.CONN:
             socketServ.new_match(id, target_id)
+            socketServ.new_fancy(id, target_id)
         else:
             socketServ.new_fancy(id, target_id)
 
@@ -152,6 +153,7 @@ def unfancy(data, id):
         userUtils.update_count_fancy(target_id, FancyOpt.DEL)
 
         if utils.get_fancy(id, target_id) == Fancy.RECV:
+            chatUtils.delete_chat(id, target_id)
             socketServ.unmatch(id, target_id)
 
     return StatusCode.OK
