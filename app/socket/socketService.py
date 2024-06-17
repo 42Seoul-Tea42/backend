@@ -13,7 +13,7 @@ id_match = dict()
 
 ### connect && disconnect ###
 def handle_connect(id, user_sid):
-    from wsgi import socket_io, socket_lock
+    from wsgi import socket_io
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if redis_user is None:
@@ -218,6 +218,7 @@ def unregister(id):
 
 #### Utils ####
 def check_status(target_id):
-    if target_id in redisServ.get_user_info(target_id, RedisOpt.SOCKET):
+    target_status = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+    if target_status["socket_id"] is not None:
         return UserStatus.ONLINE
     return UserStatus.OFFLINE
