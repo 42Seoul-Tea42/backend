@@ -120,7 +120,8 @@ def get_socket_id_by_id(id):
 
 
 def delete_socket_id_by_id(id):
-    redis_client.hdel(str(id), "socket_id")
+    if str(id) in redis_client.keys():
+        redis_client.hdel(str(id), "socket_id")
 
 
 # # Redis user schema (db=0)
