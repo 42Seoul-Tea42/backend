@@ -119,9 +119,8 @@ def fancy(data, id):
 
         if utils.get_fancy(id, target_id) == Fancy.CONN:
             socketServ.new_match(id, target_id)
-            socketServ.new_fancy(id, target_id)
-        else:
-            socketServ.new_fancy(id, target_id)
+
+        socketServ.new_fancy(id, target_id)
 
     return StatusCode.OK
 
@@ -155,5 +154,7 @@ def unfancy(data, id):
         if utils.get_fancy(id, target_id) == Fancy.RECV:
             chatUtils.delete_chat(id, target_id)
             socketServ.unmatch(id, target_id)
+
+        socketServ.new_unfancy(id, target_id)
 
     return StatusCode.OK

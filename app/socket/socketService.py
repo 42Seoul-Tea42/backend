@@ -143,6 +143,15 @@ def new_fancy(id, target_id):
             socket_io.emit("new_fancy", {"target_id": id}, room=target_sid)
 
 
+def new_unfancy(id, target_id):
+    from wsgi import socket_io, socket_lock
+
+    target_sid = redisServ.get_socket_id_by_id(target_id)
+    if target_sid:
+        with socket_lock:
+            socket_io.emit("unfancy", {"target_id": id}, room=target_sid)
+
+
 def new_history(id):
     from wsgi import socket_io, socket_lock
 
