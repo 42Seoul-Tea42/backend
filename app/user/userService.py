@@ -379,8 +379,6 @@ def setting(data, id, images):
 
     if not update_fields:
         raise BadRequest("업데이트 내용이 없습니다.")
-    
-    # print(update_fields, flush=True)
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -609,7 +607,6 @@ def logout(id):
     # 유저의 토큰을 redis 블록리스트에 추가
     jti = get_jwt()["jti"]
     refresh_jti = redisServ.get_refresh_jti_by_id(id)
-    print("logout", refresh_jti, flush=True)
 
     redisBlockList.update_block_list(jti, refresh_jti)
     
