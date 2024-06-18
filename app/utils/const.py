@@ -73,14 +73,6 @@ class Oauth:
     GOOGLE = 2
 
 
-# KaKao
-class Kakao:
-    REDIRECT_URI = "/kakao/redirect"
-    AUTH_URI = "https://kauth.kakao.com/oauth/authorize"
-    TOKEN_URI = "https://kauth.kakao.com/oauth/token"
-    DATA_URI = "https://kapi.kakao.com/v2/user/me"
-
-
 class UserStatus:
     OFFLINE = 0
     ONLINE = 1

@@ -24,7 +24,7 @@ def send_smtp_email(addr_to, key, opt) -> str:
     msg["From"] = email_account
     msg["To"] = addr_to
 
-    domain = os.getenv("DOMAIN")
+    domain = os.getenv("NEXT_PUBLIC_DOMAIN")
 
     if opt == Key.EMAIL:
         msg["Subject"] = f"[Tea For Two] 이메일 인증 요청"  # 메일 제목
