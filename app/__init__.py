@@ -33,9 +33,7 @@ def create_app(test=False):
     app = Flask(__name__)
     CORS(
         app,
-        origins="*",
-        # resources={r"/*": {"origins": "*"}},
-        # headers=["Content-Type"],
+        origins=[os.getenv("NEXT_PUBLIC_DOMAIN")],
         expose_headers=["Access-Control-Allow-Origin"],
         supports_credentials=True,
     )
@@ -65,116 +63,26 @@ def create_app(test=False):
         return token_in_redis is not None
 
     ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
-    # Create a cursor
-    conn = PostgreSQLFactory.get_connection()
-    cursor = conn.cursor()
-    # Read the content of db_schema.sql
-    with open("./app/db/db_schema.sql") as f:
-        db_setup_sql = f.read()
-    # Execute the database setup logic from the SQL script
-    cursor.execute(db_setup_sql)
-    # Commit the changes
-    conn.commit()
+    # # Create a cursor
+    # conn = PostgreSQLFactory.get_connection()
+    # cursor = conn.cursor()
+    # # Read the content of db_schema.sql
+    # with open("./app/db/db_schema.sql") as f:
+    #     db_setup_sql = f.read()
+    # # Execute the database setup logic from the SQL script
+    # cursor.execute(db_setup_sql)
+    # # Commit the changes
+    # conn.commit()
 
-    # TODO [TEST] dummy data delete
-    from .user.userService import register_dummy
-    dummy_data = [
-        {
-            "login_id": "dummy1",
-            "pw": "ASDFasdf0",
-            "email": "dummy1@tea42.com",
-            "name": "dummy1",
-            "last_name": "1",
-            "age": 20,
-            "longitude": 127.065527,
-            "latitude": 37.488405,
-            "gender": Gender.FEMALE,
-            "taste": Gender.ALL,
-            "bio": "1",
-            "tags": [Tags.TRAVEL, Tags.IT, Tags.GAME],
-            "hate_tags": [Tags.SMOKE],
-            "emoji": [Emoji.EMOJI16, Emoji.EMOJI13, Emoji.EMOJI12],
-            "hate_emoji": [Emoji.EMOJI15],
-            "similar": True,
-        },
-        {
-            "login_id": "dummy2",
-            "pw": "ASDFasdf0",
-            "email": "dummy2@tea42.com",
-            "name": "dummy2",
-            "last_name": "2",
-            "age": 18,
-            "longitude": 127.029973,
-            "latitude": 37.492252,
-            "gender": Gender.MALE,
-            "taste": Gender.FEMALE,
-            "bio": "2",
-            "tags": [Tags.TRAVEL, Tags.IT, Tags.GAME],
-            "hate_tags": [Tags.SMOKE],
-            "emoji": [Emoji.EMOJI16],
-            "hate_emoji": [],
-            "similar": True,
-        },
-        {
-            "login_id": "dummy3",
-            "pw": "ASDFasdf0",
-            "email": "dummy3@tea43.com",
-            "name": "dummy3",
-            "last_name": "3",
-            "age": 25,
-            "longitude": 127.024527,
-            "latitude": 37.504189,
-            "gender": Gender.FEMALE,
-            "taste": Gender.ALL,
-            "bio": "3",
-            "tags": [Tags.ART, Tags.SPORTS, Tags.PETS, Tags.GAME],
-            "hate_tags": [Tags.SMOKE],
-            "emoji": [Emoji.EMOJI13, Emoji.EMOJI12],
-            "hate_emoji": [],
-            "similar": True,
-        },
-        {
-            "login_id": "dummy4",
-            "pw": "ASDFasdf0",
-            "email": "dummy4@tea44.com",
-            "name": "dummy4",
-            "last_name": "4",
-            "age": 23,
-            "longitude": 127.0276,
-            "latitude": 37.4977,
-            "gender": Gender.MALE,
-            "taste": Gender.FEMALE,
-            "bio": "4",
-            "tags": [Tags.FASHION, Tags.FOOD, Tags.PETS, Tags.GAME],
-            "hate_tags": [],
-            "emoji": [Emoji.EMOJI16, Emoji.EMOJI12],
-            "hate_emoji": [],
-            "similar": True,
-        },
-        {
-            "login_id": "dummy5",
-            "pw": "ASDFasdf0",
-            "email": "dummy5@tea45.com",
-            "name": "dummy5",
-            "last_name": "5",
-            "age": 40,
-            "longitude": 127.062986,
-            "latitude": 37.494398,
-            "gender": Gender.MALE,
-            "taste": Gender.FEMALE,
-            "bio": "5",
-            "tags": [Tags.SMOKE],
-            "hate_tags": [Tags.DRINK],
-            "emoji": [Emoji.EMOJI15, Emoji.EMOJI16],
-            "hate_emoji": [],
-            "similar": True,
-        },
-    ]
-    for data in dummy_data:
-        register_dummy(data)
+    # # TODO [TEST] dummy data delete
+    # from .user.userService import register_dummy
+    # from tests.dummy_data import dummy_data
 
-    # Close the cursor
-    cursor.close()
+    # for data in dummy_data:
+    #     register_dummy(data)
+
+    # # Close the cursor
+    # cursor.close()
     ################################################################
 
     # general error handler
