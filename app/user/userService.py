@@ -116,7 +116,7 @@ def login_check(id):
     return response
 
 
-def login_kakao(login_id):
+def login_oauth(login_id):
     user = utils.get_user_by_login_id(login_id)
     if not user:
         raise BadRequest("존재하지 않는 유저입니다.")
@@ -124,18 +124,17 @@ def login_kakao(login_id):
     response = make_response(
         jsonify(
             {
-                "Location": os.getenv("DOMAIN"),
                 "id": user["id"],
                 "name": user["name"],
                 "last_name": user["last_name"],
                 "age": user["age"],
-                "email_check": user["email_check"],
+                "email_check": True,
                 "profile_check": True if user["gender"] else False,
                 "emoji_check": True if user["emoji"] is not None else False,
                 "oauth": user["oauth"],
             }
         ),
-        StatusCode.REDIRECTION,
+        StatusCode.OK,
     )
 
     #JWT 토큰 생성 및 쿠키 설정
@@ -403,7 +402,9 @@ def setting(data, id, images):
     redisServ.update_user_info(id, update_fields)
 
     return {
-       "email_check": False if "email" in update_fields else True
+        "email_check": False if "email" in update_fields else True,
+        "profile_check": True if (user["gender"] or "gender" in update_fields) else False,
+        "emoji_check": True if (user["emoji"] or "emoji" in update_fields) else False,
     }, StatusCode.OK
 
 
@@ -543,13 +544,13 @@ def register(data):
     return StatusCode.OK
 
 
-def register_kakao(data):
+def register_oauth(data, oauthOpt):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'INSERT INTO "User" (email, email_check, login_id, name, oauth) \
-                            VALUES (%s, %s, %s, %s, %s)'
+        sql = 'INSERT INTO "User" (email, email_check, login_id, name, oauth, pictures, last_online) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(
-            sql, (data["email"], True, data["login_id"], data["name"], Oauth.KAKAO)
+            sql, (data["email"], True, data["login_id"], data["name"], oauthOpt, [DEFAULT_PICTURE], datetime.now(KST))
         )
         conn.commit()
 
