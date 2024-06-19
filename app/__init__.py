@@ -7,7 +7,6 @@ from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 import redis
 from .utils.routes import add_routes
 from dotenv import load_dotenv
-from .utils.const import Tags, Emoji, Gender
 
 # 환경변수 로드
 load_dotenv()
@@ -62,29 +61,29 @@ def create_app(test=False):
         token_in_redis = redis_jwt_blocklist.get(token)
         return token_in_redis is not None
 
-    ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
-    # Create a cursor
-    conn = PostgreSQLFactory.get_connection()
-    cursor = conn.cursor()
-    # Read the content of db_schema.sql
-    with open("./app/db/db_schema.sql") as f:
-        db_setup_sql = f.read()
-    # Execute the database setup logic from the SQL script
-    cursor.execute(db_setup_sql)
-    # Commit the changes
-    conn.commit()
+    # ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
+    # # Create a cursor
+    # conn = PostgreSQLFactory.get_connection()
+    # cursor = conn.cursor()
+    # # Read the content of db_schema.sql
+    # with open("./app/db/db_schema.sql") as f:
+    #     db_setup_sql = f.read()
+    # # Execute the database setup logic from the SQL script
+    # cursor.execute(db_setup_sql)
+    # # Commit the changes
+    # conn.commit()
 
-    # TODO [TEST] dummy data delete
-    from .user.userService import register_dummy
-    from .utils.dummy import generate_dummy_data
+    # # TODO [TEST] dummy data delete
+    # from .user.userService import register_dummy
+    # from .utils.dummy import generate_dummy_data
 
-    dummy_data = [generate_dummy_data(i) for i in range(1, 101)]
-    for data in dummy_data:
-        register_dummy(data)
+    # dummy_data = [generate_dummy_data(i) for i in range(1, 1001)]
+    # for data in dummy_data:
+    #     register_dummy(data)
 
-    # Close the cursor
-    cursor.close()
-    ################################################################
+    # # Close the cursor
+    # cursor.close()
+    # ################################################################
 
     # general error handler
     from .utils.error import error_handle

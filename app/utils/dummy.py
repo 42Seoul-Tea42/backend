@@ -62,19 +62,17 @@ def generate_dummy_data(index):
     email = f"{login_id}@tea42.com"
     name = random.choice(first_names) + random.choice(first_names)
     last_name = random.choice(last_names)
-    age = random.randint(18, 39)
-    latitude = random.uniform(37.225977, 37.661738)
-    longitude = random.uniform(126.838502, 127.205925)
-    gender = random.choice([Gender.OTHER, Gender.FEMALE, Gender.MALE])
+    age = random.randint(20, 35)
+    latitude = random.uniform(37.4676, 37.64)
+    longitude = random.uniform(126.911, 127.1287)
+    gender = random.choice([Gender.FEMALE, Gender.MALE])
     taste = random.choice([Gender.FEMALE, Gender.MALE, Gender.ALL])
     bio = f"안녕하세요 {name}입니다"
-    tags = random.sample(list(range(Tags.MIN, Tags.MAX + 1)), random.randint(1, 13))
-    hate_tags = random.sample(
-        list(range(Tags.MIN, Tags.MAX + 1)), random.randint(0, 10)
-    )
-    emoji = random.sample(list(range(Emoji.MIN, Emoji.MAX + 1)), random.randint(1, 4))
+    tags = random.sample(list(range(Tags.MIN, Tags.MAX + 1)), random.randint(4, 13))
+    hate_tags = random.sample(list(range(Tags.MIN, Tags.MAX + 1)), random.randint(0, 2))
+    emoji = random.sample(list(range(Emoji.MIN, Emoji.MAX + 1)), random.randint(4, 4))
     hate_emoji = random.sample(
-        list(range(Emoji.MIN, Emoji.MAX + 1)), random.randint(1, 4)
+        list(range(Emoji.MIN, Emoji.MAX + 1)), random.randint(0, 1)
     )
     similar = random.choice([True, False])
 
