@@ -42,7 +42,9 @@ def get_user_info(id, opt):
             "login_id",
         ]
     elif opt == RedisOpt.SOCKET:
-        check_fields = ["socket_id"]
+        if redis_client.hget(str(id), "socket_id") is None:
+            return set()
+        return set(json.loads(redis_client.hget(str(id), "socket_id")))
     elif opt == RedisOpt.BLOCK:
         if redis_client.hget(str(id), "block") is None:
             return set()
@@ -77,12 +79,21 @@ def update_user_info(id, fields):
         if "emoji" in fields:
             redis_client.hset(str_id, "emoji_check", 1)
         if "socket_id" in fields:
-            redis_client.hset(str_id, "socket_id", fields["socket_id"])
+            prev_socket = redis_client.hget(str_id, "socket_id")
+            if prev_socket is not None:
+                socket_id = json.loads(prev_socket)
+                socket_id.append(fields["socket_id"])
+                redis_client.hset(id, "socket_id", json.dumps(socket_id))
+            else:
+                redis_client.hset(id, "socket_id", json.dumps([fields["socket_id"]]))
+
         if "refresh_jti" in fields:
             redis_client.hset(str_id, "refresh_jti", fields["refresh_jti"])
+
         if "email" in fields:
             redis_client.hset(str_id, "email", fields["email"])
             redis_client.hset(str_id, "email_check", 0)
+
         if "block" in fields:
             prev_block = redis_client.hget(str_id, "block")
             if prev_block:
@@ -91,6 +102,7 @@ def update_user_info(id, fields):
                 redis_client.hset(id, "block", json.dumps(block))
             else:
                 redis_client.hset(id, "block", json.dumps([fields["block"]]))
+
         if "ban" in fields:
             prev_ban = redis_client.hget(str_id, "ban")
             if prev_ban:
@@ -106,22 +118,25 @@ def delete_user_info(id):
 
 
 ### jti ###
-
-
 def get_refresh_jti_by_id(id):
     return redis_client.hget(str(id), "refresh_jti")
 
 
 ### socket ###
+def delete_socket_id_by_id(id, socket_id) -> bool:
+    prev_socket = redis_client.hget(id, "socket_id")
+    if prev_socket is None:
+        return True
 
-
-def get_socket_id_by_id(id):
-    return redis_client.hget(str(id), "socket_id")
-
-
-def delete_socket_id_by_id(id):
-    if str(id) in redis_client.keys():
-        redis_client.hdel(str(id), "socket_id")
+    socket_id_list = json.loads(prev_socket)
+    if socket_id in socket_id_list:
+        socket_id_list.remove(socket_id)
+        if socket_id_list:
+            redis_client.hset(id, "socket_id", json.dumps(socket_id_list))
+            return False
+        else:
+            redis_client.hdel(id, "socket_id")
+            return True
 
 
 # # Redis user schema (db=0)

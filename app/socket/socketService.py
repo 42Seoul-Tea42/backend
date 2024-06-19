@@ -17,9 +17,7 @@ def handle_connect(id, user_sid):
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if redis_user is None:
-        socket_io.emit(
-            "conn_fail", {"message": "존재하지 않는 유저입니다."}, room=user_sid
-        )
+        socket_io.emit("conn_fail", {"msg": "존재하지 않는 유저입니다."}, room=user_sid)
 
     # (redis) user_info 업데이트
     redisServ.update_user_info(id, {"socket_id": user_sid})
@@ -40,12 +38,12 @@ def handle_disconnect(user_sid):
     if id is None:
         return
 
-    _update_status(socket_io, id, UserStatus.OFFLINE, id_match)
-
     # match 정보 삭제 및 (redis) 데이터 삭제
     if id in id_match:
         id_match.pop(id)
-    redisServ.delete_socket_id_by_id(id)
+    if redisServ.delete_socket_id_by_id(id, user_sid):
+        # redis에서 유저 삭제 시에만 offline 처리
+        _update_status(socket_io, id, UserStatus.OFFLINE, id_match)
 
     userUtils.update_last_online(id)
 
@@ -53,8 +51,8 @@ def handle_disconnect(user_sid):
 def _update_status(socket_io, id, status, id_match):
     # status 업데이트
     for target_id in id_match.get(id, []):
-        target_sid = redisServ.get_socket_id_by_id(target_id)
-        if target_sid:
+        target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+        for target_sid in target_sid_set:
             socket_io.emit(
                 "update_status",
                 {"target_id": id, "status": status},
@@ -80,8 +78,9 @@ def send_message(data, user_sid=None):
 
     if recver_id and message.strip():
         msg_time = chatUtils.save_chat(sender_id, recver_id, message)
-        recver_sid = redisServ.get_socket_id_by_id(recver_id)
-        if recver_sid:
+
+        recver_sid_set = redisServ.get_user_info(recver_id, RedisOpt.SOCKET)
+        for recver_sid in recver_sid_set:
             socket_io.emit(
                 "send_message",
                 {
@@ -103,9 +102,8 @@ def read_message(data, user_sid):
 
     # TODO type 검사
     sender_id = data.get("sender_id")  # int
-    sender_sid = redisServ.get_socket_id_by_id(sender_id)
-
-    if sender_sid:
+    sender_sid_set = redisServ.get_user_info(sender_id, RedisOpt.SOCKET)
+    for sender_sid in sender_sid_set:
         socket_io.emit("read_message", {"recver_id": recver_id}, room=sender_sid)
 
     # (DB) message read 처리
@@ -116,19 +114,19 @@ def read_message(data, user_sid):
 def new_match(id, target_id):
     from wsgi import socket_io, socket_lock
 
-    user_sid = redisServ.get_socket_id_by_id(id)
-    target_sid = redisServ.get_socket_id_by_id(target_id)
+    user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
+    target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
 
     # MongoDB에 신규 대화 생성
     chatUtils.save_chat(id, target_id, "")
 
     # socket alarm 발생
-    if user_sid:
+    for user_sid in user_sid_set:
         id_match.get(id, set()).add(target_id)
         with socket_lock:
             socket_io.emit("new_match", {"target_id": target_id}, room=user_sid)
 
-    if target_sid:
+    for target_sid in target_sid_set:
         id_match.get(target_id, set()).add(id)
         with socket_lock:
             socket_io.emit("new_match", {"target_id": id}, room=target_sid)
@@ -137,8 +135,8 @@ def new_match(id, target_id):
 def new_fancy(id, target_id):
     from wsgi import socket_io, socket_lock
 
-    target_sid = redisServ.get_socket_id_by_id(target_id)
-    if target_sid:
+    target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+    for target_sid in target_sid_set:
         with socket_lock:
             socket_io.emit("new_fancy", {"target_id": id}, room=target_sid)
 
@@ -146,8 +144,8 @@ def new_fancy(id, target_id):
 def new_unfancy(id, target_id):
     from wsgi import socket_io, socket_lock
 
-    target_sid = redisServ.get_socket_id_by_id(target_id)
-    if target_sid:
+    target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+    for target_sid in target_sid_set:
         with socket_lock:
             socket_io.emit("unfancy", {"target_id": id}, room=target_sid)
 
@@ -155,8 +153,8 @@ def new_unfancy(id, target_id):
 def new_history(id):
     from wsgi import socket_io, socket_lock
 
-    user_sid = redisServ.get_socket_id_by_id(id)
-    if user_sid:
+    user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
+    for user_sid in user_sid_set:
         with socket_lock:
             socket_io.emit("new_history", room=user_sid)
 
@@ -167,8 +165,8 @@ def update_distance(id, lat, long):
 
     for target_id in id_match.get(id, set()):
 
-        target_sid = redisServ.get_socket_id_by_id(target_id)
-        if target_sid:
+        target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+        for target_sid in target_sid_set:
             target = userUtils.get_user(target_id)
             if target is None:
                 continue
@@ -195,13 +193,13 @@ def unmatch(id, target_id):
     if id in id_match.get(target_id, set()):
         id_match[target_id].remove(id)
 
-    user_sid = redisServ.get_socket_id_by_id(id)
-    if user_sid:
+    user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
+    for user_sid in user_sid_set:
         with socket_lock:
             socket_io.emit("unmatch", {"target_id": target_id}, room=user_sid)
 
-    target_sid = redisServ.get_socket_id_by_id(target_id)
-    if target_sid:
+    target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+    for target_sid in target_sid_set:
         with socket_lock:
             socket_io.emit("unmatch", {"target_id": id}, room=target_sid)
 
@@ -210,8 +208,8 @@ def unregister(id):
     from wsgi import socket_io, socket_lock
 
     for target_id in id_match.get(id, set()):
-        target_sid = redisServ.get_socket_id_by_id(target_id)
-        if target_sid:
+        target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
+        for target_sid in target_sid_set:
             with socket_lock:
                 socket_io.emit("unregister", {"target_id": id}, room=target_sid)
 
@@ -219,6 +217,6 @@ def unregister(id):
 #### Utils ####
 def check_status(target_id):
     target_status = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-    if target_status["socket_id"] is not None:
+    if target_status and len(target_status):
         return UserStatus.ONLINE
     return UserStatus.OFFLINE
