@@ -13,7 +13,6 @@ from flask_jwt_extended import (
 )
 from ..utils.const import (
     MAX_SEARCH,
-    DISTANCE,
     Key,
     KST,
     PICTURE_DIR,
@@ -36,7 +35,7 @@ from ..utils.const import (
     AGE_GAP,
     AREA_DISTANCE,
     MAX_SUGGEST,
-    TIME_STR_TYPE
+    TIME_DETAIL_PAGE_STR_TYPE
 )
 from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
@@ -191,23 +190,9 @@ def check_email(email):
         return {"occupied": True if user else False}, StatusCode.OK
 
 
-# def email_status(id):
-#     user = utils.get_user(id)
-#     if not user:
-#         return {
-#             "message": "존재하지 않는 유저입니다.",
-#         }, StatusCode.UNAUTHORIZED
-
-#     return {
-#         "email_check": user["email_check"],
-#         "profile_check": True if user["gender"] else False,
-#         "emoji_check": True if user["emoji"] is not None else False,
-#     }, StatusCode.OK
-
-
 def get_email(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not redis_user:
+    if redis_user['login_id'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
@@ -221,7 +206,7 @@ def change_email(data, id):
         raise BadRequest("올바르지 않은 이메일 형식입니다.")
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not redis_user:
+    if redis_user['login_id'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     if redis_user["email_check"] == RedisSetOpt.SET:
@@ -258,7 +243,7 @@ def change_email(data, id):
 
 def resend_email(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not redis_user:
+    if redis_user['login_id'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
@@ -334,7 +319,7 @@ def setting(data, id, images):
         if not utils.is_valid_new_password(data["pw"]):
             raise BadRequest("안전하지 않은 비밀번호입니다.")
         update_fields["password"] = utils.hashing(data["pw"])
-    if data.get("last_name", None):
+    if data.get("last_name", ""):
         update_fields["last_name"] = data["last_name"]
     if data.get("name", None):
         update_fields["name"] = data["name"]
@@ -350,14 +335,10 @@ def setting(data, id, images):
         update_fields["taste"] = data["taste"]
     if data.get("bio", None):
         update_fields["bio"] = data["bio"]
-    if data.get("tags", None):
-        update_fields["tags"] = utils.encode_bit(data["tags"], EncodeOpt.TAGS)
-    if data.get("hate_tags", None):
-        update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"], EncodeOpt.TAGS)
-    if data.get("emoji", None):
-        update_fields["emoji"] = utils.encode_bit(data["emoji"], EncodeOpt.EMOJI)
-    if data.get("hate_emoji", None):
-        update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"], EncodeOpt.EMOJI)
+    update_fields["tags"] = utils.encode_bit(data.get("tags", []), EncodeOpt.TAGS)
+    update_fields["hate_tags"] = utils.encode_bit(data.get("hate_tags", []), EncodeOpt.TAGS)
+    update_fields["emoji"] = utils.encode_bit(data.get("emoji", []), EncodeOpt.EMOJI)
+    update_fields["hate_emoji"] = utils.encode_bit(data.get("hate_emoji", []), EncodeOpt.EMOJI)
     if data.get("similar", None):
         update_fields["similar"] = data["similar"]
     if images:
@@ -584,7 +565,7 @@ def profile_detail(id, target_id):
     return {
         "login_id": target["login_id"],
         "status": socketServ.check_status(target_id),
-        "last_online": (target["last_online"]+timedelta(hours=9)).strftime(TIME_STR_TYPE),
+        "last_online": (target["last_online"]+timedelta(hours=9)).strftime(TIME_DETAIL_PAGE_STR_TYPE),
         "fame": (
             (target["count_fancy"] / target["count_view"] * MAX_FAME)
             if target["count_view"]
@@ -725,14 +706,14 @@ def search(data, id):
     
     tags = utils.encode_bit(data["tags"], EncodeOpt.TAGS) if data.get("tags", None) else Tags.ALL
     distance = (
-        int(data["distance"]) * DISTANCE if data.get("distance", None) else MAX_DISTANCE
+        int(data["distance"]) if data.get("distance", None) else MAX_DISTANCE
     )
     fame = data["fame"] if data.get("fame", None) else MIN_FAME
     min_age = data["min_age"] if data.get("min_age", None) else MIN_AGE
     max_age = data["max_age"] if data.get("max_age", None) else MAX_AGE
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if not redis_user:
+    if redis_user['longitude'] is None or redis_user['latitude'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
     long, lat = redis_user["longitude"], redis_user["latitude"]
 
@@ -742,8 +723,10 @@ def search(data, id):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM ( \
-                            SELECT *, \
-                                sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
+                            SELECT *, 6371 * acos( \
+                                        cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + \
+                                        sin(radians(%s)) * sin(radians(latitude)) \
+                                    ) AS distance \
                             FROM "User" \
                         ) AS user_distance \
                 WHERE "id" != %s \
@@ -767,6 +750,7 @@ def search(data, id):
         cursor.execute(
             sql,
             (
+                lat,
                 long,
                 lat,
                 id,
@@ -824,8 +808,10 @@ def suggest(id):
 
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM ( \
-                            SELECT *, \
-                                sqrt((longitude - %s)^2 + (latitude - %s)^2) AS distance \
+                            SELECT *, 6371 * acos( \
+                                        cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + \
+                                        sin(radians(%s)) * sin(radians(latitude)) \
+                                    ) AS distance \
                             FROM "User" \
                         ) AS user_distance \
                 WHERE "id" != %s \
@@ -859,6 +845,7 @@ def suggest(id):
         cursor.execute(
             sql,
             (
+                lat,
                 long,
                 lat,
                 id,
