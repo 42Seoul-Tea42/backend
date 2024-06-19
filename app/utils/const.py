@@ -4,6 +4,7 @@ import pytz
 # General
 KST = pytz.timezone("Asia/Seoul")
 TIME_STR_TYPE = "%Y-%m-%d %H:%M:%S.%f%z"
+TIME_DETAIL_PAGE_STR_TYPE = "%Y-%m-%d %H:%M"
 PICTURE_DIR = "/usr/app/srcs/app/profile/"
 DEFAULT_PICTURE = "default.png"
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
@@ -28,10 +29,9 @@ class TokenError:
 MAX_SEARCH = 16  # max result limit
 DAYS = 365  # age calculation
 EARTH_RADIUS = 6_371_000  # (m)
-DISTANCE = 1_000  # distance(km)
 MIN_AGE = 1
 MAX_AGE = 100
-MAX_DISTANCE = 1_000
+MAX_DISTANCE = 60  # 60km
 MIN_FAME = 0
 MAX_FAME = 5
 
@@ -78,9 +78,6 @@ class UserStatus:
     ONLINE = 1
 
 
-BAD_TOKEN = None
-
-
 class JWT:
     ACCESS = 0
     REFRESH = 1
@@ -117,7 +114,7 @@ class Fancy:
 # Tea Suggestions
 MAX_SUGGEST = 5
 AGE_GAP = 5
-AREA_DISTANCE = 500  # 500m
+AREA_DISTANCE = 20  # 20km
 
 # Chat / Socket
 FIRST_CHAT = 0

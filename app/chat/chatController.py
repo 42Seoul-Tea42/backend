@@ -5,7 +5,6 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 from datetime import datetime
 from ..utils.const import KST, TIME_STR_TYPE
-import pytz
 
 # from ..wrapper.location import check_location
 
