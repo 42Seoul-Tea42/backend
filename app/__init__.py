@@ -63,26 +63,27 @@ def create_app(test=False):
         return token_in_redis is not None
 
     ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
-    # # Create a cursor
-    # conn = PostgreSQLFactory.get_connection()
-    # cursor = conn.cursor()
-    # # Read the content of db_schema.sql
-    # with open("./app/db/db_schema.sql") as f:
-    #     db_setup_sql = f.read()
-    # # Execute the database setup logic from the SQL script
-    # cursor.execute(db_setup_sql)
-    # # Commit the changes
-    # conn.commit()
+    # Create a cursor
+    conn = PostgreSQLFactory.get_connection()
+    cursor = conn.cursor()
+    # Read the content of db_schema.sql
+    with open("./app/db/db_schema.sql") as f:
+        db_setup_sql = f.read()
+    # Execute the database setup logic from the SQL script
+    cursor.execute(db_setup_sql)
+    # Commit the changes
+    conn.commit()
 
-    # # TODO [TEST] dummy data delete
-    # from .user.userService import register_dummy
-    # from tests.dummy_data import dummy_data
+    # TODO [TEST] dummy data delete
+    from .user.userService import register_dummy
+    from .utils.dummy import generate_dummy_data
 
-    # for data in dummy_data:
-    #     register_dummy(data)
+    dummy_data = [generate_dummy_data(i) for i in range(1, 101)]
+    for data in dummy_data:
+        register_dummy(data)
 
-    # # Close the cursor
-    # cursor.close()
+    # Close the cursor
+    cursor.close()
     ################################################################
 
     # general error handler
