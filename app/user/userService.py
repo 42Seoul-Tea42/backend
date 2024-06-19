@@ -972,8 +972,10 @@ def block(data, id):
 
 def reset_token(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not redis_user:
-        raise Unauthorized("인증정보가 없습니다. 로그인해주세요.")
+    if redis_user is None or redis_user['login_id'] is None:
+        response = jsonify({"msg": "refresh"})
+        response.status_code = StatusCode.UNAUTHORIZED
+        return response
 
     response = make_response("", StatusCode.OK)
     
