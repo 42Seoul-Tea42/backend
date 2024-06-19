@@ -225,7 +225,7 @@ def get_user_profile(id):
 
 def get_target_profile(id, target_id, time=None):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if not redis_user:
+    if redis_user['longitude'] is None or redis_user['latitude'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     target = get_user(target_id)
@@ -359,7 +359,7 @@ def is_valid_taste(taste):
 
 def check_authorization(id, opt):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if not redis_user:
+    if redis_user['login_id'] is None:
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     if Authorization.EMAIL <= opt and redis_user["email_check"] == RedisSetOpt.UNSET:
