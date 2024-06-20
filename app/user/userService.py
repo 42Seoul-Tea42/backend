@@ -226,8 +226,8 @@ def change_email(data, id):
     if os.getenv("PYTEST") == "True":
         return {
             "email_check": False,
-            "profile_check": redis_user["profile_check"],
-            "emoji_check": redis_user["emoji_check"],
+            "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
+            "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False,
             "key": email_key,
         }, StatusCode.OK
         
@@ -236,8 +236,8 @@ def change_email(data, id):
 
     return {
         "email_check": False,
-        "profile_check": redis_user["profile_check"],
-        "emoji_check": redis_user["emoji_check"],
+        "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
+        "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False
     }, StatusCode.OK
 
 
