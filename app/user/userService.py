@@ -234,6 +234,9 @@ def change_email(data, id):
     # send verify email
     utils.send_email(data["email"], email_key, Key.EMAIL)
 
+    #Redis 업데이트
+    redisServ.update_user_info(id, {"email": data["email"]})
+
     return {
         "email_check": False,
         "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
