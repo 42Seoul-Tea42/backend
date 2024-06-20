@@ -150,13 +150,13 @@ def new_unfancy(id, target_id):
             socket_io.emit("unfancy", {"target_id": id}, room=target_sid)
 
 
-def new_history(id):
+def new_visitor(id):
     from wsgi import socket_io, socket_lock
 
     user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
     for user_sid in user_sid_set:
         with socket_lock:
-            socket_io.emit("new_history", room=user_sid)
+            socket_io.emit("new_visitor", room=user_sid)
 
 
 #### update ####

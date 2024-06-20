@@ -3,7 +3,7 @@ from datetime import datetime
 
 from ..utils.const import (
     MAX_HISTORY,
-    History,
+    ProfileList,
     KST,
     Fancy,
     StatusCode,
@@ -28,16 +28,22 @@ def view_history(id, time_limit, opt):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
-        if opt == History.FANCY:
+        if opt == ProfileList.FANCY:
             utils.update_fancy_check(id)
             sql = 'SELECT * FROM "History" \
                     WHERE "target_id" = %s AND "fancy" = True AND "fancy_time" < %s \
                     ORDER BY "fancy_time" DESC \
                     LIMIT %s;'
 
-        elif opt == History.HISTORY:
+        elif opt == ProfileList.HISTORY:
             sql = 'SELECT * FROM "History" \
                     WHERE "user_id" = %s AND "last_view" < %s \
+                    ORDER BY "last_view" DESC \
+                    LIMIT %s;'
+
+        elif opt == ProfileList.VISITOR:
+            sql = 'SELECT * FROM "History" \
+                    WHERE "target_id" = %s AND "last_view" < %s \
                     ORDER BY "last_view" DESC \
                     LIMIT %s;'
 
@@ -47,11 +53,11 @@ def view_history(id, time_limit, opt):
     result = [
         userUtils.get_target_profile(
             id,
-            history["target_id" if opt == History.HISTORY else "user_id"],
+            history["target_id" if opt == ProfileList.HISTORY else "user_id"],
             (
-                history["last_view"]
-                if opt == History.HISTORY
-                else history["fancy_time"]
+                history["fancy_time"]
+                if opt == ProfileList.FANCY
+                else history["last_view"]
             ).strftime(TIME_STR_TYPE),
         )
         for history in histories

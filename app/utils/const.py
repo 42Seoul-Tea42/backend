@@ -99,9 +99,10 @@ class FancyOpt:
     DEL = 1
 
 
-class History:
+class ProfileList:
     FANCY = 0
     HISTORY = 1
+    VISITOR = 2
 
 
 class Fancy:

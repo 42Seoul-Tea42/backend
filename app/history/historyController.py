@@ -1,7 +1,7 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
-from ..utils.const import History
+from ..utils.const import ProfileList
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.exceptions import BadRequest
 from datetime import datetime
@@ -60,7 +60,7 @@ class _ResponseSchema:
 
 
 @ns.route("/fancy-list")
-class CheckFancy(Resource):
+class FancyList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
@@ -73,8 +73,6 @@ class CheckFancy(Resource):
     def get(self):
         """나를 팬시한 사람 그 누구냐!"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
 
         try:
             str_time = request.args.get("time")
@@ -85,7 +83,7 @@ class CheckFancy(Resource):
         except ValueError:
             raise BadRequest("기준 시간이 유효하지 않습니다.")
 
-        return serv.view_history(id, time, History.FANCY)
+        return serv.view_history(id, time, ProfileList.FANCY)
 
 
 @ns.route("/fancy")
@@ -102,8 +100,6 @@ class Fancy(Resource):
     def patch(self):
         """타겟을 fancy 합니다"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
         return serv.fancy(request.json, id)
 
 
@@ -121,13 +117,11 @@ class Unfancy(Resource):
     def patch(self):
         """타겟을 unfancy 합니다"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
         return serv.unfancy(request.json, id)
 
 
 @ns.route("/history-list")
-class ViewHistory(Resource):
+class HistoryList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
@@ -140,8 +134,32 @@ class ViewHistory(Resource):
     def get(self):
         """내가 본 사람들"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
+        try:
+            str_time = request.args.get("time")
+            if str_time is None:
+                time = datetime.now(KST)
+            else:
+                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
+        except ValueError:
+            raise BadRequest("기준 시간이 유효하지 않습니다.")
+
+        return serv.view_history(id, time, ProfileList.HISTORY)
+
+
+@ns.route("/visitor-list")
+class VisitorList(Resource):
+
+    @jwt_required()
+    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
+    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(
+        401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
+    )
+    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
+    def get(self):
+        """내가 본 사람들"""
+        id = get_jwt_identity()
 
         try:
             str_time = request.args.get("time")
@@ -152,4 +170,4 @@ class ViewHistory(Resource):
         except ValueError:
             raise BadRequest("기준 시간이 유효하지 않습니다.")
 
-        return serv.view_history(id, time, History.HISTORY)
+        return serv.view_history(id, time, ProfileList.VISITOR)
