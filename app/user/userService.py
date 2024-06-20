@@ -59,7 +59,7 @@ def login(data):
         raise BadRequest("존재하지 않는 유저입니다.")
 
     if not utils.is_valid_password(data["pw"], user["password"]):
-        raise Forbidden("잘못된 비밀번호입니다.")
+        raise BadRequest("잘못된 비밀번호입니다.")
 
     response = make_response(
         jsonify(
@@ -162,7 +162,7 @@ def login_oauth(login_id):
 def check_id(login_id):
     login_id = login_id.lower()
     if not utils.is_valid_login_id(login_id):
-        raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
+        raise BadRequest("사용할 수 없는 로그인 아이디입니다.")
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -196,7 +196,7 @@ def get_email(id):
         raise Unauthorized("존재하지 않는 유저입니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
-        raise BadRequest("이미 인증된 메일입니다.")
+        raise Forbidden("이미 인증된 메일입니다.")
 
     return {"email": redis_user["email"]}, StatusCode.OK
 
@@ -210,7 +210,7 @@ def change_email(data, id):
         raise Unauthorized("존재하지 않는 유저입니다.")
 
     if redis_user["email_check"] == RedisSetOpt.SET:
-        raise BadRequest("이미 인증된 메일입니다.")
+        raise Forbidden("이미 인증된 메일입니다.")
     
     if redis_user["email"] == data["email"]:
         raise BadRequest("기존과 동일한 이메일입니다.")
@@ -247,7 +247,7 @@ def resend_email(id):
         raise Unauthorized("존재하지 않는 유저입니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
-        raise BadRequest("이미 인증된 메일입니다.")
+        raise Forbidden("이미 인증된 메일입니다.")
     
     user = utils.get_user(id)
     if not user:
@@ -255,7 +255,7 @@ def resend_email(id):
 
     email = user["email"]
     if user["email_check"]:
-        raise BadRequest("이미 인증된 메일입니다.")
+        raise Forbidden("이미 인증된 메일입니다.")
 
     if os.getenv("PYTEST") == "True":
         return {
@@ -275,7 +275,7 @@ def resend_email(id):
 
 def verify_email(key):
     if key[-1] != str(Key.EMAIL):
-        raise Forbidden("유효하지 않은 인증키입니다.")
+        raise BadRequest("유효하지 않은 인증키입니다.")
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -283,7 +283,7 @@ def verify_email(key):
         cursor.execute(sql, (key,))
         user = cursor.fetchone()
         if not user:
-            raise Forbidden("유효하지 않은 인증키입니다.")
+            raise BadRequest("유효하지 않은 인증키입니다.")
 
         id = user["id"]
         
@@ -296,7 +296,7 @@ def verify_email(key):
         redisServ.update_user_info(id, {"email_check": 1})
         return StatusCode.OK
 
-    raise Forbidden("유효하지 않은 인증키입니다.")
+    raise BadRequest("유효하지 않은 인증키입니다.")
 
 
 # # ##### register && setting
@@ -480,7 +480,7 @@ def register(data):
         raise BadRequest("유효하지 않은 이메일 형식입니다.")
 
     if not utils.is_valid_login_id(data["login_id"]):
-        raise BadRequest("이미 사용중이거나 올바르지 않은 로그인 아이디 형식입니다.")
+        raise BadRequest("사용할 수 없는 로그인 아이디입니다.")
     
     if not utils.is_valid_new_password(data["pw"]):
         raise BadRequest("안전하지 않은 비밀번호입니다.")
@@ -648,7 +648,7 @@ def request_reset(login_id):
 
 def reset_pw(data, key):
     if key[-1] != str(Key.PASSWORD):
-        raise Forbidden("유효하지 않은 인증키입니다.")
+        raise BadRequest("유효하지 않은 인증키입니다.")
 
     if not data["pw"]:
         raise BadRequest("변경할 비밀번호를 입력해주세요.")
@@ -663,7 +663,7 @@ def reset_pw(data, key):
 
         user = cursor.fetchone()
         if not user:
-            raise Forbidden("유효하지 않은 인증키입니다.")
+            raise BadRequest("유효하지 않은 인증키입니다.")
 
         hashed_pw = utils.hashing(data["pw"])
         sql = 'UPDATE "User" SET "password" = %s, "email_key" = %s WHERE "email_key" = %s;'
