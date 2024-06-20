@@ -6,20 +6,34 @@ from email.mime.multipart import (
 from email.mime.text import MIMEText  # 메일의 본문 내용을 만드는 모듈
 from .const import Key
 
-# smpt 서버와 연결
+# 필요 환경변수
 email_smtp = os.getenv("EMAIL_SMTP")
 email_port = os.getenv("EMAIL_PORT")
-smtp = smtplib.SMTP(email_smtp, email_port)
-
-# 로그인
 email_account = os.getenv("EMAIL_ACCOUNT")
 email_password = os.getenv("EMAIL_PASSWORD")
-smtp.ehlo()
-smtp.starttls()
-smtp.login(email_account, email_password)
+
+# 전역 변수로 SMTP 객체와 연결 상태를 유지
+smtp = None
+
+
+def get_smtp_connection():
+    global smtp
+
+    if smtp is None or not smtp.sock:
+        # smpt 서버와 연결
+        smtp = smtplib.SMTP(email_smtp, email_port)
+
+        # 로그인
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.login(email_account, email_password)
+
+    return smtp
 
 
 def send_smtp_email(addr_to, key, opt) -> str:
+    smtp = get_smtp_connection()
+
     msg = MIMEMultipart()
     msg["From"] = email_account
     msg["To"] = addr_to
