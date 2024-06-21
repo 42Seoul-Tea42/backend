@@ -14,7 +14,6 @@ from ..utils import smtp, redisServ
 from ..utils.const import (
     KST,
     EARTH_RADIUS,
-    MIN_PASSWORD_SIZE,
     ALLOWED_EXTENSIONS,
     PICTURE_DIR,
     MAX_FAME,
@@ -25,31 +24,21 @@ from ..utils.const import (
     Gender,
     Authorization,
     LOGIN_ID_BLUR_SIZE,
-    LOGIN_ID_MIN_LENGTH,
-    EncodeOpt,
-    Tags,
-    Emoji,
 )
 from werkzeug.exceptions import Unauthorized, BadRequest, Forbidden
 
 
-def create_email_key(login_id, key):
+def create_email_key(key):
     random_key = (
-        login_id
-        + "".join(random.choices(string.ascii_letters + string.digits, k=10))
+        "".join(random.choices(string.ascii_letters + string.digits, k=10))
         + str(key)
     )
     return random_key
 
 
-def encode_bit(data, opt) -> int:
-    MIN = Tags.MIN  # 1, Emoji.MIN 과 동일
-    MAX = Tags.MAX if opt == EncodeOpt.TAGS else Emoji.MAX
-
+def encode_bit(data) -> int:
     result = 0
     for n in list(data):
-        if n < MIN or MAX < n:
-            raise BadRequest("올바르지 않은 태그/이모티콘 값입니다.")
         result |= 1 << n - 1
 
     return result
@@ -70,25 +59,6 @@ def send_email(addr_to, key, opt):
     smtp.send_smtp_email(addr_to, key, opt)
 
 
-def is_valid_email(email):
-    reg = r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9.]+\.[a-zA-Z]{2,3}$"  # 유효성 검사를 위한 정규표현식
-    if re.match(reg, email):
-        return True
-    return False
-
-
-def is_valid_new_password(pw):
-    # 글자 수, 대/소문자 및 숫자 포함 여부 확인
-    if len(pw) < MIN_PASSWORD_SIZE:
-        return False
-    if not re.search(r"[A-Z]", pw):
-        return False
-    if not re.search(r"[a-z]", pw):
-        return False
-    if not re.search(r"\d", pw):
-        return False
-
-    return True
 
 
 def hashing(password):
@@ -103,8 +73,8 @@ def hashing(password):
     # return m.hexdigest()
 
 
-def is_valid_password(password, hashed_pw):
-    if hashed_pw is None:
+def matched_password(password, hashed_pw):
+    if password is None or hashed_pw is None:
         return False
 
     return bcrypt.checkpw(password.encode("utf-8"), bytes(hashed_pw))
@@ -143,18 +113,6 @@ def get_user_by_login_id(login_id):
     return dict(user) if user else None
 
 
-def is_valid_login_id(login_id):
-    if (
-        len(login_id) < LOGIN_ID_MIN_LENGTH
-        or login_id.startswith("kakao")
-        or login_id.startswith("google")
-        or login_id.startswith("default")
-        or login_id.startswith("tea")
-        or login_id.startswith("admin")
-        or login_id.startswith("root")
-    ):
-        return False
-    return True
 
 
 def blur_login_id(login_id):
@@ -199,7 +157,7 @@ def get_pictures(filenames):
 def get_user_profile(id):
     user = get_user(id)
     if not user:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     # 이미지 파일 생성
     images = get_pictures(user["pictures"])
@@ -225,8 +183,8 @@ def get_user_profile(id):
 
 def get_target_profile(id, target_id, time=None):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if redis_user['longitude'] is None or redis_user['latitude'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['longitude'] is None or redis_user['latitude'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     target = get_user(target_id)
     if not target:
@@ -246,7 +204,7 @@ def get_target_profile(id, target_id, time=None):
             target["latitude"],
             target["longitude"],
         ),
-        "fancy": historyUtils.get_fancy(id, target_id),
+        "fancy": historyUtils.get_fancy_status(id, target_id),
         "age": target["age"],
         "tags": decode_bit(target["tags"]),
         "fame": (
@@ -347,20 +305,10 @@ def update_location(id, lat, long):
         conn.commit()
 
 
-def is_valid_gender(gender):
-    if gender not in (Gender.OTHER, Gender.FEMALE, Gender.MALE):
-        raise BadRequest("잘못된 성별입니다.")
-
-
-def is_valid_taste(taste):
-    if taste not in (Gender.ALL, Gender.FEMALE, Gender.MALE):
-        raise BadRequest("잘못된 취향입니다.")
-
-
 def check_authorization(id, opt):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user['login_id'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['email'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     if Authorization.EMAIL <= opt and redis_user["email_check"] == RedisSetOpt.UNSET:
         raise Forbidden("이메일 인증이 필요합니다.")
@@ -393,10 +341,3 @@ def get_ban_list(id):
         ban = cursor.fetchall()
 
     return [row["user_id"] for row in ban]
-
-def validation(value, func):
-    try:
-        func(value)
-        return True
-    except Exception as e:
-        return False

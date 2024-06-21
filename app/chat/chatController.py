@@ -2,11 +2,7 @@ from flask import request
 from flask_restx import Namespace, Resource, fields
 from . import chatService as serv
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from werkzeug.exceptions import BadRequest
-from datetime import datetime
-from ..utils.const import KST, TIME_STR_TYPE
-
-# from ..wrapper.location import check_location
+from ..utils.validator import Validator
 
 ns = Namespace(name="chat", description="채팅창 관련 API", path="/api/chat")
 
@@ -67,16 +63,16 @@ class ChatList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_list)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     def get(self):
         """채팅리스트를 드립니다!"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
         return serv.chat_list(id)
 
 
@@ -85,35 +81,23 @@ class GetMsg(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_msg)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.doc(
         params={"target_id": "메시지 상대 id", "time": "확인할 메시지 기준 timestamp"}
     )
     def get(self):
         """채팅 했던 내용 보내드립니다!!"""
         id = get_jwt_identity()
-        # [JWT] delete below
-        # id = 1
-
-        str_target_id = request.args.get("target_id")
-        if not str_target_id:
-            raise BadRequest("유저 id가 필요합니다.")
-        try:
-            target_id = int(str_target_id)
-        except ValueError:
-            raise BadRequest("유저 id를 확인해주세요.")
-
-        try:
-            str_time = request.args.get("time")
-            if str_time is None:
-                time = datetime.now(KST)
-            else:
-                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
-        except ValueError:
-            raise BadRequest("기준 시간이 유효하지 않습니다.")
-
-        return serv.get_msg(id, target_id, time)
+        data = Validator.validate(
+            {
+                "target_id": request.args.get("target_id"),
+                "time": request.args.get("time"),
+            }
+        )
+        return serv.get_msg(id, data)

@@ -19,11 +19,6 @@ from ..utils.const import (
     Oauth,
     Gender,
     Tags,
-    MAX_AGE,
-    MIN_AGE,
-    MAX_DISTANCE,
-    MIN_FAME,
-    MAX_FAME,
     MAX_PICTURE_AMOUNT,
     StatusCode,
     RedisOpt,
@@ -35,7 +30,8 @@ from ..utils.const import (
     AGE_GAP,
     AREA_DISTANCE,
     MAX_SUGGEST,
-    TIME_DETAIL_PAGE_STR_TYPE
+    TIME_DETAIL_PAGE_STR_TYPE,
+    MAX_FAME
 )
 from ..db.db import PostgreSQLFactory
 from psycopg2.extras import DictCursor
@@ -46,19 +42,17 @@ from ..utils import redisServ, redisBlockList
 from ..chat import chatUtils
 
 
-# TODO conn.commit()
 # TODO update, insert, delete count확인 후 리턴 처리
 
 # db result 접근 전 에러 처리 (user 없을 경우 등)
 
 
 def login(data):
-    login_id = data["login_id"].lower()
-    user = utils.get_user_by_login_id(login_id)
+    user = utils.get_user_by_login_id(data["login_id"])
     if not user:
         raise BadRequest("존재하지 않는 유저입니다.")
 
-    if not utils.is_valid_password(data["pw"], user["password"]):
+    if not utils.matched_password(data["pw"], user["password"]):
         raise BadRequest("잘못된 비밀번호입니다.")
 
     response = make_response(
@@ -99,8 +93,8 @@ def login_check(id):
     #Redis에서 유저 정보 가져오기
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     
-    if redis_user is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['email'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     response = make_response(
         jsonify(
@@ -160,26 +154,20 @@ def login_oauth(login_id):
 
 
 def check_id(login_id):
-    login_id = login_id.lower()
-    if not utils.is_valid_login_id(login_id):
-        raise BadRequest("사용할 수 없는 로그인 아이디입니다.")
-
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         sql = 'SELECT * FROM "User" WHERE "login_id" = %s;'
         cursor.execute(sql, (login_id,))
         user = cursor.fetchone()
-
-        return {"occupied": True if user else False}, StatusCode.OK
+        if user is not None:
+            raise BadRequest("이미 존재하는 아이디입니다.")
+        
+        return StatusCode.OK
 
 
 # # ##### email
 def check_email(email):
-
-    if not utils.is_valid_email(email):
-        raise BadRequest("올바르지 않은 이메일 형식입니다.")
-
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
@@ -187,13 +175,16 @@ def check_email(email):
         cursor.execute(sql, (email,))
         user = cursor.fetchone()
 
-        return {"occupied": True if user else False}, StatusCode.OK
+        if user is not None:
+            raise BadRequest("이미 존재하는 이메일입니다.")
+        
+        return StatusCode.OK
 
 
 def get_email(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user['login_id'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['email'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
         raise Forbidden("이미 인증된 메일입니다.")
@@ -201,28 +192,28 @@ def get_email(id):
     return {"email": redis_user["email"]}, StatusCode.OK
 
 
-def change_email(data, id):
-    if not utils.is_valid_email(data["email"]):
-        raise BadRequest("올바르지 않은 이메일 형식입니다.")
-
+def change_email(id, email):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user['login_id'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['email'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     if redis_user["email_check"] == RedisSetOpt.SET:
         raise Forbidden("이미 인증된 메일입니다.")
     
-    if redis_user["email"] == data["email"]:
+    if redis_user["email"] == email:
         raise BadRequest("기존과 동일한 이메일입니다.")
 
-    email_key = utils.create_email_key(redis_user["login_id"], Key.EMAIL)
+    email_key = utils.create_email_key(Key.EMAIL)
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         # update
         sql = 'UPDATE "User" SET "email" = %s, "email_key" = %s WHERE "id" = %s;'
-        cursor.execute(sql, (data["email"], email_key, id))
+        cursor.execute(sql, (email, email_key, id))
         conn.commit()
         
+    #Redis 업데이트
+    redisServ.update_user_info(id, {"email": email})
+
     if os.getenv("PYTEST") == "True":
         return {
             "email_check": False,
@@ -232,10 +223,7 @@ def change_email(data, id):
         }, StatusCode.OK
         
     # send verify email
-    utils.send_email(data["email"], email_key, Key.EMAIL)
-
-    #Redis 업데이트
-    redisServ.update_user_info(id, {"email": data["email"]})
+    utils.send_email(email, email_key, Key.EMAIL)
 
     return {
         "email_check": False,
@@ -246,29 +234,24 @@ def change_email(data, id):
 
 def resend_email(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user['login_id'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['email'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     
     if redis_user["email_check"] == RedisSetOpt.SET:
         raise Forbidden("이미 인증된 메일입니다.")
     
-    user = utils.get_user(id)
-    if not user:
-        raise Unauthorized("존재하지 않는 유저입니다.")
-
-    email = user["email"]
-    if user["email_check"]:
-        raise Forbidden("이미 인증된 메일입니다.")
+    email = redis_user["email"]
+    email_key = utils.get_user(id)["email_key"]
 
     if os.getenv("PYTEST") == "True":
         return {
             "email_check": False,
             "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
             "emoji_check": True if redis_user["emoji_check"] == RedisSetOpt.SET else False,
-            "key": user["email_key"],
+            "key": email_key,
         }, StatusCode.OK
 
-    utils.send_email(email, user["email_key"], Key.EMAIL)
+    utils.send_email(email, email_key, Key.EMAIL)
     return {
         "email_check": False,
         "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
@@ -303,47 +286,37 @@ def verify_email(key):
 
 
 # # ##### register && setting
-def setting(data, id, images):
+def setting(id, data, images):
     user = utils.get_user(id)
     if not user:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
-    if not user["email_check"]:
-        raise Forbidden("이메일 인증이 필요합니다.")
+    utils.check_authorization(id, Authorization.EMAIL)
 
     # 업데이트할 항목 정리
-    update_fields = {}
-    if data.get("email", None) and user["email"] != data["email"]:
-        if not utils.is_valid_email(data["email"]):
-            raise BadRequest("유효하지 않은 이메일 형식입니다.")
+    update_fields = dict()
+    categories = ("last_name", "name", "age", "gender", "taste", "bio", "similar")
+    for category in categories:
+        if category in data:
+            update_fields[category] = data[category]
+
+    if data.get("email") and user["email"] != data["email"]:
         update_fields["email"] = data["email"]
-        update_fields["email_key"] = utils.create_email_key(user["login_id"], Key.EMAIL)
-    if user["oauth"] == Oauth.NONE and data.get("pw", None):
-        if not utils.is_valid_new_password(data["pw"]):
-            raise BadRequest("안전하지 않은 비밀번호입니다.")
+        update_fields["email_key"] = utils.create_email_key(Key.EMAIL)
+    if user["oauth"] == Oauth.NONE and data.get("pw"):
         update_fields["password"] = utils.hashing(data["pw"])
-    if data.get("last_name", ""):
-        update_fields["last_name"] = data["last_name"]
-    if data.get("name", None):
-        update_fields["name"] = data["name"]
-    if data.get("age", None):
-        if data["age"] < MIN_AGE or MAX_AGE < data["age"]:
-            raise BadRequest("유효하지 않은 나이입니다.")
-        update_fields["age"] = data["age"]
-    if data.get("gender", None):
-        utils.is_valid_gender(data["gender"])
-        update_fields["gender"] = data["gender"]
-    if data.get("taste", None):
-        utils.is_valid_taste(data["taste"])
-        update_fields["taste"] = data["taste"]
-    if data.get("bio", None):
-        update_fields["bio"] = data["bio"]
-    update_fields["tags"] = utils.encode_bit(data.get("tags", []), EncodeOpt.TAGS)
-    update_fields["hate_tags"] = utils.encode_bit(data.get("hate_tags", []), EncodeOpt.TAGS)
-    update_fields["emoji"] = utils.encode_bit(data.get("emoji", []), EncodeOpt.EMOJI)
-    update_fields["hate_emoji"] = utils.encode_bit(data.get("hate_emoji", []), EncodeOpt.EMOJI)
-    if data.get("similar", None):
-        update_fields["similar"] = data["similar"]
+
+    if "tags" in data:
+        update_fields["tags"] = utils.encode_bit(data["tags"])
+    if "hate_tags" in data:
+        update_fields["hate_tags"] = utils.encode_bit(data["hate_tags"])
+    if "emoji" in data:
+        update_fields["emoji"] = utils.encode_bit(data["emoji"])
+    if "hate_emoji" in data:
+        update_fields["hate_emoji"] = utils.encode_bit(data["hate_emoji"])
+    
+
+    # TODO 이미지 있을 수 밖에 없음... (if문 삭제)
     if images:
         # 이전 프로필 사진 지우기
         pictures = user["pictures"]
@@ -359,9 +332,6 @@ def setting(data, id, images):
                 # app.logger.error(f"사진 삭제 시 에러 발생(setting): {e}")
                 pass
         update_fields["pictures"] = images
-
-    if not update_fields:
-        raise BadRequest("업데이트 내용이 없습니다.")
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -426,10 +396,10 @@ def register_dummy(data):
                 data["gender"],
                 data["taste"],
                 "자기소개입니다",
-                utils.encode_bit(data["tags"], EncodeOpt.TAGS),
-                utils.encode_bit(data["hate_tags"], EncodeOpt.TAGS),
-                utils.encode_bit(data["emoji"], EncodeOpt.EMOJI),
-                utils.encode_bit(data["hate_emoji"], EncodeOpt.EMOJI),
+                utils.encode_bit(data["tags"]),
+                utils.encode_bit(data["hate_tags"]),
+                utils.encode_bit(data["emoji"]),
+                utils.encode_bit(data["hate_emoji"]),
                 data["similar"]
             ),
         )
@@ -479,24 +449,12 @@ def save_pictures(id, files):
 
 
 def register(data):
-    if not utils.is_valid_email(data["email"]):
-        raise BadRequest("유효하지 않은 이메일 형식입니다.")
-
-    if not utils.is_valid_login_id(data["login_id"]):
-        raise BadRequest("사용할 수 없는 로그인 아이디입니다.")
+    if data["pw"] is None:
+        raise BadRequest("비밀번호를 입력해주세요.")
     
-    if not utils.is_valid_new_password(data["pw"]):
-        raise BadRequest("안전하지 않은 비밀번호입니다.")
-
-    if len(data["name"]) == 0:
-        raise BadRequest("이름을 입력해주세요.")
-    
-    if len(data["last_name"]) == 0:
-        raise BadRequest("성을 입력해주세요.")
-
-    login_id = data["login_id"].lower()
+    login_id = data["login_id"]
     hashed_pw = utils.hashing(data["pw"])
-    email_key = utils.create_email_key(login_id, Key.EMAIL)
+    email_key = utils.create_email_key(Key.EMAIL)
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -531,10 +489,10 @@ def register(data):
 def register_oauth(data, oauthOpt):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'INSERT INTO "User" (email, email_check, login_id, name, oauth, pictures, last_online) \
+        sql = 'INSERT INTO "User" (email, email_check, login_id, name, last_name, oauth, pictures, last_online) \
                             VALUES (%s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(
-            sql, (data["email"], True, data["login_id"], data["name"], oauthOpt, [DEFAULT_PICTURE], datetime.now(KST))
+            sql, (data["email"], True, data["login_id"], data["name"], data["last_name"], oauthOpt, [DEFAULT_PICTURE], datetime.now(KST))
         )
         conn.commit()
 
@@ -561,7 +519,8 @@ def profile_detail(id, target_id):
     historyUtils.update_last_view(id, target_id)
 
     ## (socket) history update alarm
-    socketServ.new_history(id)
+    if os.getenv("PYTEST") != "True":
+        socketServ.new_visitor(target_id)
 
     images = utils.get_pictures(target["pictures"])
 
@@ -622,8 +581,6 @@ def find_login_id(email):
 
 
 def request_reset(login_id):
-    login_id = login_id.lower()
-
     user = utils.get_user_by_login_id(login_id)
     if not user:
         raise BadRequest("존재하지 않는 로그인 id입니다.")
@@ -631,7 +588,7 @@ def request_reset(login_id):
     if not user["email_check"]:
         raise Forbidden("인증되지 않은 이메일입니다.")
 
-    email_key = utils.create_email_key(login_id, Key.PASSWORD)
+    email_key = utils.create_email_key(Key.PASSWORD)
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -649,28 +606,24 @@ def request_reset(login_id):
     return {"email_check": True}, StatusCode.OK
 
 
-def reset_pw(data, key):
+def reset_pw(pw, key):
+    if not pw:
+        raise BadRequest("변경할 비밀번호를 입력해주세요.")
+    
     if key[-1] != str(Key.PASSWORD):
         raise BadRequest("유효하지 않은 인증키입니다.")
 
-    if not data["pw"]:
-        raise BadRequest("변경할 비밀번호를 입력해주세요.")
-
-    if not utils.is_valid_new_password(data["pw"]):
-        raise BadRequest("안전하지 않은 비밀번호입니다.")
+    hashed_pw = utils.hashing(pw)
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'SELECT * FROM "User" WHERE "email_key" = %s;'
-        cursor.execute(sql, (key,))
-
-        user = cursor.fetchone()
-        if not user:
-            raise BadRequest("유효하지 않은 인증키입니다.")
-
-        hashed_pw = utils.hashing(data["pw"])
+        
         sql = 'UPDATE "User" SET "password" = %s, "email_key" = %s WHERE "email_key" = %s;'
         cursor.execute(sql, (hashed_pw, None, key))
+
+        if cursor.rowcount < 1:
+            raise BadRequest("유효하지 않은 인증키입니다.")
+
         conn.commit()
 
     return StatusCode.OK
@@ -681,6 +634,7 @@ def unregister(id):
     utils.check_authorization(id, Authorization.EMOJI)
 
     logout(id)
+    # if os.getenv("PYTEST") != "True":
     socketServ.unregister(id)
     redisServ.delete_user_info(id)
 
@@ -703,21 +657,19 @@ def get_profile(id):
     return utils.get_user_profile(id), StatusCode.OK
     
     
-def search(data, id):
+def search(id, data):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
-    tags = utils.encode_bit(data["tags"], EncodeOpt.TAGS) if data.get("tags", None) else Tags.ALL
-    distance = (
-        int(data["distance"]) if data.get("distance", None) else MAX_DISTANCE
-    )
-    fame = data["fame"] if data.get("fame", None) else MIN_FAME
-    min_age = data["min_age"] if data.get("min_age", None) else MIN_AGE
-    max_age = data["max_age"] if data.get("max_age", None) else MAX_AGE
+    tags = utils.encode_bit(data["tags"]) if data["tags"] else Tags.ALL
+    distance = data["distance"]
+    fame = data["fame"]
+    min_age = data["min_age"]
+    max_age = data["max_age"]
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if redis_user['longitude'] is None or redis_user['latitude'] is None:
-        raise Unauthorized("존재하지 않는 유저입니다.")
+    if redis_user is None or redis_user['longitude'] is None or redis_user['latitude'] is None:
+        raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = redis_user["longitude"], redis_user["latitude"]
 
     user = utils.get_user(id)
@@ -796,13 +748,9 @@ def suggest(id):
     emoji, hate_emoji = user["emoji"], user["hate_emoji"]
     long, lat = user["longitude"], user["latitude"]
     similar = user["similar"]
-
-    if MIN_AGE <= user["age"]:
-        min_age = max(user["age"] - AGE_GAP, MIN_AGE)
-        max_age = user["age"] + AGE_GAP
-    else:
-        min_age = max_age = MIN_AGE
-
+    min_age = user["age"] - AGE_GAP
+    max_age = user["age"] + AGE_GAP
+    
     find_taste = user["gender"] | Gender.OTHER
     find_gender = Gender.ALL if user["taste"] & Gender.OTHER else user["taste"]
 
@@ -881,7 +829,7 @@ def suggest(id):
 
 
 ##### report && block
-def report(data, id):
+def report(id, data):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
@@ -904,7 +852,7 @@ def report(data, id):
             raise BadRequest("사유를 입력해주세요.")
     
     # report시 자동 block 처리
-    block(data, id)
+    block(id, target_id)
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -916,42 +864,42 @@ def report(data, id):
     return StatusCode.OK
 
 
-def block(data, id):
+def block(id, target_id):
     # 유저 API 접근 권한 확인
     utils.check_authorization(id, Authorization.EMOJI)
     
-    if id == data["target_id"]:
+    if id == target_id:
         raise BadRequest("스스로를 block할 수 없습니다.")
 
-    target = utils.get_user(data["target_id"])
+    target = utils.get_user(target_id)
     if not target:
         raise BadRequest("존재하지 않는 유저입니다.")
 
     # block check
     block_set = redisServ.get_user_info(id, RedisOpt.BLOCK)
-    if data["target_id"] in block_set:
+    if target_id in block_set:
         raise BadRequest("이미 블록한 유저입니다.")
 
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "Block" (user_id, target_id) VALUES (%s, %s)'
-        cursor.execute(sql, (id, data["target_id"]))
+        cursor.execute(sql, (id, target_id))
 
         # user -> target
         sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-        cursor.execute(sql, (id, data["target_id"]))
+        cursor.execute(sql, (id, target_id))
         user_history = cursor.fetchone()
         if user_history:
             if user_history["fancy"]:
                 sql = 'UPDATE "User" SET "count_fancy" = "count_fancy" - 1 WHERE "id" = %s;'
-                cursor.execute(sql, (data["target_id"],))
+                cursor.execute(sql, (target_id,))
             #TODO [Later] soft delete
             sql = 'DELETE FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-            cursor.execute(sql, (id, data["target_id"]))
+            cursor.execute(sql, (id, target_id))
         
         # target -> user
         sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-        cursor.execute(sql, (data["target_id"], id))
+        cursor.execute(sql, (target_id, id))
         target_history = cursor.fetchone()
         if target_history:
             if target_history["fancy"]:
@@ -959,23 +907,23 @@ def block(data, id):
                 cursor.execute(sql, (id,))
             #TODO [Later] soft delete
             sql = 'DELETE FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
-            cursor.execute(sql, (data["target_id"], id))
+            cursor.execute(sql, (target_id, id))
 
         conn.commit()
         
     #redis update
-    redisServ.update_user_info(id, {"block": data["target_id"]})
-    redisServ.update_user_info(data["target_id"], {"ban": id})
+    redisServ.update_user_info(id, {"block": target_id})
+    redisServ.update_user_info(target_id, {"ban": id})
     
     #delete chat
-    chatUtils.delete_chat(id, data["target_id"])
+    chatUtils.delete_chat(id, target_id)
 
     return StatusCode.OK
 
 
 def reset_token(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user is None or redis_user['login_id'] is None:
+    if redis_user is None or redis_user['email'] is None:
         response = jsonify({"msg": "refresh"})
         response.status_code = StatusCode.UNAUTHORIZED
         return response

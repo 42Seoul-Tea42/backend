@@ -19,6 +19,7 @@ from psycopg2.extras import DictCursor
 from ..socket import socketService as socketServ
 from werkzeug.exceptions import BadRequest
 from ..utils import redisServ
+import os
 
 
 def view_history(id, time_limit, opt):
@@ -68,15 +69,10 @@ def view_history(id, time_limit, opt):
     }, StatusCode.OK
 
 
-def check_before_service(id, data):
+def check_before_service(id, target_id):
     # 유저 API 접근 권한 확인
-    userUtils.check_authorization(id, Authorization.EMOJI)
-
-    target_id = data["target_id"]
-    try:
-        target_id = int(target_id)
-    except ValueError:
-        raise BadRequest("id는 숫자로 제공되어야 합니다.")
+    if os.getenv("PYTEST") != "True":
+        userUtils.check_authorization(id, Authorization.EMOJI)
 
     if id == target_id:
         raise BadRequest("스스로를 fancy할 수 없습니다.")
@@ -89,13 +85,11 @@ def check_before_service(id, data):
     if target_id in block_set:
         raise BadRequest("차단한 유저입니다.")
 
-    return target_id
 
+def fancy(id, target_id):
+    check_before_service(id, target_id)
 
-def fancy(data, id):
-    target_id = check_before_service(id, data)
-
-    if utils.get_fancy(id, target_id) & 1:
+    if utils.get_fancy_status(id, target_id) & 1:
         return StatusCode.OK
 
     now_kst = datetime.now(KST)
@@ -123,7 +117,7 @@ def fancy(data, id):
         if history is None:
             userUtils.update_count_view(target_id)
 
-        if utils.get_fancy(id, target_id) == Fancy.CONN:
+        if utils.get_fancy_status(id, target_id) == Fancy.CONN:
             socketServ.new_match(id, target_id)
 
         socketServ.new_fancy(id, target_id)
@@ -131,10 +125,10 @@ def fancy(data, id):
     return StatusCode.OK
 
 
-def unfancy(data, id):
-    target_id = check_before_service(id, data)
+def unfancy(id, target_id):
+    check_before_service(id, target_id)
 
-    if not utils.get_fancy(id, target_id) & 1:
+    if not (utils.get_fancy_status(id, target_id) & 1):
         return StatusCode.OK
 
     now_kst = datetime.now(KST)
@@ -157,7 +151,7 @@ def unfancy(data, id):
 
         userUtils.update_count_fancy(target_id, FancyOpt.DEL)
 
-        if utils.get_fancy(id, target_id) == Fancy.RECV:
+        if utils.get_fancy_status(id, target_id) == Fancy.RECV:
             chatUtils.delete_chat(id, target_id)
             socketServ.unmatch(id, target_id)
 

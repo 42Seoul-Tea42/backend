@@ -3,9 +3,7 @@ from flask_restx import Namespace, Resource, fields
 from . import historyService as serv
 from ..utils.const import ProfileList
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from werkzeug.exceptions import BadRequest
-from datetime import datetime
-from ..utils.const import KST, TIME_STR_TYPE
+from ..utils.validator import Validator
 
 # from ..wrapper.location import check_location
 
@@ -64,26 +62,24 @@ class FancyList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
     def get(self):
         """나를 팬시한 사람 그 누구냐!"""
         id = get_jwt_identity()
+        data = Validator.validate(
+            {
+                "time": request.args.get("time"),
+            }
+        )
 
-        try:
-            str_time = request.args.get("time")
-            if str_time is None:
-                time = datetime.now(KST)
-            else:
-                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
-        except ValueError:
-            raise BadRequest("기준 시간이 유효하지 않습니다.")
-
-        return serv.view_history(id, time, ProfileList.FANCY)
+        return serv.view_history(id, data["time"], ProfileList.FANCY)
 
 
 @ns.route("/fancy")
@@ -91,16 +87,20 @@ class Fancy(Resource):
 
     @jwt_required()
     @ns.expect(_RequestSchema.field_patch_fancy, validate=True)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.header("content-type", "application/json")
     def patch(self):
         """타겟을 fancy 합니다"""
         id = get_jwt_identity()
-        return serv.fancy(request.json, id)
+        data = Validator.validate({"target_id": request.json.get("target_id")})
+
+        return serv.fancy(id, data["target_id"])
 
 
 @ns.route("/unfancy")
@@ -108,16 +108,20 @@ class Unfancy(Resource):
 
     @jwt_required()
     @ns.expect(_RequestSchema.field_patch_fancy, validate=True)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.header("content-type", "application/json")
     def patch(self):
         """타겟을 unfancy 합니다"""
         id = get_jwt_identity()
-        return serv.unfancy(request.json, id)
+        data = Validator.validate({"target_id": request.json.get("target_id")})
+
+        return serv.unfancy(id, data["target_id"])
 
 
 @ns.route("/history-list")
@@ -125,25 +129,23 @@ class HistoryList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
     def get(self):
         """내가 본 사람들"""
         id = get_jwt_identity()
-        try:
-            str_time = request.args.get("time")
-            if str_time is None:
-                time = datetime.now(KST)
-            else:
-                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
-        except ValueError:
-            raise BadRequest("기준 시간이 유효하지 않습니다.")
-
-        return serv.view_history(id, time, ProfileList.HISTORY)
+        data = Validator.validate(
+            {
+                "time": request.args.get("time"),
+            }
+        )
+        return serv.view_history(id, data["time"], ProfileList.HISTORY)
 
 
 @ns.route("/visitor-list")
@@ -151,23 +153,20 @@ class VisitorList(Resource):
 
     @jwt_required()
     @ns.response(200, "api요청 성공", _ResponseSchema.field_get_profile_list)
-    @ns.response(400, "Bad Request: 잘못된 요청", _ResponseSchema.field_failed)
+    @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.response(
         401, "Unauthorized: JWT, CSRF token 없음", _ResponseSchema.field_failed
     )
-    @ns.response(403, "Forbidden: (token 외) 권한 없음", _ResponseSchema.field_failed)
+    @ns.response(
+        403, "Forbidden: email 인증 혹은 프로필 세팅 안됨", _ResponseSchema.field_failed
+    )
     @ns.doc(params={"time": "무한스크롤 시점 확인용 time"})
     def get(self):
         """내가 본 사람들"""
         id = get_jwt_identity()
-
-        try:
-            str_time = request.args.get("time")
-            if str_time is None:
-                time = datetime.now(KST)
-            else:
-                time = datetime.strptime(str_time, TIME_STR_TYPE).astimezone(KST)
-        except ValueError:
-            raise BadRequest("기준 시간이 유효하지 않습니다.")
-
-        return serv.view_history(id, time, ProfileList.VISITOR)
+        data = Validator.validate(
+            {
+                "time": request.args.get("time"),
+            }
+        )
+        return serv.view_history(id, data["time"], ProfileList.VISITOR)

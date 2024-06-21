@@ -22,7 +22,7 @@ def chat_list(id):
     userUtils.check_authorization(id, Authorization.EMOJI)
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if redis_user is None:
+    if redis_user is None or redis_user["longitude"] is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = float(redis_user["longitude"]), float(redis_user["latitude"])
 
@@ -42,7 +42,7 @@ def chat_list(id):
                 "distance": userUtils.get_distance(
                     lat, long, target["latitude"], target["longitude"]
                 ),
-                "fancy": hisUtils.get_fancy(id, target["id"]),
+                "fancy": hisUtils.get_fancy_status(id, target["id"]),
                 "new": chatUtils.is_new_chat(id, target["id"]),
                 "picture": picture,
             }
@@ -53,24 +53,22 @@ def chat_list(id):
     }, StatusCode.OK
 
 
-def get_msg(id, target_id, time):
+def get_msg(id, data):
     # 유저 API 접근 권한 확인
     userUtils.check_authorization(id, Authorization.EMOJI)
 
+    target_id = data["target_id"]
     if id == target_id:
         raise BadRequest("자기 자신과 채팅할 수 없습니다.")
 
-    if userUtils.get_user(target_id) is None:
-        raise BadRequest("유저 정보를 찾을 수 없습니다.")
-
-    if hisUtils.get_fancy(id, target_id) < Fancy.CONN:
+    if hisUtils.get_fancy_status(id, target_id) < Fancy.CONN:
         raise BadRequest("매칭된 상대가 아닙니다.")
 
     # message new True인 경우 처리 (읽은 경우)
     chatUtils.read_chat(recver_id=id, sender_id=target_id)
 
     # time을 기준으로 이전의 메시지를 가져와 최신 MAX_CHAT개 반환
-    iso_time = time.isoformat()
+    iso_time = data["time"].isoformat()
 
     chat_collection = MongoDBFactory.get_collection("tea42", "chat")
     pipeline = [
