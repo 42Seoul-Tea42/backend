@@ -23,10 +23,10 @@ CREATE TABLE "User" (
 	"pictures"	TEXT[],
 	"taste"	    INTEGER,
 	"bio"	      TEXT,
-	"tags"	    INTEGER,
-	"hate_tags"	INTEGER,
-	"emoji"	    INTEGER,
-	"hate_emoji"	INTEGER,
+	"tags"	    INTEGER DEFAULT 0,
+	"hate_tags"	INTEGER DEFAULT 0,
+	"emoji"	    INTEGER DEFAULT 0,
+	"hate_emoji"	INTEGER DEFAULT 0,
 	"similar"	  BOOLEAN DEFAULT TRUE
 );
 
