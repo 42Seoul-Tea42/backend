@@ -5,7 +5,6 @@ gevent.monkey.patch_all()
 
 from app import create_app
 import socketio
-from app.socket import socketService as socketServ
 from gevent.lock import Semaphore
 import sys
 
@@ -32,12 +31,16 @@ def handle_connect(sid, environ, auth=None):
             sys.stdout.flush()
             return False
 
+        from app.socket import socketService as socketServ
+
         socketServ.handle_connect(int(auth["id"]), sid)
 
 
 @socket_io.on("disconnect")
 def handle_disconnect(sid):
     with socket_lock:
+        from app.socket import socketService as socketServ
+
         socketServ.handle_disconnect(sid)
 
 
@@ -45,12 +48,16 @@ def handle_disconnect(sid):
 @socket_io.on("send_message")
 def send_message(sid, data):
     with socket_lock:
+        from app.socket import socketService as socketServ
+
         socketServ.send_message(data, sid)
 
 
 @socket_io.on("read_message")
 def read_message(sid, data):
     with socket_lock:
+        from app.socket import socketService as socketServ
+
         socketServ.read_message(data, sid)
 
 

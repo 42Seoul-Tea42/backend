@@ -5,6 +5,7 @@ from ..user import userUtils
 from ..utils import redisServ
 from ..history import historyUtils
 from ..chat import chatUtils as chatUtils
+from wsgi import socket_io, socket_lock
 import sys
 
 # match된 유저 저장용 id: set()
@@ -13,10 +14,9 @@ id_match = dict()
 
 ### connect && disconnect ###
 def handle_connect(id, user_sid):
-    from wsgi import socket_io
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
-    if redis_user is None:
+    if redis_user is None or redis_user["login_id"] is None:
         socket_io.emit("conn_fail", {"msg": "존재하지 않는 유저입니다."}, room=user_sid)
 
     # (redis) user_info 업데이트
@@ -31,7 +31,6 @@ def handle_connect(id, user_sid):
 
 
 def handle_disconnect(user_sid):
-    from wsgi import socket_io
 
     # (socket) status 업데이트
     id = socket_io.get_session(user_sid).get("id", None)
@@ -53,27 +52,27 @@ def _update_status(socket_io, id, status, id_match):
     for target_id in id_match.get(id, []):
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
         for target_sid in target_sid_set:
-            socket_io.emit(
-                "update_status",
-                {"target_id": id, "status": status},
-                room=target_sid,
-            )
+            with socket_lock:
+                socket_io.emit(
+                    "update_status",
+                    {"target_id": id, "status": status},
+                    room=target_sid,
+                )
 
 
 ### chat ###
-def send_message(data, user_sid=None):
-    from wsgi import socket_io
-
-    # [Test]
-    sender_id = socket_io.get_session(user_sid).get("id", None)
+def send_message(data, user_sid=None, sender_id=None):
+    # [Pytest]
     if sender_id is None:
-        return
+        sender_id = socket_io.get_session(user_sid).get("id", None)
+        if sender_id is None:
+            return
 
     # TODO type 검사
     recver_id = data.get("recver_id")  # int
     message = data.get("message")  # str
 
-    if recver_id not in id_match.get(sender_id, set()):
+    if sender_id not in id_match.get(recver_id, set()):
         return
 
     if recver_id and message.strip():
@@ -81,21 +80,20 @@ def send_message(data, user_sid=None):
 
         recver_sid_set = redisServ.get_user_info(recver_id, RedisOpt.SOCKET)
         for recver_sid in recver_sid_set:
-            socket_io.emit(
-                "send_message",
-                {
-                    "sender_id": sender_id,
-                    "message": message,
-                    "msg_time": msg_time,
-                    "msg_new": True,
-                },
-                room=recver_sid,
-            )
+            with socket_lock:
+                socket_io.emit(
+                    "send_message",
+                    {
+                        "sender_id": sender_id,
+                        "message": message,
+                        "msg_time": msg_time,
+                        "msg_new": True,
+                    },
+                    room=recver_sid,
+                )
 
 
 def read_message(data, user_sid):
-    from wsgi import socket_io
-
     recver_id = socket_io.get_session(user_sid).get("id", None)
     if recver_id is None:
         return
@@ -104,7 +102,8 @@ def read_message(data, user_sid):
     sender_id = data.get("sender_id")  # int
     sender_sid_set = redisServ.get_user_info(sender_id, RedisOpt.SOCKET)
     for sender_sid in sender_sid_set:
-        socket_io.emit("read_message", {"recver_id": recver_id}, room=sender_sid)
+        with socket_lock:
+            socket_io.emit("read_message", {"recver_id": recver_id}, room=sender_sid)
 
     # (DB) message read 처리
     chatUtils.read_chat(recver_id, sender_id)
@@ -112,8 +111,6 @@ def read_message(data, user_sid):
 
 #### alarm ####
 def new_match(id, target_id):
-    from wsgi import socket_io, socket_lock
-
     user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
 
@@ -121,20 +118,18 @@ def new_match(id, target_id):
     chatUtils.save_chat(id, target_id, "")
 
     # socket alarm 발생
+    id_match[id] = id_match.get(id, set()) | set([target_id])
     for user_sid in user_sid_set:
-        id_match.get(id, set()).add(target_id)
         with socket_lock:
             socket_io.emit("new_match", {"target_id": target_id}, room=user_sid)
 
+    id_match[target_id] = id_match.get(target_id, set()) | set([id])
     for target_sid in target_sid_set:
-        id_match.get(target_id, set()).add(id)
         with socket_lock:
             socket_io.emit("new_match", {"target_id": id}, room=target_sid)
 
 
 def new_fancy(id, target_id):
-    from wsgi import socket_io, socket_lock
-
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
     for target_sid in target_sid_set:
         with socket_lock:
@@ -142,8 +137,6 @@ def new_fancy(id, target_id):
 
 
 def new_unfancy(id, target_id):
-    from wsgi import socket_io, socket_lock
-
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
     for target_sid in target_sid_set:
         with socket_lock:
@@ -151,8 +144,6 @@ def new_unfancy(id, target_id):
 
 
 def new_visitor(id):
-    from wsgi import socket_io, socket_lock
-
     user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
     for user_sid in user_sid_set:
         with socket_lock:
@@ -161,8 +152,6 @@ def new_visitor(id):
 
 #### update ####
 def update_distance(id, lat, long):
-    from wsgi import socket_io, socket_lock
-
     for target_id in id_match.get(id, set()):
 
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
@@ -185,8 +174,6 @@ def update_distance(id, lat, long):
 
 
 def unmatch(id, target_id):
-    from wsgi import socket_io, socket_lock
-
     if target_id in id_match.get(id, set()):
         id_match[id].remove(target_id)
 
@@ -205,8 +192,6 @@ def unmatch(id, target_id):
 
 
 def unregister(id):
-    from wsgi import socket_io, socket_lock
-
     for target_id in id_match.get(id, set()):
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
         for target_sid in target_sid_set:
