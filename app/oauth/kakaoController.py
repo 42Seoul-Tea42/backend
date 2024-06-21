@@ -26,7 +26,7 @@ class authorize(Resource):
     def get(self):
         code = request.args.get("code")
         state = request.args.get("state")
-        if not code or not state:
+        if code is None or state is None:
             raise BadRequest("code 또는 state 값이 필요합니다.")
         
         # 카카오 token 요청
@@ -58,7 +58,8 @@ class authorize(Resource):
         data = {
             'login_id': f'kakao{kakao_data['id']}',
             'email': kakao_data['kakao_account']['email'],
-            'name': kakao_data['kakao_account']['profile']['nickname']
+            'name': kakao_data['kakao_account']['profile']['nickname'],
+            'last_name': kakao_data['kakao_account']['profile']['nickname'][0],
         }
 
         #유저 정보 없으면 회원가입
