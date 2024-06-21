@@ -17,7 +17,6 @@ def set_user_info(user):
     )
     redis_client.hset(str_id, "emoji_check", 1 if user["emoji"] is not None else 0)
     redis_client.hset(str_id, "refresh_jti", user["refresh_jti"])
-    redis_client.hset(str_id, "login_id", user["login_id"])
     redis_client.hset(str_id, "email", user["email"])
 
     block = userUtils.get_block_list(user["id"])
@@ -39,7 +38,6 @@ def get_user_info(id, opt):
             "profile_check",
             "emoji_check",
             "email",
-            "login_id",
         ]
     elif opt == RedisOpt.SOCKET:
         if redis_client.hget(str(id), "socket_id") is None:
@@ -152,7 +150,6 @@ def delete_socket_id_by_id(id, socket_id) -> bool:
 #         # 유저 refresh token 정보
 #         "refresh_jti": "string",
 #         # 유저 정보
-#         "login_id": "string",
 #         "email": "string",
 #         # 유저 차단 및 차단된 정보
 #         "block": "JSON string (array of blocked user IDs)",
