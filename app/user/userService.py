@@ -449,9 +449,6 @@ def save_pictures(id, files):
 
 
 def register(data):
-    if data["pw"] is None:
-        raise BadRequest("비밀번호를 입력해주세요.")
-    
     login_id = data["login_id"]
     hashed_pw = utils.hashing(data["pw"])
     email_key = utils.create_email_key(Key.EMAIL)
@@ -459,8 +456,8 @@ def register(data):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (email, email_check, email_key, login_id, password, \
-                                    name, last_name, oauth, pictures) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
+                                    name, last_name, oauth, pictures, last_online) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(
             sql,
             (
@@ -472,7 +469,8 @@ def register(data):
                 data["name"],
                 data["last_name"],
                 Oauth.NONE,
-                [DEFAULT_PICTURE]
+                [DEFAULT_PICTURE],
+                datetime.now(KST)
             ),
         )
         conn.commit()
