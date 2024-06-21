@@ -23,10 +23,14 @@ application = socketio.WSGIApp(socket_io, application)
 #### connect && disconnect ####
 @socket_io.on("connect")
 def handle_connect(sid, environ, auth=None):
-    from app.user.userUtils import validation
-
     with socket_lock:
-        if not auth or not auth["id"] or not validation(auth["id"], int):
+        if not auth or not auth["id"]:
+            print("auth error: ", auth)
+            sys.stdout.flush()
+            return False
+        try:
+            int(auth["id"])
+        except:
             print("auth error: ", auth)
             sys.stdout.flush()
             return False
