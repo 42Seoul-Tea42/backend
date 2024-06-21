@@ -407,7 +407,7 @@ class Profile(Resource):
         except Exception as e:
             raise InternalServerError("사진 저장 실패")
 
-        data = Validator.validate(request.json)
+        data = Validator.validate_setting(request.json)
         return serv.setting(id, data, images)
 
     # 프로필 하나 요청하는 상황 == 자기 자신 정보 보기

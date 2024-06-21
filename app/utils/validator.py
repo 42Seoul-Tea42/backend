@@ -131,7 +131,7 @@ class Validator:
         return bio
 
     @staticmethod
-    def _validate_tags(tags: list[str]) -> list[int]:
+    def _validate_tags(tags):
         if type(tags) is not list:
             raise BadRequest("올바르지 않은 태그 값입니다.")
 
@@ -142,7 +142,7 @@ class Validator:
         return tags
 
     @staticmethod
-    def _validate_emoji(emoji: list[str]) -> list[int]:
+    def _validate_emoji(emoji):
         if type(emoji) is not list:
             raise BadRequest("올바르지 않은 이모티콘 값입니다.")
 
@@ -275,7 +275,7 @@ class Validator:
 
         for key, value in data.items():
             if value is None:
-                if key == "pw" or key == "reason_opt":
+                if key == "reason_opt":
                     result[key] = None
                     continue
 
@@ -284,9 +284,6 @@ class Validator:
             if key in Validator.func:
                 result[key] = Validator.func[key](value)
             else:
-                if key == "pictures":
-                    result[key] = value
-                    continue
                 raise BadRequest(f"Validation Error: 잘못된 키 값입니다. ({key})")
 
         if (
@@ -295,5 +292,23 @@ class Validator:
             and ("reason_opt" not in result or result["reason_opt"] is None)
         ):
             raise BadRequest("신고 이유를 입력해주세요.")
+
+        return result
+
+    @staticmethod
+    def validate_setting(data) -> dict:
+        result = dict()
+
+        for key, value in data.items():
+            if not value:
+                continue
+
+            if key in Validator.func:
+                result[key] = Validator.func[key](value)
+            else:
+                if key == "pictures":
+                    result[key] = value
+                    continue
+                raise BadRequest(f"Validation Error: 잘못된 키 값입니다. ({key})")
 
         return result
