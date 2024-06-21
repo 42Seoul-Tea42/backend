@@ -29,10 +29,6 @@ class TokenError:
 MAX_SEARCH = 16  # max result limit
 DAYS = 365  # age calculation
 EARTH_RADIUS = 6_371_000  # (m)
-# MIN_AGE = 1
-# MAX_AGE = 100
-# MAX_DISTANCE = 60  # 60km
-# MIN_FAME = 0
 MAX_FAME = 5
 
 # User
