@@ -29,20 +29,39 @@ class TokenError:
 MAX_SEARCH = 16  # max result limit
 DAYS = 365  # age calculation
 EARTH_RADIUS = 6_371_000  # (m)
-MIN_AGE = 1
-MAX_AGE = 100
-MAX_DISTANCE = 60  # 60km
-MIN_FAME = 0
+# MIN_AGE = 1
+# MAX_AGE = 100
+# MAX_DISTANCE = 60  # 60km
+# MIN_FAME = 0
 MAX_FAME = 5
 
 # User
 IGNORE_MOVE = 1000  # 1km 이하의 움직임 무시
-MIN_PASSWORD_SIZE = 8
 MAX_PICTURE_AMOUNT = 5
 
-# Login Id
+# Validation
 LOGIN_ID_BLUR_SIZE = 3
-LOGIN_ID_MIN_LENGTH = 5
+
+
+class ValidationConst:
+    EMAIL_MAX_LENGTH = 20
+    LOGIN_ID_MIN_LENGTH = 5
+    LOGIN_ID_MAX_LENGTH = 15
+    PASSWORD_MIN_LENGTH = 8
+    PASSWORD_MAX_LENGTH = 20
+    NAME_MIN_LENGTH = 1
+    NAME_MAX_LENGTH = 15
+    AGE_MIN = 1
+    AGE_MAX = 100
+    BIO_MAX_LENGTH = 500
+    DISTANCE_MIN = 0
+    DISTANCE_MAX = 100  # 100km
+    FAME_MIN = 0
+    FAME_MAX = 5
+    TARGET_ID_MIN = 1
+    REASON_OPT_MIN = 3
+    REASON_OPT_MAX = 200
+    KEY_LENGTH = 11
 
 
 # Redis
@@ -139,7 +158,7 @@ class Tags:
     ALL = 0
     MIN = 1
     MAX = 13
-    NONE = 0
+    NONE = 0  # 언제쓰지
     FOOD = 1
     VIDEO = 2
     BOOK = 3
