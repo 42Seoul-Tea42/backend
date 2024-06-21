@@ -113,20 +113,6 @@ class _ResponseSchema:
         },
     )
 
-    field_get_checkEmail = ns.model(
-        "이메일 중복 확인 응답 데이터",
-        {
-            "occupied": fields.Boolean(description="이메일 사용 여부"),
-        },
-    )
-
-    field_get_checkId = ns.model(
-        "Login Id 중복 확인 응답 데이터",
-        {
-            "occupied": fields.Boolean(description="login id 사용 여부"),
-        },
-    )
-
     field_get_emailStatus = ns.model(
         "이메일 인증 여부 확인 응답 데이터",
         {
@@ -292,7 +278,7 @@ class Login(Resource):
 
 @ns.route("/check-id")
 class CheckId(Resource):
-    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_checkId)
+    @ns.response(200, "api요청 성공")
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.doc(params={"login_id": "중복 확인할 login id"})
     def get(self):
@@ -304,7 +290,7 @@ class CheckId(Resource):
 # ##### email
 @ns.route("/check-email")
 class CheckEmail(Resource):
-    @ns.response(200, "api요청 성공", _ResponseSchema.field_get_checkEmail)
+    @ns.response(200, "api요청 성공")
     @ns.response(400, "Bad Request", _ResponseSchema.field_failed)
     @ns.doc(params={"email": "중복 확인할 email"})
     def get(self):
