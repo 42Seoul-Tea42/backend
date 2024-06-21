@@ -12,7 +12,7 @@ CREATE TABLE "User" (
 	"email_check"	BOOLEAN	NOT NULL,
 	"email_key"	TEXT,
 	"name"	    TEXT	NOT NULL,
-	"last_name"	TEXT,
+	"last_name"	TEXT	NOT NULL,
 	"age"		INTEGER,
 	"last_online"	TIMESTAMP,
 	"longitude"	FLOAT,
