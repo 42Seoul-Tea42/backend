@@ -78,7 +78,7 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
 
     # fancy 받기
-    fancy({"target_id": id}, id + 1)
+    fancy(id + 1, target_id=id)
 
     # chat 목록 보기
     response = test_client.get(f"/api/chat/list")
@@ -94,7 +94,9 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][0]["new"] == True
 
     # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+1}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -118,7 +120,7 @@ def test_chat_list_order(test_client):
 
     # match case (2): 내가 매치 (new_msg == False)
     # fancy 받기
-    fancy({"target_id": id}, id + 2)
+    fancy(id + 2, target_id=id)
 
     # 유저 fancy 하기
     response = test_client.patch(
@@ -155,8 +157,10 @@ def test_chat_list_order(test_client):
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 0
 
-    # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
+    # 채팅방 내용 확인하기 (1)
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+1}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -165,8 +169,10 @@ def test_chat_list_order(test_client):
     assert data["msg_list"][0]["msg_time"]
     assert data["msg_list"][0]["msg_new"] == False
 
-    # 채팅방 내용 확인하기 (empty)
-    response = test_client.get(f"/api/chat/msg?target_id={id+2}")
+    # 채팅방 내용 확인하기 (1)
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+2}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 1
@@ -201,7 +207,9 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][1]["new"] == False
 
     # 채팅방 내용 확인하기
-    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+1}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["msg_list"]) == 2
@@ -260,7 +268,18 @@ def test_chat_msg(test_client):
     assert response.status_code == StatusCode.OK
 
     # fancy 받기
-    fancy({"target_id": id}, id + 1)
+    fancy(id + 1, target_id=id)
+
+    # 채팅방 내용 확인하기 (최신)
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+1}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert len(data["msg_list"]) == 1
+    assert data["msg_list"][0]["sender_id"] == id + 1
+    assert data["msg_list"][0]["message"] == ""
+    assert data["msg_list"][0]["msg_new"] == False
 
     # 채팅 받기
     from app.socket.socketService import send_message
@@ -315,10 +334,12 @@ def test_chat_msg(test_client):
     assert data["chat_list"][0]["new"] == True
 
     # 채팅방 내용 확인하기 (최신)
-    response = test_client.get(f"/api/chat/msg?target_id={id+1}")
+    response = test_client.get(
+        f"/api/chat/msg?target_id={id+1}&time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert len(data["msg_list"]) == 6
+    assert len(data["msg_list"]) == 5  # const.py에 정의된 MAX_CHAT_MSG_COUNT
     assert data["msg_list"][0]["sender_id"] == id + 1
     assert data["msg_list"][0]["message"] == "3"
     assert data["msg_list"][0]["msg_new"] == False
@@ -334,9 +355,6 @@ def test_chat_msg(test_client):
     assert data["msg_list"][4]["sender_id"] == id + 1
     assert data["msg_list"][4]["message"] == "hello"
     assert data["msg_list"][4]["msg_new"] == False
-    assert data["msg_list"][5]["sender_id"] == id + 1
-    assert data["msg_list"][5]["message"] == ""
-    assert data["msg_list"][5]["msg_new"] == False
 
     # 채팅방 내용 확인하기 (중간1)
     response = test_client.get(

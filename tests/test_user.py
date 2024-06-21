@@ -1,12 +1,21 @@
 import json
 from app.utils.const import StatusCode
 
-not_valid_email = "dummy1@tea42"
+invalid_email = "dummy1@tea42"
+invalid_email_2 = "d@tea42.com"
+invalid_email_3 = "dummy1@t.com"
+invalid_email_4 = "dummy1@tea42.c"
+invalid_email_5 = "dummy1tea42.com"
+invalid_email_6 = "dummy1@.com"
+invalid_email_7 = "duasdfasdfasdfmmy1@teasdfasdfa42.comm"
 duplicated_email = "dummy1@tea42.com"
 valid_email = "dummy11@tea42.com"
 valid_email_2 = "dummy1111@tea42.com"
 
-not_valid_login = "dum"
+invalid_login = "dum"
+invalid_login_2 = "dumakskdkgksndek"
+invalid_login_3 = "dum!sdfasdf"
+invalid_login_4 = "dumasdf현"
 duplicated_login = "dummy1"
 valid_login = "dummy1111"
 not_registered_login = "dummy2222"
@@ -18,41 +27,226 @@ not_valid_pw_3 = "12345678"
 not_valid_pw_4 = "pass1234"
 not_valid_pw_5 = "PASS1234"
 not_valid_pw_6 = "PASSword"
+not_valid_pw_7 = "PASSword0현"
 valid_pw = "ASDFasdf0"
 
 
 # 이메일 중복 확인
 def test_check_email_duplication(test_client):
 
-    response = test_client.get(f"/api/user/check-email?email={not_valid_email}")
+    response = test_client.get(f"/api/user/check-email")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email=")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email=0000")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_2}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_3}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_4}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_5}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_6}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-email?email={invalid_email_7}")
     assert response.status_code == StatusCode.BAD_REQUEST
 
     response = test_client.get(f"/api/user/check-email?email={duplicated_email}")
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
-    assert data["occupied"] == True
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(
+        f"/api/user/check-email?email={duplicated_email.upper()}"
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
 
     response = test_client.get(f"/api/user/check-email?email={valid_email}")
-    data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert data["occupied"] == False
+
+    response = test_client.get(f"/api/user/check-email?email={valid_email.upper()}")
+    assert response.status_code == StatusCode.OK
 
 
 # 로그인 아이디 중복 확인
 def test_check_login_id_duplication(test_client):
 
-    response = test_client.get(f"/api/user/check-id?login_id={not_valid_login}")
+    response = test_client.get(f"/api/user/check-id")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id=")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id=0000")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id={invalid_login}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id={invalid_login_2}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id={invalid_login_3}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/check-id?login_id={invalid_login_4}")
     assert response.status_code == StatusCode.BAD_REQUEST
 
     response = test_client.get(f"/api/user/check-id?login_id={duplicated_login}")
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
-    assert data["occupied"] == True
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(
+        f"/api/user/check-id?login_id={duplicated_login.upper()}"
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
 
     response = test_client.get(f"/api/user/check-id?login_id={valid_login}")
+    assert response.status_code == StatusCode.OK
+
+    response = test_client.get(f"/api/user/check-id?login_id={valid_login.upper()}")
+    assert response.status_code == StatusCode.OK
+
+
+# 패스워드 재설정 메일 요청
+def test_request_pw_reset_mail(test_client):
+
+    response = test_client.get(f"/api/user/reset-pw")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?login_id=")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?login_id=0000")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?login_id={invalid_login}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?login_id={not_registered_login}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/reset-pw?login_id={duplicated_login}")
+    data = json.loads(response.data.decode("utf-8"))
+    prev_key = data["key"]
+    assert response.status_code == StatusCode.OK
+    assert data["key"]
+
+    response = test_client.get(f"/api/user/reset-pw?login_id={duplicated_login.upper()}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
-    assert data["occupied"] == False
+    assert data["key"]
+    assert data["key"] != prev_key
+
+    # 비밀번호 재설정하기
+    response = test_client.post(
+        f"/api/user/reset-pw",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key=",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key=0001",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"] + '11'}",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"]}",
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"]}",
+        data=json.dumps({"pw": None}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"]}",
+        data=json.dumps({"pw": short_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"]}",
+        data=json.dumps({"pw": not_valid_pw_1}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/reset-pw?key={data["key"]}",
+        data=json.dumps({"pw": valid_pw}),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.OK
+
+
+# email로 login_id 찾기
+def test_find_login_id_by_email(test_client):
+
+    response = test_client.get(f"/api/user/login-id")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/login-id?")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/login-id?email=")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/login-id?email={invalid_email}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/login-id?email={valid_email}")
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.get(f"/api/user/login-id?email={duplicated_email}")
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert data["login_id"] == "dum***"
 
 
 # 유저 로그인 확인
@@ -63,8 +257,231 @@ def test_check_login_using_jwt(test_client):
 
 # 유저 회원가입
 def test_register_user(test_client):
+    # 항목 없음
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    # 값 없음
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": "",
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": None,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": "",
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": None,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": "",
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": None,
+                "last_name": "last_name",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "",
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": None,
+                "name": "이름",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": "",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(
+            {
+                "email": valid_email,
+                "login_id": valid_login,
+                "pw": valid_pw,
+                "last_name": "last_name",
+                "name": None,
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    # 잘못된 값
     user_data = {
-        "email": not_valid_email,
+        "email": invalid_email,
         "login_id": valid_login,
         "pw": valid_pw,
         "last_name": "last_name",
@@ -87,7 +504,7 @@ def test_register_user(test_client):
     assert response.status_code == StatusCode.BAD_REQUEST
 
     user_data["email"] = valid_email
-    user_data["login_id"] = not_valid_login
+    user_data["login_id"] = invalid_login
     response = test_client.post(
         f"/api/user/profile",
         data=json.dumps(user_data),
@@ -160,6 +577,14 @@ def test_register_user(test_client):
     )
     assert response.status_code == StatusCode.BAD_REQUEST
 
+    user_data["pw"] = not_valid_pw_7
+    response = test_client.post(
+        f"/api/user/profile",
+        data=json.dumps(user_data),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
     user_data["pw"] = valid_pw
     user_data["last_name"] = ""
     user_data["name"] = ""
@@ -177,72 +602,9 @@ def test_register_user(test_client):
         data=json.dumps(user_data),
         content_type="application/json",
     )
-    assert response.status_code == StatusCode.OK
-
-
-# 패스워드 재설정 메일 요청
-def test_request_pw_reset_mail(test_client):
-
-    response = test_client.get(f"/api/user/reset-pw?login_id={not_valid_login}")
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.get(f"/api/user/reset-pw?login_id={not_registered_login}")
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.get(f"/api/user/reset-pw?login_id={duplicated_login}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert data["key"]
-
-    # 비밀번호 재설정하기
-    response = test_client.post(
-        f"/api/user/reset-pw?key={data["key"] + '11'}",
-        data=json.dumps({"pw": valid_pw}),
-        content_type="application/json",
-    )
-    assert response.status_code == StatusCode.FORBIDDEN
-
-    response = test_client.post(
-        f"/api/user/reset-pw?key={data["key"]}",
-        content_type="application/json",
-    )
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.post(
-        f"/api/user/reset-pw?key={data["key"]}",
-        data=json.dumps({"pw": short_pw}),
-        content_type="application/json",
-    )
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.post(
-        f"/api/user/reset-pw?key={data["key"]}",
-        data=json.dumps({"pw": not_valid_pw_1}),
-        content_type="application/json",
-    )
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.post(
-        f"/api/user/reset-pw?key={data["key"]}",
-        data=json.dumps({"pw": valid_pw}),
-        content_type="application/json",
-    )
-    assert response.status_code == StatusCode.OK
-
-
-# email로 login_id 찾기
-def test_find_login_id_by_email(test_client):
-
-    response = test_client.get(f"/api/user/login-id?email={not_valid_email}")
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.get(f"/api/user/login-id?email={valid_email}")
-    assert response.status_code == StatusCode.BAD_REQUEST
-
-    response = test_client.get(f"/api/user/login-id?email={duplicated_email}")
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
-    assert data["login_id"] == "dum***"
 
 
 # 회원가입 후 이메일 인증 전
@@ -320,7 +682,7 @@ def test_unauthrized_email(test_client):
 
     response = test_client.patch(
         f"/api/user/email",
-        data=json.dumps({"email": not_valid_email}),
+        data=json.dumps({"email": invalid_email}),
         content_type="application/json",
     )
     assert response.status_code == StatusCode.BAD_REQUEST
@@ -344,7 +706,7 @@ def test_unauthrized_email(test_client):
 
     # 이메일 인증
     response = test_client.get(f"/api/user/verify-email?key={key + '00'}")
-    assert response.status_code == StatusCode.FORBIDDEN
+    assert response.status_code == StatusCode.BAD_REQUEST
 
     response = test_client.get(f"/api/user/verify-email?key={key}")
     assert response.status_code == StatusCode.OK
@@ -434,7 +796,7 @@ def test_unauthrized_email(test_client):
         "/api/user/profile",
         data=json.dumps(
             {
-                "Tags": [1, 2, 3],
+                "tags": [1, 2, 3],
                 "hate_tags": [7, 8, 9],
             }
         ),
@@ -457,11 +819,50 @@ def test_unauthrized_email(test_client):
         content_type="application/json",
     )
     data = json.loads(response.data.decode("utf-8"))
+    print(data)
     assert response.status_code == StatusCode.OK
     assert data["email_check"] == True
 
     # 프로필 설정 확인 (emoji_check)
     response = test_client.get(f"/api/user/login")
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert data["email_check"] == True
+    assert data["profile_check"] == True
+    assert data["emoji_check"] == True
+
+    # 프로필 설정 (pw)
+    response = test_client.patch(
+        "/api/user/profile",
+        data=json.dumps(
+            {
+                "pw": short_pw,
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.patch(
+        "/api/user/profile",
+        data=json.dumps(
+            {
+                "pw": not_valid_pw_1,
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    response = test_client.patch(
+        "/api/user/profile",
+        data=json.dumps(
+            {
+                "pw": valid_pw,
+            }
+        ),
+        content_type="application/json",
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert data["email_check"] == True
@@ -571,7 +972,7 @@ def test_after_authorize_email(test_client):
         ),
         content_type="application/json",
     )
-    assert response.status_code == StatusCode.FORBIDDEN
+    assert response.status_code == StatusCode.BAD_REQUEST
 
     # 로그인
     response = test_client.post(
@@ -605,7 +1006,7 @@ def test_after_authorize_email(test_client):
     # 메일 주소 가져오기
     response = test_client.get(f"/api/user/email")
     data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.BAD_REQUEST
+    assert response.status_code == StatusCode.FORBIDDEN
 
     # 메일 주소 바꾸기
     response = test_client.patch(
@@ -614,12 +1015,12 @@ def test_after_authorize_email(test_client):
         content_type="application/json",
     )
     data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.BAD_REQUEST
+    assert response.status_code == StatusCode.FORBIDDEN
 
     # 이메일 인증 키 다시 보내기
     response = test_client.get(f"/api/user/send-email")
     data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.BAD_REQUEST
+    assert response.status_code == StatusCode.FORBIDDEN
 
     # (자기 자신) 프로필 확인
     response = test_client.get(f"/api/user/profile")
@@ -644,7 +1045,7 @@ def test_after_authorize_email(test_client):
         "/api/user/profile",
         data=json.dumps(
             {
-                "Tags": [1, 2, 3],
+                "tags": [1, 2, 3],
                 "hate_tags": [7, 8, 9],
             }
         ),
@@ -824,6 +1225,9 @@ def test_user_api(test_client):
             {
                 "min_age": 10,
                 "max_age": 40,
+                "distance": 100,
+                "fame": 0,
+                "tags": [],
             }
         ),
         content_type="application/json",
@@ -897,6 +1301,9 @@ def test_user_api(test_client):
             {
                 "min_age": 10,
                 "max_age": 40,
+                "distance": 100,
+                "fame": 0,
+                "tags": [],
             }
         ),
         content_type="application/json",
@@ -904,6 +1311,26 @@ def test_user_api(test_client):
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
+
+    # 신고 (실패)
+    response = test_client.post(
+        f"/api/user/report",
+        data=json.dumps(
+            {"target_id": target_id+2, "reason": 9, "reason_opt": "밍"}
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.BAD_REQUEST
+
+    # 신고 (성공)
+    response = test_client.post(
+        f"/api/user/report",
+        data=json.dumps(
+            {"target_id": target_id+2, "reason": 9, "reason_opt": "그냥 싫어요"}
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == StatusCode.OK
 
     # 로그아웃
     response = test_client.post(f"/api/user/logout")
@@ -949,6 +1376,7 @@ def test_tea_suggest_api(test_client):
         data=json.dumps({"target_id": target["id"], "reason": 1}),
         content_type="application/json",
     )
+    data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
 
     # (신고, 블록 후) tea 추천

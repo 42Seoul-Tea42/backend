@@ -30,7 +30,9 @@ def test_view_history(test_client):
     first_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # history 목록 보기 (empty)
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
@@ -58,8 +60,8 @@ def test_view_history(test_client):
     assert response.status_code == StatusCode.OK
 
     # fancy 받기
-    fancy({"target_id": id}, id + 2)
-    fancy({"target_id": id}, id + 3)
+    fancy(id + 2, target_id=id)
+    fancy(id + 3, target_id=id)
 
     # 중간 시간
     second_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
@@ -99,7 +101,9 @@ def test_view_history(test_client):
     assert target["picture"]
     assert target["time"]
 
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 4
@@ -163,7 +167,9 @@ def test_view_history(test_client):
     assert data["pictures"]
 
     # history 목록 보기 (all)
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 4
@@ -210,11 +216,6 @@ def test_fancy_history(test_client):
     first_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # fancy 받은 목록 보기 (empty)
-    response = test_client.get(f"/api/history/fancy-list")
-    data = json.loads(response.data.decode("utf-8"))
-    assert response.status_code == StatusCode.OK
-    assert len(data["profile_list"]) == 0
-
     response = test_client.get(f"/api/history/fancy-list?time={first_kst}")
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
@@ -247,13 +248,13 @@ def test_fancy_history(test_client):
     assert response.status_code == StatusCode.BAD_REQUEST
 
     # fancy 받기 (1)
-    fancy({"target_id": id}, id + 1)
+    fancy(id + 1, target_id=id)
 
     # 중간 시간
     second_kst = quote(datetime.now(KST).strftime(TIME_STR_TYPE))
 
     # fancy 받기 (2)
-    fancy({"target_id": id}, id + 3)
+    fancy(id + 3, target_id=id)
 
     # fancy 받은 목록 보기 (all)
     response = test_client.get(
@@ -275,7 +276,9 @@ def test_fancy_history(test_client):
     assert target["picture"]
     assert target["time"]
 
-    response = test_client.get(f"/api/history/fancy-list")
+    response = test_client.get(
+        f"/api/history/fancy-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -318,7 +321,9 @@ def test_fancy_history(test_client):
     assert response.status_code == StatusCode.OK
 
     # fancy 받은 목록 보기 (all)
-    response = test_client.get(f"/api/history/fancy-list")
+    response = test_client.get(
+        f"/api/history/fancy-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -336,10 +341,12 @@ def test_fancy_history(test_client):
     assert target["time"]
 
     # unfancy 받기
-    unfancy({"target_id": id}, id + 3)
+    unfancy(id + 3, target_id=id)
 
     # fancy 받은 목록 보기 (all)
-    response = test_client.get(f"/api/history/fancy-list")
+    response = test_client.get(
+        f"/api/history/fancy-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 1
@@ -377,7 +384,9 @@ def test_fancy(test_client):
     id = data["id"]
 
     # history 목록 보기
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 0
@@ -400,7 +409,9 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -427,7 +438,9 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -454,7 +467,9 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 2
@@ -488,7 +503,9 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.OK
 
     # history 목록 보기
-    response = test_client.get(f"/api/history/history-list")
+    response = test_client.get(
+        f"/api/history/history-list?time={quote(datetime.now(KST).strftime(TIME_STR_TYPE))}"
+    )
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
     assert len(data["profile_list"]) == 1
