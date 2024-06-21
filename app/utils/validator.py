@@ -284,6 +284,9 @@ class Validator:
             if key in Validator.func:
                 result[key] = Validator.func[key](value)
             else:
+                if key == "pictures":
+                    result[key] = value
+                    continue
                 raise BadRequest(f"Validation Error: 잘못된 키 값입니다. ({key})")
 
         if (
