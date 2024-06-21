@@ -14,7 +14,7 @@ def update_fancy_check(id):
         conn.commit()
 
 
-def get_fancy(id, target_id) -> int:
+def get_fancy_status(id, target_id) -> int:
     fancy = 0
 
     conn = PostgreSQLFactory.get_connection()
