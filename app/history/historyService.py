@@ -71,8 +71,7 @@ def view_history(id, time_limit, opt):
 
 def check_before_service(id, target_id):
     # 유저 API 접근 권한 확인
-    if os.getenv("PYTEST") != "True":
-        userUtils.check_authorization(id, Authorization.EMOJI)
+    userUtils.check_authorization(id, Authorization.EMOJI)
 
     if id == target_id:
         raise BadRequest("스스로를 fancy할 수 없습니다.")
@@ -127,6 +126,82 @@ def fancy(id, target_id):
 
 def unfancy(id, target_id):
     check_before_service(id, target_id)
+
+    now_kst = datetime.now(KST)
+
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+
+        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+        cursor.execute(sql, (id, target_id))
+        history = cursor.fetchone()
+
+        if history:
+            if not history["fancy"]:
+                return StatusCode.OK
+
+            sql = 'UPDATE "History" \
+                    SET "fancy" = False, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    WHERE "user_id" = %s AND "target_id" = %s;'
+            cursor.execute(sql, (now_kst, now_kst, id, target_id))
+        else:
+            raise BadRequest("잘못된 접근입니다. (fancy기록 없음)")
+        conn.commit()
+
+        userUtils.update_count_fancy(target_id, FancyOpt.DEL)
+
+        if utils.get_fancy_status(id, target_id) == Fancy.RECV:
+            chatUtils.delete_chat(id, target_id)
+            socketServ.unmatch(id, target_id)
+
+        socketServ.new_unfancy(id, target_id)
+
+    return StatusCode.OK
+
+
+def dummy_fancy(id, target_id):
+    if id == target_id:
+        return StatusCode.OK
+
+    now_kst = datetime.now(KST)
+
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+
+        sql = 'SELECT * FROM "History" WHERE "user_id" = %s AND "target_id" = %s;'
+        cursor.execute(sql, (id, target_id))
+        history = cursor.fetchone()
+
+        if history:  # update
+            if history["fancy"]:
+                return StatusCode.OK
+
+            sql = 'UPDATE "History" \
+                    SET "fancy" = True, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    WHERE "user_id" = %s AND "target_id" = %s;'
+            cursor.execute(sql, (now_kst, now_kst, id, target_id))
+        else:  # create
+            sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, fancy_check, last_view) \
+                                VALUES (%s, %s, %s, %s, %s, %s)'
+            cursor.execute(sql, (id, target_id, True, now_kst, False, now_kst))
+        conn.commit()
+
+        userUtils.update_count_fancy(target_id, FancyOpt.ADD)
+
+        if history is None:
+            userUtils.update_count_view(target_id)
+
+        if utils.get_fancy_status(id, target_id) == Fancy.CONN:
+            socketServ.new_match(id, target_id)
+
+        socketServ.new_fancy(id, target_id)
+
+    return StatusCode.OK
+
+
+def dummy_unfancy(id, target_id):
+    if id == target_id:
+        return StatusCode.OK
 
     now_kst = datetime.now(KST)
 

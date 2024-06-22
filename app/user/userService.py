@@ -517,8 +517,7 @@ def profile_detail(id, target_id):
     historyUtils.update_last_view(id, target_id)
 
     ## (socket) history update alarm
-    if os.getenv("PYTEST") != "True":
-        socketServ.new_visitor(target_id)
+    socketServ.new_visitor(target_id)
 
     images = utils.get_pictures(target["pictures"])
 
@@ -933,3 +932,34 @@ def reset_token(id):
     set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
     
     return response
+
+
+def dummy_profile_detail(id, target_id):
+    target = utils.get_user(target_id)
+    if not target:
+        raise BadRequest("존재하지 않는 유저입니다.")
+
+    # History.last_view update
+    historyUtils.update_last_view(id, target_id)
+
+    images = utils.get_pictures(target["pictures"])
+
+    return {
+        "login_id": target["login_id"],
+        "status": socketServ.check_status(target_id),
+        "last_online": (target["last_online"]+timedelta(hours=9)).strftime(TIME_DETAIL_PAGE_STR_TYPE),
+        "fame": (
+            (target["count_fancy"] / target["count_view"] * MAX_FAME)
+            if target["count_view"]
+            else 0
+        ),
+        "gender": target["gender"],
+        "taste": target["taste"],
+        "bio": target["bio"],
+        "tags": utils.decode_bit(target["tags"]),
+        "hate_tags": utils.decode_bit(target["hate_tags"]),
+        "emoji": utils.decode_bit(target["emoji"]),
+        "hate_emoji": utils.decode_bit(target["hate_emoji"]),
+        "similar": target["similar"],
+        "pictures": images,
+    }, StatusCode.OK
