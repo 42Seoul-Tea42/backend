@@ -311,4 +311,7 @@ class Validator:
                     continue
                 raise BadRequest(f"Validation Error: 잘못된 키 값입니다. ({key})")
 
+        if not result:
+            raise BadRequest("수정할 값이 없습니다.")
+
         return result
