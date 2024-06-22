@@ -21,7 +21,6 @@ from ..utils.const import (
     DEFAULT_PICTURE,
     RedisOpt,
     RedisSetOpt,
-    Gender,
     Authorization,
     LOGIN_ID_BLUR_SIZE,
 )
@@ -38,7 +37,7 @@ def create_email_key(key):
 
 def encode_bit(data) -> int:
     result = 0
-    for n in list(data):
+    for n in data:
         result |= 1 << n - 1
 
     return result
