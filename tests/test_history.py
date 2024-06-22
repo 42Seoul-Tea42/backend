@@ -158,7 +158,7 @@ def test_view_history(test_client):
     assert data["fame"]
     assert data["gender"] == 4
     assert data["taste"] == 2
-    assert data["bio"] == "자기소개입니다"
+    assert data["bio"] == "2"
     assert data["tags"] == [4, 11, 12]
     assert data["hate_tags"] == [13]
     assert data["emoji"] == [16]

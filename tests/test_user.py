@@ -1032,7 +1032,7 @@ def test_after_authorize_email(test_client):
     assert data["age"] == 20
     assert data["gender"] == 2
     assert data["taste"] == 7
-    assert data["bio"] == "자기소개입니다"
+    assert data["bio"] == "1"
     assert data["tags"] == [4, 11, 12]
     assert data["hate_tags"] == [13]
     assert data["emoji"] == [12, 13, 16]
@@ -1137,7 +1137,7 @@ def test_user_api(test_client):
     assert data["fame"] == 0
     assert data["gender"] == 4
     assert data["taste"] == 2
-    assert data["bio"] == "자기소개입니다"
+    assert data["bio"] == "2"
     assert data["tags"] == [4, 11, 12]
     assert data["hate_tags"] == [13]
     assert data["emoji"] == [16]

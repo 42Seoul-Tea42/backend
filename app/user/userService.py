@@ -395,7 +395,7 @@ def register_dummy(data):
                 data["latitude"],
                 data["gender"],
                 data["taste"],
-                "자기소개입니다",
+                data["bio"],
                 utils.encode_bit(data["tags"]),
                 utils.encode_bit(data["hate_tags"]),
                 utils.encode_bit(data["emoji"]),
