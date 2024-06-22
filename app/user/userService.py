@@ -358,7 +358,7 @@ def setting(id, data, images):
     return {
         "email_check": False if "email" in update_fields else True,
         "profile_check": True if (user["gender"] or "gender" in update_fields) else False,
-        "emoji_check": True if (user["emoji"] or "emoji" in update_fields) else False,
+        "emoji_check": True if (user["emoji"] is not None or "emoji" in update_fields) else False,
     }, StatusCode.OK
 
 
@@ -779,13 +779,14 @@ def suggest(id):
                     AND "tags" & %s = 0 \
                     AND "hate_emoji" & %s = 0 \
                     AND "emoji" & %s = 0 \
-                    AND "tags" & %s > 0 \
-                    AND CASE WHEN %s THEN "emoji" & %s > 0 \
+                    AND "tags" & %s >= 0 \
+                    AND CASE WHEN %s THEN "emoji" & %s >= 0 \
                             ELSE "emoji" & %s = 0 \
                         END \
                     AND "distance" <= %s \
                 ORDER BY CASE WHEN %s THEN "emoji" & %s \
                         END DESC, \
+                        "tags" & %s DESC, \
                         distance ASC, \
                         "count_fancy"::float / COALESCE("count_view", 1) DESC \
                 LIMIT %s ;'
@@ -814,6 +815,7 @@ def suggest(id):
                 AREA_DISTANCE,
                 similar,
                 emoji,
+                tags,
                 MAX_SUGGEST,
             ),
         )

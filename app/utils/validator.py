@@ -301,6 +301,8 @@ class Validator:
 
         for key, value in data.items():
             if not value:
+                if key == "emoji":
+                    result[key] = []
                 continue
 
             if key in Validator.func:
