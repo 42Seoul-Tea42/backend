@@ -26,8 +26,21 @@ def handle_connect(id, user_sid):
     socket_io.save_session(user_sid, {"id": id})
 
     # (socket) status 업데이트
-    id_match[id] = historyUtils.get_match_list(id)
-    _update_status(socket_io, id, UserStatus.ONLINE, id_match)
+    if id not in id_match:
+        id_match[id] = historyUtils.get_match_list(id)
+        _update_status(socket_io, id, UserStatus.ONLINE, id_match)
+
+    # (socket) 로그아웃 중 발생한 이벤트 처리
+    user = userUtils.get_user(id)
+    if user["is_fancy"] or user["is_visitor"] or user["is_match"]:
+        with socket_lock:
+            if user["is_fancy"]:
+                socket_io.emit("new_fancy", {"target_id": id}, room=user_sid)
+            if user["is_visitor"]:
+                socket_io.emit("new_visitor", room=user_sid)
+            if user["is_match"]:
+                socket_io.emit("new_match", {"target_id": id}, room=user_sid)
+        userUtils.update_event(id)
 
 
 def handle_disconnect(user_sid):

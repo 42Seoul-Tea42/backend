@@ -250,6 +250,14 @@ def update_count_fancy(target_id, opt):
         conn.commit()
 
 
+def update_event(id):
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'UPDATE "User" SET "is_fancy" = %s, "is_visitor" = %s, "is_match" = %s WHERE "id" = %s'
+        cursor.execute(sql, (id, False, False, False))
+        conn.commit()
+
+
 ### location & distance ###
 
 

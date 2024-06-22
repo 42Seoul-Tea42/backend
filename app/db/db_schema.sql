@@ -27,7 +27,10 @@ CREATE TABLE "User" (
 	"hate_tags"	INTEGER DEFAULT 0,
 	"emoji"	    INTEGER,
 	"hate_emoji"	INTEGER DEFAULT 0,
-	"similar"	  BOOLEAN DEFAULT TRUE
+	"similar"		BOOLEAN DEFAULT TRUE,
+	"is_fancy"		BOOLEAN DEFAULT FALSE,
+	"is_visitor"	BOOLEAN DEFAULT FALSE,
+	"is_match"		BOOLEAN DEFAULT FALSE,
 );
 
 -- age 열에 대한 인덱스 생성
