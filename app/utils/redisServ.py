@@ -1,7 +1,15 @@
-from app import redis_client
+# from app import redis_client
 from .const import RedisOpt
 from ..user import userUtils
 import os, json
+import redis
+
+redis_client = redis.StrictRedis(
+    host=os.getenv("REDIS_HOST"),
+    port=int(os.getenv("REDIS_PORT")),
+    db=0,
+    decode_responses=True,
+)
 
 
 def set_user_info(user):

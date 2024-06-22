@@ -34,14 +34,16 @@ class MongoDBFactory:
         return db[collection_name]
 
     @classmethod
-    def release_collection(cls, collection):
-        # 클라이언트를 닫지 않고 컬렉션을 릴리스합니다.
-        pass
+    def initialize_collection(cls, db_name, collection_name):
+        collection = cls.get_collection(db_name, collection_name)
+
+        # 컬렉션 초기화 (기존 문서 삭제)
+        collection.delete_many({})
 
 
 # 사용 예시
 # chat_collection = MongoDBFactory.get_collection("tea42", "chat")
-# MongoDBFactory.release_collection(chat_collection)
+# MongoDBFactory.initialize_collection("tea42", "chat")
 
 
 # # MongoDB chat collection schema

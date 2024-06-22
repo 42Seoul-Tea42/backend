@@ -1,5 +1,12 @@
-from app import redis_jwt_blocklist
-import os
+# from app import redis_jwt_blocklist
+import os, redis
+
+redis_jwt_blocklist = redis.StrictRedis(
+    host=os.getenv("REDIS_HOST"),
+    port=int(os.getenv("REDIS_PORT")),
+    db=1,
+    decode_responses=True,
+)
 
 
 def update_block_list(jti, refresh_jti):
