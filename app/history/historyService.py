@@ -89,9 +89,6 @@ def check_before_service(id, target_id):
 def fancy(id, target_id):
     check_before_service(id, target_id)
 
-    if utils.get_fancy_status(id, target_id) & 1:
-        return StatusCode.OK
-
     now_kst = datetime.now(KST)
 
     conn = PostgreSQLFactory.get_connection()
@@ -102,6 +99,9 @@ def fancy(id, target_id):
         history = cursor.fetchone()
 
         if history:  # update
+            if history["fancy"]:
+                return StatusCode.OK
+
             sql = 'UPDATE "History" \
                     SET "fancy" = True, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
@@ -128,9 +128,6 @@ def fancy(id, target_id):
 def unfancy(id, target_id):
     check_before_service(id, target_id)
 
-    if not (utils.get_fancy_status(id, target_id) & 1):
-        return StatusCode.OK
-
     now_kst = datetime.now(KST)
 
     conn = PostgreSQLFactory.get_connection()
@@ -141,6 +138,9 @@ def unfancy(id, target_id):
         history = cursor.fetchone()
 
         if history:
+            if not history["fancy"]:
+                return StatusCode.OK
+
             sql = 'UPDATE "History" \
                     SET "fancy" = False, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
