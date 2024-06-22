@@ -38,7 +38,6 @@ CREATE TABLE "History" (
 	"target_id"	INTEGER	NOT NULL,
 	"fancy"	    BOOLEAN NOT NULL,
 	"fancy_time"	TIMESTAMP,
-	"fancy_check"	BOOLEAN,
 	"last_view"	TIMESTAMP	NOT NULL,
   PRIMARY KEY (user_id, target_id),
   FOREIGN KEY (user_id) REFERENCES "User" (id) ON DELETE CASCADE,

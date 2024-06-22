@@ -30,7 +30,6 @@ def view_history(id, time_limit, opt):
     with conn.cursor(cursor_factory=DictCursor) as cursor:
 
         if opt == ProfileList.FANCY:
-            utils.update_fancy_check(id)
             sql = 'SELECT * FROM "History" \
                     WHERE "target_id" = %s AND "fancy" = True AND "fancy_time" < %s \
                     ORDER BY "fancy_time" DESC \
@@ -102,13 +101,13 @@ def fancy(id, target_id):
                 return StatusCode.OK
 
             sql = 'UPDATE "History" \
-                    SET "fancy" = True, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    SET "fancy" = True, "fancy_time" = %s, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (now_kst, now_kst, id, target_id))
         else:  # create
-            sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, fancy_check, last_view) \
-                                VALUES (%s, %s, %s, %s, %s, %s)'
-            cursor.execute(sql, (id, target_id, True, now_kst, False, now_kst))
+            sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, last_view) \
+                                VALUES (%s, %s, %s, %s, %s)'
+            cursor.execute(sql, (id, target_id, True, now_kst, now_kst))
         conn.commit()
 
         userUtils.update_count_fancy(target_id, FancyOpt.ADD)
@@ -141,7 +140,7 @@ def unfancy(id, target_id):
                 return StatusCode.OK
 
             sql = 'UPDATE "History" \
-                    SET "fancy" = False, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    SET "fancy" = False, "fancy_time" = %s, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (now_kst, now_kst, id, target_id))
         else:
@@ -177,13 +176,13 @@ def dummy_fancy(id, target_id):
                 return StatusCode.OK
 
             sql = 'UPDATE "History" \
-                    SET "fancy" = True, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    SET "fancy" = True, "fancy_time" = %s, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (now_kst, now_kst, id, target_id))
         else:  # create
-            sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, fancy_check, last_view) \
-                                VALUES (%s, %s, %s, %s, %s, %s)'
-            cursor.execute(sql, (id, target_id, True, now_kst, False, now_kst))
+            sql = 'INSERT INTO "History" (user_id, target_id, fancy, fancy_time, last_view) \
+                                VALUES (%s, %s, %s, %s, %s)'
+            cursor.execute(sql, (id, target_id, True, now_kst, now_kst))
         conn.commit()
 
         userUtils.update_count_fancy(target_id, FancyOpt.ADD)
@@ -217,7 +216,7 @@ def dummy_unfancy(id, target_id):
                 return StatusCode.OK
 
             sql = 'UPDATE "History" \
-                    SET "fancy" = False, "fancy_time" = %s, "fancy_check" = False, "last_view" = %s \
+                    SET "fancy" = False, "fancy_time" = %s, "last_view" = %s \
                     WHERE "user_id" = %s AND "target_id" = %s;'
             cursor.execute(sql, (now_kst, now_kst, id, target_id))
         else:

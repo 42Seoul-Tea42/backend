@@ -4,16 +4,6 @@ from ..utils.const import Fancy, KST
 from datetime import datetime
 
 
-def update_fancy_check(id):
-    # 전달할 fancy 리스트 fancyCheck = True 처리하기
-    conn = PostgreSQLFactory.get_connection()
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
-        sql = 'UPDATE "History" SET "fancy_check" = True \
-                WHERE "target_id" = %s AND "fancy" = True;'
-        cursor.execute(sql, (id,))
-        conn.commit()
-
-
 def get_fancy_status(id, target_id) -> int:
     fancy = 0
 
