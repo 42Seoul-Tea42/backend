@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from app.utils.const import StatusCode, KST, TIME_STR_TYPE
 from urllib.parse import quote
-from app.history.historyService import fancy, unfancy
+from app.history.historyService import dummy_fancy as fancy, dummy_unfancy as unfancy
 
 
 duplicated_login = "dummy1"
@@ -537,6 +537,11 @@ def test_fancy(test_client):
 
 
 def setup_function():
+    from app.db.db import PostgreSQLFactory
+
+    conn = PostgreSQLFactory.get_connection()
+    conn.rollback()
+
     # 테스트 사용자 생성
     from app.user.userService import register_dummy
     from dummy_data import dummy_data

@@ -753,7 +753,7 @@ def test_unauthrized_email(test_client):
 
     response = test_client.patch(
         "/api/user/profile",
-        data=json.dumps({"name": "", "last_name": "", "tags": [], "emoji": []}),
+        data=json.dumps({"name": "", "last_name": "", "tags": [], "hate_tags": []}),
         content_type="application/json",
     )
     data = json.loads(response.data.decode("utf-8"))
@@ -809,6 +809,24 @@ def test_unauthrized_email(test_client):
     # 프로필 설정 (emoji, hate_emoji)
     response = test_client.patch(
         "/api/user/profile",
+        data=json.dumps({"emoji": []}),
+        content_type="application/json",
+    )
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert data["email_check"] == True
+
+    # 프로필 설정 확인 (emoji_check)
+    response = test_client.get(f"/api/user/login")
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert data["email_check"] == True
+    assert data["profile_check"] == True
+    assert data["emoji_check"] == True
+
+    # 프로필 설정 (emoji, hate_emoji)
+    response = test_client.patch(
+        "/api/user/profile",
         data=json.dumps(
             {
                 "emoji": [1, 2, 14],
@@ -819,7 +837,6 @@ def test_unauthrized_email(test_client):
         content_type="application/json",
     )
     data = json.loads(response.data.decode("utf-8"))
-    print(data)
     assert response.status_code == StatusCode.OK
     assert data["email_check"] == True
 
@@ -1445,6 +1462,11 @@ def test_logout(test_client):
 
 
 def setup_function():
+    from app.db.db import PostgreSQLFactory
+
+    conn = PostgreSQLFactory.get_connection()
+    conn.rollback()
+    
     # 테스트 사용자 생성
     from app.user.userService import register_dummy
     from dummy_data import dummy_data
