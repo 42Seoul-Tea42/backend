@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 from .utils.routes import add_routes
 from dotenv import load_dotenv
+from werkzeug.exceptions import BadRequest
 
 # 환경변수 로드
 load_dotenv()
@@ -38,6 +39,12 @@ def create_app(test=False):
         def log_request_info():
             app.logger.error(f"Request to {request.path} received")
 
+    @app.before_request
+    def check_content_type():
+        if request.method in ["POST", "PUT", "PATCH"]:
+            if not request.is_json:
+                raise BadRequest("Content-Type은 'application/json'이어야 합니다.")
+
     jwt = JWTManager(app)
 
     from .utils.redisBlockList import redis_jwt_blocklist
@@ -64,7 +71,7 @@ def create_app(test=False):
     from .utils.redisServ import redis_client
 
     redis_client.flushdb()
-    print("finish setting up db ==================")
+    print("finish setting up db ==================", flush=True)
 
     # # TODO [TEST] dummy data delete
     # from .utils.dummy import Dummy
