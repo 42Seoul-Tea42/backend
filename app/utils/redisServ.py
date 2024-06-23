@@ -37,6 +37,9 @@ def set_user_info(user):
 
 
 def get_user_info(id, opt):
+    str_id = str(id)
+    if not redis_client.exists(str_id):
+        return None
 
     if opt == RedisOpt.LOCATION:
         check_fields = ["longitude", "latitude"]
@@ -48,21 +51,21 @@ def get_user_info(id, opt):
             "email",
         ]
     elif opt == RedisOpt.SOCKET:
-        if redis_client.hget(str(id), "socket_id") is None:
+        if redis_client.hget(str_id, "socket_id") is None:
             return set()
-        return set(json.loads(redis_client.hget(str(id), "socket_id")))
+        return set(json.loads(redis_client.hget(str_id, "socket_id")))
     elif opt == RedisOpt.BLOCK:
-        if redis_client.hget(str(id), "block") is None:
+        if redis_client.hget(str_id, "block") is None:
             return set()
-        return set(json.loads(redis_client.hget(str(id), "block")))
+        return set(json.loads(redis_client.hget(str_id, "block")))
     elif opt == RedisOpt.BAN:
-        if redis_client.hget(str(id), "ban") is None:
+        if redis_client.hget(str_id, "ban") is None:
             return set()
-        return set(json.loads(redis_client.hget(str(id), "ban")))
+        return set(json.loads(redis_client.hget(str_id, "ban")))
     else:
         return None
 
-    check_values = redis_client.hmget(str(id), *check_fields)
+    check_values = redis_client.hmget(str_id, *check_fields)
 
     # 요청 필드와 값을 딕셔너리로 반환
     if check_values:
