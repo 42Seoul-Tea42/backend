@@ -154,12 +154,9 @@ class Validator:
 
     @staticmethod
     def _validate_similar(similar) -> bool:
-        if type(similar) is not bool or type(similar) is not str:
-            raise BadRequest("올바르지 않은 similar 값입니다.")
-
         if type(similar) is bool:
             return similar
-        else:
+        elif type(similar) is str:
             similar = similar.lower()
             if similar == "true":
                 return True
@@ -167,6 +164,8 @@ class Validator:
                 return False
             else:
                 raise BadRequest("올바르지 않은 similar 값입니다.")
+        else:
+            raise BadRequest("올바르지 않은 similar 값입니다.")
 
     @staticmethod
     def _validate_distance(str_distance: str) -> int:
