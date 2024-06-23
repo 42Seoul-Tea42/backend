@@ -30,7 +30,7 @@ CREATE TABLE "User" (
 	"similar"		BOOLEAN DEFAULT TRUE,
 	"is_fancy"		BOOLEAN DEFAULT FALSE,
 	"is_visitor"	BOOLEAN DEFAULT FALSE,
-	"is_match"		BOOLEAN DEFAULT FALSE,
+	"is_match"		BOOLEAN DEFAULT FALSE
 );
 
 -- age 열에 대한 인덱스 생성
