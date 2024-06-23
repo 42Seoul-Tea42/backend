@@ -761,7 +761,7 @@ def test_unauthrized_email(test_client):
 
     response = test_client.patch(
         "/api/user/profile",
-        data=json.dumps({"similar": "True"}),
+        data=json.dumps({"similar": "asdf"}),
         content_type="application/json",
     )
     data = json.loads(response.data.decode("utf-8"))
@@ -887,7 +887,10 @@ def test_unauthrized_email(test_client):
     assert data["emoji_check"] == True
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -960,7 +963,10 @@ def test_change_email(test_client):
     assert data["oauth"] == 0
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -1097,7 +1103,10 @@ def test_after_authorize_email(test_client):
     assert data["emoji_check"] == True
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -1350,7 +1359,10 @@ def test_user_api(test_client):
     assert response.status_code == StatusCode.OK
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -1405,7 +1417,10 @@ def test_tea_suggest_api(test_client):
     assert data["profile_list"][1]["name"] == "dummy3"
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -1434,7 +1449,11 @@ def test_logout(test_client):
     assert data["emoji_check"] == True
 
     # refresh token 재발급
-    response = test_client.patch(f"/api/user/reset-token")
+    response = test_client.patch(
+        f"/api/user/reset-token",
+        content_type="application/json",
+    )
+    data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
 
     # (로그인 후) 로그인 확인
@@ -1446,7 +1465,10 @@ def test_logout(test_client):
     assert data["emoji_check"] == True
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
     # (로그인 후) 로그인 확인
@@ -1454,7 +1476,10 @@ def test_logout(test_client):
     assert response.status_code == StatusCode.UNAUTHORIZED
 
     # refresh token 재발급
-    response = test_client.patch(f"/api/user/reset-token")
+    response = test_client.patch(
+        f"/api/user/reset-token",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.UNAUTHORIZED
 
 
@@ -1466,7 +1491,7 @@ def setup_function():
 
     conn = PostgreSQLFactory.get_connection()
     conn.rollback()
-    
+
     # 테스트 사용자 생성
     from app.user.userService import register_dummy
     from dummy_data import dummy_data

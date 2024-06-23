@@ -191,7 +191,10 @@ def test_view_history(test_client):
     assert target["time"]
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -362,7 +365,10 @@ def test_fancy_history(test_client):
     assert target["time"]
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -529,7 +535,10 @@ def test_fancy(test_client):
     assert response.status_code == StatusCode.BAD_REQUEST
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
