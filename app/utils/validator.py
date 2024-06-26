@@ -153,11 +153,19 @@ class Validator:
         return emoji
 
     @staticmethod
-    def _validate_similar(similar: str) -> bool:
-        if type(similar) is not str and type(similar) is not bool:
-            raise BadRequest("올바르지 않은 similar 값입니다.")
-
-        return Validator._check_type(similar, bool, "similar")
+    def _validate_similar(similar) -> bool:
+        if type(similar) is bool:
+            return similar
+        elif type(similar) is str:
+            similar = similar.lower()
+            if similar == "true":
+                return True
+            elif similar == "false":
+                return False
+            else:
+                raise BadRequest("2: 올바르지 않은 similar 값입니다.")
+        else:
+            raise BadRequest("1: 올바르지 않은 similar 값입니다.")
 
     @staticmethod
     def _validate_distance(str_distance: str) -> int:
@@ -274,11 +282,10 @@ class Validator:
         result = dict()
 
         for key, value in data.items():
-            if value is None:
-                if key == "reason_opt":
-                    result[key] = None
+            if not value:
+                if key in ("reason_opt", "fame", "tags"):
+                    result[key] = value
                     continue
-
                 raise BadRequest(f"Validation Error: 값이 없습니다. ({key})")
 
             if key in Validator.func:
@@ -289,7 +296,7 @@ class Validator:
         if (
             "reason" in result
             and result["reason"] == Report.MAX
-            and ("reason_opt" not in result or result["reason_opt"] is None)
+            and ("reason_opt" not in result or not result["reason_opt"])
         ):
             raise BadRequest("신고 이유를 입력해주세요.")
 
@@ -301,16 +308,25 @@ class Validator:
 
         for key, value in data.items():
             if not value:
-                if key == "emoji":
-                    result[key] = []
-                continue
+                if key == "pw":
+                    continue
+                if key in (
+                    "tags",
+                    "emoji",
+                    "hate_tags",
+                    "hate_emoji",
+                    "bio",
+                    "similar",
+                ):
+                    result[key] = value
+                    continue
+                raise BadRequest(f"Validation Error: 값이 없습니다. ({key})")
 
             if key in Validator.func:
                 result[key] = Validator.func[key](value)
+            elif key == "pictures":
+                result[key] = value
             else:
-                if key == "pictures":
-                    result[key] = value
-                    continue
                 raise BadRequest(f"Validation Error: 잘못된 키 값입니다. ({key})")
 
         if not result:

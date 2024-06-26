@@ -31,7 +31,7 @@ def handle_connect(sid, environ, auth=None):
         try:
             int(auth["id"])
         except:
-            print("auth error: ", auth)
+            print("not int :: auth error: ", auth)
             sys.stdout.flush()
             return False
 
