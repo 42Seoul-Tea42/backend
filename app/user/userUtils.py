@@ -182,7 +182,7 @@ def get_user_profile(id):
 
 def get_target_profile(id, target_id, time=None):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if redis_user is None or redis_user['longitude'] is None or redis_user['latitude'] is None:
+    if redis_user is None or redis_user['longitude'] is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
 
     target = get_user(target_id)
@@ -250,11 +250,29 @@ def update_count_fancy(target_id, opt):
         conn.commit()
 
 
-def update_event(id):
+def get_logout_event(id):
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = 'SELECT is_fancy, is_visitor, is_match FROM "User" WHERE "id" = %s;'
+        cursor.execute(sql, (id,))
+        user = cursor.fetchone()
+
+    return user['is_fancy'], user['is_visitor'], user['is_match']
+
+
+def reset_logout_event(id):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET "is_fancy" = %s, "is_visitor" = %s, "is_match" = %s WHERE "id" = %s'
         cursor.execute(sql, (id, False, False, False))
+        conn.commit()
+
+
+def update_logout_event(id, column_name):
+    conn = PostgreSQLFactory.get_connection()
+    with conn.cursor(cursor_factory=DictCursor) as cursor:
+        sql = f'UPDATE "User" SET "{column_name}" = %s WHERE "id" = %s;'
+        cursor.execute(sql, (True, id))
         conn.commit()
 
 
@@ -348,3 +366,4 @@ def get_ban_list(id):
         ban = cursor.fetchall()
 
     return [row["user_id"] for row in ban]
+

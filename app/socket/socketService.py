@@ -30,17 +30,17 @@ def handle_connect(id, user_sid):
         id_match[id] = historyUtils.get_match_list(id)
         _update_status(socket_io, id, UserStatus.ONLINE, id_match)
 
-    # (socket) 로그아웃 중 발생한 이벤트 처리
-    user = userUtils.get_user(id)
-    if user["is_fancy"] or user["is_visitor"] or user["is_match"]:
-        with socket_lock:
-            if user["is_fancy"]:
-                socket_io.emit("new_fancy", {"target_id": id}, room=user_sid)
-            if user["is_visitor"]:
-                socket_io.emit("new_visitor", room=user_sid)
-            if user["is_match"]:
-                socket_io.emit("new_match", {"target_id": id}, room=user_sid)
-        userUtils.update_event(id)
+        # (socket) 로그아웃 중 발생한 이벤트 처리
+        is_fancy, is_visitor, is_match = userUtils.get_logout_event(id)
+        if any([is_fancy, is_visitor, is_match]):
+            with socket_lock:
+                if is_fancy:
+                    socket_io.emit("new_fancy", {"target_id": id}, room=user_sid)
+                if is_visitor:
+                    socket_io.emit("new_visitor", room=user_sid)
+                if is_match:
+                    socket_io.emit("new_match", {"target_id": id}, room=user_sid)
+            userUtils.reset_logout_event(id)
 
 
 def handle_disconnect(user_sid):
@@ -62,15 +62,16 @@ def handle_disconnect(user_sid):
 
 def _update_status(socket_io, id, status, id_match):
     # status 업데이트
-    for target_id in id_match.get(id, []):
+    for target_id in id_match.get(id, set()):
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-        for target_sid in target_sid_set:
+        if target_sid_set:
             with socket_lock:
-                socket_io.emit(
-                    "update_status",
-                    {"target_id": id, "status": status},
-                    room=target_sid,
-                )
+                for target_sid in target_sid_set:
+                    socket_io.emit(
+                        "update_status",
+                        {"target_id": id, "status": status},
+                        room=target_sid,
+                    )
 
 
 ### chat ###
@@ -92,18 +93,22 @@ def send_message(data, user_sid=None, sender_id=None):
         msg_time = chatUtils.save_chat(sender_id, recver_id, message)
 
         recver_sid_set = redisServ.get_user_info(recver_id, RedisOpt.SOCKET)
-        for recver_sid in recver_sid_set:
+        if recver_sid_set:
             with socket_lock:
-                socket_io.emit(
-                    "send_message",
-                    {
-                        "sender_id": sender_id,
-                        "message": message,
-                        "msg_time": msg_time,
-                        "msg_new": True,
-                    },
-                    room=recver_sid,
-                )
+                for recver_sid in recver_sid_set:
+                    socket_io.emit(
+                        "send_message",
+                        {
+                            "sender_id": sender_id,
+                            "message": message,
+                            "msg_time": msg_time,
+                            "msg_new": True,
+                        },
+                        room=recver_sid,
+                    )
+        else:
+            # 상대방이 오프라인일 경우
+            userUtils.update_logout_event(recver_id, "is_match")
 
 
 def read_message(data, user_sid):
@@ -114,9 +119,12 @@ def read_message(data, user_sid):
     # TODO type 검사
     sender_id = data.get("sender_id")  # int
     sender_sid_set = redisServ.get_user_info(sender_id, RedisOpt.SOCKET)
-    for sender_sid in sender_sid_set:
-        with socket_lock:
-            socket_io.emit("read_message", {"recver_id": recver_id}, room=sender_sid)
+    if sender_sid_set:
+        for sender_sid in sender_sid_set:
+            with socket_lock:
+                socket_io.emit(
+                    "read_message", {"recver_id": recver_id}, room=sender_sid
+                )
 
     # (DB) message read 처리
     chatUtils.read_chat(recver_id, sender_id)
@@ -132,35 +140,46 @@ def new_match(id, target_id):
 
     # socket alarm 발생
     id_match[id] = id_match.get(id, set()) | set([target_id])
-    for user_sid in user_sid_set:
+    if user_sid_set:
         with socket_lock:
-            socket_io.emit("new_match", {"target_id": target_id}, room=user_sid)
+            for user_sid in user_sid_set:
+                socket_io.emit("new_match", {"target_id": target_id}, room=user_sid)
 
     id_match[target_id] = id_match.get(target_id, set()) | set([id])
-    for target_sid in target_sid_set:
+    if target_sid_set:
         with socket_lock:
-            socket_io.emit("new_match", {"target_id": id}, room=target_sid)
+            for target_sid in target_sid_set:
+                socket_io.emit("new_match", {"target_id": id}, room=target_sid)
+    else:  # 상대방이 오프라인일 경우
+        userUtils.update_logout_event(target_id, "is_match")
 
 
 def new_fancy(id, target_id):
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-    for target_sid in target_sid_set:
+    if target_sid_set:
         with socket_lock:
-            socket_io.emit("new_fancy", {"target_id": id}, room=target_sid)
+            for target_sid in target_sid_set:
+                socket_io.emit("new_fancy", {"target_id": id}, room=target_sid)
+    else:  # 오프라인일 경우
+        userUtils.update_logout_event(target_id, "is_fancy")
 
 
 def new_unfancy(id, target_id):
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-    for target_sid in target_sid_set:
+    if target_sid_set:
         with socket_lock:
-            socket_io.emit("unfancy", {"target_id": id}, room=target_sid)
+            for target_sid in target_sid_set:
+                socket_io.emit("unfancy", {"target_id": id}, room=target_sid)
 
 
 def new_visitor(id):
     user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
-    for user_sid in user_sid_set:
+    if user_sid_set:
         with socket_lock:
-            socket_io.emit("new_visitor", room=user_sid)
+            for user_sid in user_sid_set:
+                socket_io.emit("new_visitor", room=user_sid)
+    else:  # 오프라인일 경우
+        userUtils.update_logout_event(id, "is_visitor")
 
 
 #### update ####
@@ -168,22 +187,24 @@ def update_distance(id, lat, long):
     for target_id in id_match.get(id, set()):
 
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-        for target_sid in target_sid_set:
-            target = userUtils.get_user(target_id)
-            if target is None:
-                continue
-
+        if target_sid_set:
+            redis_target = redisServ.get_user_info(target_id, RedisOpt.LOCATION)
+            distance = userUtils.get_distance(
+                float(redis_target["latitude"]),
+                float(redis_target["longitude"]),
+                lat,
+                long,
+            )
             with socket_lock:
-                socket_io.emit(
-                    "update_distance",
-                    {
-                        "target_id": id,
-                        "distance": userUtils.get_distance(
-                            lat, long, target["latitude"], target["longitude"]
-                        ),
-                    },
-                    room=target_sid,
-                )
+                for target_sid in target_sid_set:
+                    socket_io.emit(
+                        "update_distance",
+                        {
+                            "target_id": id,
+                            "distance": distance,
+                        },
+                        room=target_sid,
+                    )
 
 
 def unmatch(id, target_id):
@@ -194,27 +215,36 @@ def unmatch(id, target_id):
         id_match[target_id].remove(id)
 
     user_sid_set = redisServ.get_user_info(id, RedisOpt.SOCKET)
-    for user_sid in user_sid_set:
+    if user_sid_set:
         with socket_lock:
-            socket_io.emit("unmatch", {"target_id": target_id}, room=user_sid)
+            for user_sid in user_sid_set:
+                socket_io.emit("unmatch", {"target_id": target_id}, room=user_sid)
 
     target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-    for target_sid in target_sid_set:
+    if target_sid_set:
         with socket_lock:
-            socket_io.emit("unmatch", {"target_id": id}, room=target_sid)
+            for target_sid in target_sid_set:
+                socket_io.emit("unmatch", {"target_id": id}, room=target_sid)
+    else:  # 상대방이 오프라인일 경우
+        userUtils.update_logout_event(target_id, "is_match")
 
 
 def unregister(id):
     for target_id in id_match.get(id, set()):
         target_sid_set = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-        for target_sid in target_sid_set:
+        if target_sid_set:
             with socket_lock:
-                socket_io.emit("unregister", {"target_id": id}, room=target_sid)
+                for target_sid in target_sid_set:
+                    socket_io.emit("unregister", {"target_id": id}, room=target_sid)
+            id_match[target_id].remove(id)
+        else:  # 상대방이 오프라인일 경우
+            userUtils.update_logout_event(target_id, "is_match")
+    id_match.pop(id, None)
 
 
 #### Utils ####
 def check_status(target_id):
     target_status = redisServ.get_user_info(target_id, RedisOpt.SOCKET)
-    if target_status and len(target_status):
+    if target_status:
         return UserStatus.ONLINE
     return UserStatus.OFFLINE

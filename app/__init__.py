@@ -7,6 +7,7 @@ from flask_jwt_extended import JWTManager
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 from .utils.routes import add_routes
 from dotenv import load_dotenv
+from werkzeug.exceptions import BadRequest
 
 # 환경변수 로드
 load_dotenv()
@@ -38,6 +39,12 @@ def create_app(test=False):
         def log_request_info():
             app.logger.error(f"Request to {request.path} received")
 
+    @app.before_request
+    def check_content_type():
+        if request.method in ["POST", "PUT", "PATCH"]:
+            if not request.is_json:
+                raise BadRequest("Content-Type은 'application/json'이어야 합니다.")
+
     jwt = JWTManager(app)
 
     from .utils.redisBlockList import redis_jwt_blocklist
@@ -49,22 +56,21 @@ def create_app(test=False):
         return token_in_redis is not None
 
     # ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
-    # Create a cursor
-    conn = PostgreSQLFactory.get_connection()
-    with conn.cursor() as cursor:
-        # Read the content of db_schema.sql
-        with open("/usr/app/srcs/app/db/db_schema.sql") as f:
-            db_setup_sql = f.read()
-        # Execute the database setup logic from the SQL script
-        cursor.execute(db_setup_sql)
-        # Commit the changes
-        conn.commit()
+    # conn = PostgreSQLFactory.get_connection()
+    # with conn.cursor() as cursor:
+    #     # Read the content of db_schema.sql
+    #     with open("/usr/app/srcs/app/db/db_schema.sql") as f:
+    #         db_setup_sql = f.read()
+    #     # Execute the database setup logic from the SQL script
+    #     cursor.execute(db_setup_sql)
+    #     # Commit the changes
+    #     conn.commit()
 
-    MongoDBFactory.initialize_collection("tea42", "chat")
-    from .utils.redisServ import redis_client
+    # MongoDBFactory.initialize_collection("tea42", "chat")
+    # from .utils.redisServ import redis_client
 
-    redis_client.flushdb()
-    print("finish setting up db ==================")
+    # redis_client.flushdb()
+    # print("finish setting up db ==================", flush=True)
 
     # # TODO [TEST] dummy data delete
     # from .utils.dummy import Dummy

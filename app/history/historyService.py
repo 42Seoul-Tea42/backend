@@ -19,7 +19,6 @@ from psycopg2.extras import DictCursor
 from ..socket import socketService as socketServ
 from werkzeug.exceptions import BadRequest
 from ..utils import redisServ
-import os
 
 
 def view_history(id, time_limit, opt):
@@ -98,7 +97,9 @@ def fancy(id, target_id):
 
         if history:  # update
             if history["fancy"]:
-                return StatusCode.OK
+                return {
+                    "msg": "success",
+                }, StatusCode.OK
 
             sql = 'UPDATE "History" \
                     SET "fancy" = True, "fancy_time" = %s, "last_view" = %s \
@@ -120,7 +121,9 @@ def fancy(id, target_id):
 
         socketServ.new_fancy(id, target_id)
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def unfancy(id, target_id):
@@ -137,7 +140,9 @@ def unfancy(id, target_id):
 
         if history:
             if not history["fancy"]:
-                return StatusCode.OK
+                return {
+                    "msg": "success",
+                }, StatusCode.OK
 
             sql = 'UPDATE "History" \
                     SET "fancy" = False, "fancy_time" = %s, "last_view" = %s \
@@ -155,12 +160,16 @@ def unfancy(id, target_id):
 
         socketServ.new_unfancy(id, target_id)
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def dummy_fancy(id, target_id):
     if id == target_id:
-        return StatusCode.OK
+        return {
+            "msg": "success",
+        }, StatusCode.OK
 
     now_kst = datetime.now(KST)
 
@@ -173,7 +182,9 @@ def dummy_fancy(id, target_id):
 
         if history:  # update
             if history["fancy"]:
-                return StatusCode.OK
+                return {
+                    "msg": "success",
+                }, StatusCode.OK
 
             sql = 'UPDATE "History" \
                     SET "fancy" = True, "fancy_time" = %s, "last_view" = %s \
@@ -195,12 +206,16 @@ def dummy_fancy(id, target_id):
 
         socketServ.new_fancy(id, target_id)
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def dummy_unfancy(id, target_id):
     if id == target_id:
-        return StatusCode.OK
+        return {
+            "msg": "success",
+        }, StatusCode.OK
 
     now_kst = datetime.now(KST)
 
@@ -213,7 +228,9 @@ def dummy_unfancy(id, target_id):
 
         if history:
             if not history["fancy"]:
-                return StatusCode.OK
+                return {
+                    "msg": "success",
+                }, StatusCode.OK
 
             sql = 'UPDATE "History" \
                     SET "fancy" = False, "fancy_time" = %s, "last_view" = %s \
@@ -231,4 +248,6 @@ def dummy_unfancy(id, target_id):
 
         socketServ.new_unfancy(id, target_id)
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK

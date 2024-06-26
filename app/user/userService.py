@@ -25,7 +25,6 @@ from ..utils.const import (
     DEFAULT_PICTURE,
     RedisSetOpt,
     Authorization,
-    EncodeOpt, 
     Report,
     AGE_GAP,
     AREA_DISTANCE,
@@ -163,7 +162,9 @@ def check_id(login_id):
         if user is not None:
             raise BadRequest("이미 존재하는 아이디입니다.")
         
-        return StatusCode.OK
+        return {
+            "msg": "success",
+        }, StatusCode.OK
 
 
 # # ##### email
@@ -178,7 +179,9 @@ def check_email(email):
         if user is not None:
             raise BadRequest("이미 존재하는 이메일입니다.")
         
-        return StatusCode.OK
+        return {
+            "msg": "success",
+        }, StatusCode.OK
 
 
 def get_email(id):
@@ -280,7 +283,9 @@ def verify_email(key):
 
     if num_rows_updated:
         redisServ.update_user_info(id, {"email_check": 1})
-        return StatusCode.OK
+        return {
+            "msg": "success",
+        }, StatusCode.OK
 
     raise BadRequest("유효하지 않은 인증키입니다.")
 
@@ -481,14 +486,16 @@ def register(data):
         }, StatusCode.OK
         
     utils.send_email(data["email"], email_key, Key.EMAIL)
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def register_oauth(data, oauthOpt):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'INSERT INTO "User" (email, email_check, login_id, name, last_name, oauth, pictures, last_online) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s)'
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
         cursor.execute(
             sql, (data["email"], True, data["login_id"], data["name"], data["last_name"], oauthOpt, [DEFAULT_PICTURE], datetime.now(KST))
         )
@@ -555,7 +562,7 @@ def logout(id):
     redisServ.delete_user_info(id)
     
     # jwt token 캐시에서 삭제
-    response = make_response("", StatusCode.OK)
+    response = make_response(jsonify({"msg": "success"}), StatusCode.OK)
     unset_jwt_cookies(response)
     
     return response
@@ -623,7 +630,9 @@ def reset_pw(pw, key):
 
         conn.commit()
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def unregister(id):
@@ -642,7 +651,9 @@ def unregister(id):
         cursor.execute(sql, (id,))
         conn.commit()
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 
@@ -665,7 +676,7 @@ def search(id, data):
     max_age = data["max_age"]
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
-    if redis_user is None or redis_user['longitude'] is None or redis_user['latitude'] is None:
+    if redis_user is None or redis_user['longitude'] is None:
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = redis_user["longitude"], redis_user["latitude"]
 
@@ -860,7 +871,9 @@ def report(id, data):
         cursor.execute(sql, (id, target_id, reason, reason_opt))
         conn.commit()
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def block(id, target_id):
@@ -917,17 +930,17 @@ def block(id, target_id):
     #delete chat
     chatUtils.delete_chat(id, target_id)
 
-    return StatusCode.OK
+    return {
+        "msg": "success",
+    }, StatusCode.OK
 
 
 def reset_token(id):
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if redis_user is None or redis_user['email'] is None:
-        response = jsonify({"msg": "refresh"})
-        response.status_code = StatusCode.UNAUTHORIZED
-        return response
+        raise Unauthorized("refresh: reset_token")
 
-    response = make_response("", StatusCode.OK)
+    response = make_response(jsonify({"msg": "success"}), StatusCode.OK)
     
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=id)

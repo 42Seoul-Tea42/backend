@@ -20,11 +20,6 @@ class StatusCode:
     INTERNAL_ERROR = 500
 
 
-class TokenError:
-    ACCESS = 0
-    REFRESH = 1
-
-
 # Search Result
 MAX_SEARCH = 16  # max result limit
 DAYS = 365  # age calculation
@@ -91,11 +86,6 @@ class Oauth:
 class UserStatus:
     OFFLINE = 0
     ONLINE = 1
-
-
-class JWT:
-    ACCESS = 0
-    REFRESH = 1
 
 
 # User_Email option

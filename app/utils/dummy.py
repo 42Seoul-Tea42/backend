@@ -40,7 +40,7 @@ class Dummy:
             "name": name,
             "last_name": random.choice(last_names),
             "age": random.randint(20, 35),
-            "longitude": random.uniform(37.4676, 37.64),
+            "longitude": random.uniform(126.911, 127.1287),
             "latitude": random.uniform(37.4676, 37.64),
             "gender": random.choice([Gender.FEMALE, Gender.MALE]),
             "taste": random.choice([Gender.FEMALE, Gender.MALE, Gender.ALL]),

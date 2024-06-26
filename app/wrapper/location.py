@@ -3,17 +3,23 @@ from flask_jwt_extended import get_jwt_identity
 from ..utils.const import IGNORE_MOVE, RedisOpt
 from ..user import userUtils
 from ..utils import redisServ
-from ..socket import socketServ
+from ..socket import socketService as socketServ
+from werkzeug.exceptions import Unauthorized
+import os
 
 
 def check_location(f):
     def wrapper(*args, **kwargs):
-        # TODO [JWT]
-        # id = 1
+        # if os.getenv("PYTEST") == "True":
+        #     return f(*args, **kwargs)
+
         id = get_jwt_identity()
         redis_user = redisServ.get_user_info(id, RedisOpt.LOCATION)
+        if redis_user is None or redis_user["longitude"] is None:
+            raise Unauthorized("refresh: check_location")
 
         # 유저의 위치 정보 가져오기 (long, lat)
+        long, lat = None, None
         try:
             long = float(request.headers.get("x-user-longitude"))
             lat = float(request.headers.get("x-user-latitude"))
