@@ -46,10 +46,10 @@ class Dummy:
             "taste": random.choice([Gender.FEMALE, Gender.MALE, Gender.ALL]),
             "bio": f"안녕하세요 {name}입니다. {index}번째 더미입니다.",
             "tags": random.sample(
-                list(range(Tags.MIN, Tags.MAX + 1)), random.randint(4, 13)
+                list(range(Tags.MIN, Tags.MAX + 1)), random.randint(8, 13)
             ),
             "hate_tags": [],
-            "emoji": random.sample(list(range(Emoji.MIN, Emoji.MAX + 1)), 4),
+            "emoji": random.sample(list(range(Emoji.MIN, Emoji.MAX + 1)), 8),
             "hate_emoji": [],
             "similar": random.choice([True, False]),
         }
