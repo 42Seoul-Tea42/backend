@@ -72,19 +72,29 @@ def login(data):
     
     #JWT 토큰 생성 및 쿠키 설정
     access_token = create_access_token(identity=user["id"])
-    refresh_token = create_refresh_token(identity=user["id"])
     set_access_cookies(response, access_token, max_age=int(os.getenv("ACCESS_TIME"))*60)
+
+    redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
+    if redis_user and redis_user["email"]:
+        #기 로그인 유저
+        refresh_token = redisServ.get_refresh_token_by_id(user["id"])
+    else:
+        #신규 로그인 유저
+        refresh_token = create_refresh_token(identity=user["id"])
+
+        #IP기반 위치 정보 업데이트
+        user["latitude"], user["longitude"] = utils.get_location_by_ip(
+            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
+        )
+        utils.update_location(user["id"], user["latitude"], user["longitude"])
+
+        #Redis에 유저 정보 저장
+        user["refresh_token"] = refresh_token
+        user["refresh_jti"] = get_jti(refresh_token)
+        redisServ.set_user_info(user)
+    
     set_refresh_cookies(response, refresh_token, max_age=int(os.getenv("REFRESH_TIME"))*60*60*24)
 
-    #IP기반 위치 정보 업데이트
-    user["latitude"], user["longitude"] = utils.get_location_by_ip(
-        ip_address=request.headers.get("X-Forwarded-For", request.remote_addr)
-    )
-    utils.update_location(user["id"], user["latitude"], user["longitude"])
-
-    #Redis에 유저 정보 저장
-    user["refresh_jti"] = get_jti(refresh_token)
-    redisServ.set_user_info(user)
     return response
 
 
@@ -550,7 +560,7 @@ def profile_detail(id, target_id):
 
 
 def logout(id):
-    # socket 정리 및 last_onlie 업데이트는 handle_disconnect()에서 자동으로 처리될 것
+    # socket 정리 및 last_online 업데이트는 handle_disconnect()에서 자동으로 처리될 것
 
     # 유저의 토큰을 redis 블록리스트에 추가
     jti = get_jwt()["jti"]

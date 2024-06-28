@@ -24,6 +24,7 @@ def set_user_info(user):
         1 if all([user["gender"], user["taste"], user["age"]]) else 0,
     )
     redis_client.hset(str_id, "emoji_check", 1 if user["emoji"] is not None else 0)
+    redis_client.hset(str_id, "refresh_token", user["refresh_token"])
     redis_client.hset(str_id, "refresh_jti", user["refresh_jti"])
     redis_client.hset(str_id, "email", user["email"])
 
@@ -127,6 +128,10 @@ def delete_user_info(id):
 
 
 ### jti ###
+def get_refresh_token_by_id(id):
+    return redis_client.hget(str(id), "refresh_token")
+
+
 def get_refresh_jti_by_id(id):
     return redis_client.hget(str(id), "refresh_jti")
 

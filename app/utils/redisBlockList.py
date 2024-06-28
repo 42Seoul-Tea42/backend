@@ -10,9 +10,10 @@ redis_jwt_blocklist = redis.StrictRedis(
 
 
 def update_block_list(jti, refresh_jti):
-
-    redis_jwt_blocklist.set(jti, "", ex=int(os.getenv("ACCESS_TIME")))
-    redis_jwt_blocklist.set(refresh_jti, "", ex=int(os.getenv("REFRESH_TIME")))
+    if jti:
+        redis_jwt_blocklist.set(jti, "", ex=int(os.getenv("ACCESS_TIME")))
+    if refresh_jti:
+        redis_jwt_blocklist.set(refresh_jti, "", ex=int(os.getenv("REFRESH_TIME")))
 
 
 # Redis JWT blocklist schema (db=1)
