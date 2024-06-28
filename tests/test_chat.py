@@ -43,7 +43,10 @@ def test_empty_chat_list(test_client):
     assert response.status_code == StatusCode.BAD_REQUEST
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -237,7 +240,10 @@ def test_chat_list_order(test_client):
     assert data["chat_list"][1]["id"] == id + 2
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
@@ -401,7 +407,10 @@ def test_chat_msg(test_client):
     assert data["chat_list"][0]["new"] == False
 
     # 로그아웃
-    response = test_client.post(f"/api/user/logout")
+    response = test_client.post(
+        f"/api/user/logout",
+        content_type="application/json",
+    )
     assert response.status_code == StatusCode.OK
 
 
