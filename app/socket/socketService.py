@@ -17,7 +17,8 @@ def handle_connect(id, user_sid):
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if redis_user is None or redis_user["email"] is None:
-        socket_io.emit("conn_fail", {"msg": "존재하지 않는 유저입니다."}, room=user_sid)
+        # socket_io.emit("conn_fail", {"msg": "존재하지 않는 유저입니다."}, room=user_sid)
+        return
 
     # (redis) user_info 업데이트
     redisServ.update_user_info(id, {"socket_id": user_sid})
