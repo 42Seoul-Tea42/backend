@@ -120,7 +120,7 @@ class Fancy:
 # Tea Suggestions
 MAX_SUGGEST = 5
 AGE_GAP = 5
-AREA_DISTANCE = 20  # 20km
+AREA_DISTANCE = 60  # 20km
 
 # Chat / Socket
 FIRST_CHAT = 0
