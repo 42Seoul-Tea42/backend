@@ -680,9 +680,6 @@ def search(id, data):
         raise Unauthorized("유저 정보를 찾을 수 없습니다.")
     long, lat = redis_user["longitude"], redis_user["latitude"]
 
-    user = utils.get_user(id)
-    find_gender = Gender.ALL if user["taste"] & Gender.OTHER else user["taste"]
-
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'SELECT * FROM ( \
@@ -704,7 +701,6 @@ def search(id, data):
                         AND "age" BETWEEN %s AND %s \
                         AND "emoji" IS NOT NULL \
                         AND "tags" & %s = %s \
-                        AND "gender" & %s > 0 \
                         AND "count_fancy"::float / COALESCE("count_view", 1) * %s >= %s \
                         AND distance <= %s \
                 ORDER BY "last_online" DESC, distance ASC \
@@ -723,7 +719,6 @@ def search(id, data):
                 max_age,
                 tags,
                 tags,
-                find_gender,
                 MAX_FAME,
                 fame,
                 distance,

@@ -1126,6 +1126,24 @@ def test_user_api(test_client):
     data = json.loads(response.data.decode("utf-8"))
     assert response.status_code == StatusCode.OK
 
+    # 전체 유저 검색
+    response = test_client.post(
+        f"/api/user/search",
+        data=json.dumps(
+            {
+                "min_age": 1,
+                "max_age": 100,
+                "distance": 100,
+                "tags": [],
+                "fame": 0,
+            }
+        ),
+        content_type="application/json",
+    )
+    data = json.loads(response.data.decode("utf-8"))
+    assert response.status_code == StatusCode.OK
+    assert len(data["profile_list"]) == 4
+
     # 유저 검색
     response = test_client.post(
         f"/api/user/search",
