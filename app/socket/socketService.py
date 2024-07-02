@@ -10,10 +10,13 @@ import sys
 
 # match된 유저 저장용 id: set()
 id_match = dict()
+# socket_id: id 저장
+socket_session = dict()
 
 
 ### connect && disconnect ###
 def handle_connect(id, user_sid):
+    print("CONN", id, user_sid, flush=True)
 
     redis_user = redisServ.get_user_info(id, RedisOpt.LOGIN)
     if redis_user is None or redis_user["email"] is None:
@@ -23,8 +26,8 @@ def handle_connect(id, user_sid):
     # (redis) user_info 업데이트
     redisServ.update_user_info(id, {"socket_id": user_sid})
 
-    # (redis) socket_id 저장
-    socket_io.save_session(user_sid, {"id": id})
+    # socket_id 저장
+    socket_session[user_sid] = id
 
     # (socket) status 업데이트
     if id not in id_match:
@@ -47,7 +50,8 @@ def handle_connect(id, user_sid):
 def handle_disconnect(user_sid):
 
     # (socket) status 업데이트
-    id = socket_io.get_session(user_sid).get("id", None)
+    id = socket_session.get(user_sid, None)
+    print("disconn", id, user_sid, flush=True)
     if id is None:
         return
 
@@ -57,6 +61,7 @@ def handle_disconnect(user_sid):
     if redisServ.delete_socket_id_by_id(id, user_sid):
         # redis에서 유저 삭제 시에만 offline 처리
         _update_status(socket_io, id, UserStatus.OFFLINE, id_match)
+        print("disconn::offline", id, flush=True)
 
     userUtils.update_last_online(id)
 
@@ -79,7 +84,7 @@ def _update_status(socket_io, id, status, id_match):
 def send_message(data, user_sid=None, sender_id=None):
     # [Pytest]
     if sender_id is None:
-        sender_id = socket_io.get_session(user_sid).get("id", None)
+        sender_id = socket_session.get(user_sid, None)
         if sender_id is None:
             return
 
@@ -113,7 +118,7 @@ def send_message(data, user_sid=None, sender_id=None):
 
 
 def read_message(data, user_sid):
-    recver_id = socket_io.get_session(user_sid).get("id", None)
+    recver_id = socket_session.get(user_sid, None)
     if recver_id is None:
         return
 
