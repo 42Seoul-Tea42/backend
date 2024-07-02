@@ -58,10 +58,9 @@ class ValidationConst:
 # Redis
 class RedisOpt:
     LOCATION = 0
-    SOCKET = 1
-    LOGIN = 2
-    BLOCK = 3
-    BAN = 4
+    LOGIN = 1
+    BLOCK = 2
+    BAN = 3
 
 
 class RedisSetOpt:

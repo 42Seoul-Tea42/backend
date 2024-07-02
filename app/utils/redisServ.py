@@ -51,10 +51,6 @@ def get_user_info(id, opt):
             "emoji_check",
             "email",
         ]
-    elif opt == RedisOpt.SOCKET:
-        if redis_client.hget(str_id, "socket_id") is None:
-            return set()
-        return set(json.loads(redis_client.hget(str_id, "socket_id")))
     elif opt == RedisOpt.BLOCK:
         if redis_client.hget(str_id, "block") is None:
             return set()
@@ -88,15 +84,7 @@ def update_user_info(id, fields):
             redis_client.hset(str_id, "profile_check", 1)
         if "emoji" in fields:
             redis_client.hset(str_id, "emoji_check", 1)
-        if "socket_id" in fields:
-            prev_socket = redis_client.hget(str_id, "socket_id")
-            if prev_socket is not None:
-                socket_id = json.loads(prev_socket)
-                socket_id.append(fields["socket_id"])
-                redis_client.hset(id, "socket_id", json.dumps(socket_id))
-            else:
-                redis_client.hset(id, "socket_id", json.dumps([fields["socket_id"]]))
-
+        
         if "refresh_jti" in fields:
             redis_client.hset(str_id, "refresh_jti", fields["refresh_jti"])
 
@@ -134,24 +122,7 @@ def get_refresh_token_by_id(id):
 
 def get_refresh_jti_by_id(id):
     return redis_client.hget(str(id), "refresh_jti")
-
-
-### socket ###
-def delete_socket_id_by_id(id, socket_id) -> bool:
-    prev_socket = redis_client.hget(id, "socket_id")
-    if prev_socket is None:
-        return True
-
-    socket_id_list = json.loads(prev_socket)
-    if socket_id in socket_id_list:
-        socket_id_list.remove(socket_id)
-        if socket_id_list:
-            redis_client.hset(id, "socket_id", json.dumps(socket_id_list))
-            return False
-        else:
-            redis_client.hdel(id, "socket_id")
-            return True
-
+    
 
 # # Redis user schema (db=0)
 # {
@@ -170,7 +141,5 @@ def delete_socket_id_by_id(id, socket_id) -> bool:
 #         # 유저 차단 및 차단된 정보
 #         "block": "JSON string (array of blocked user IDs)",
 #         "ban": "JSON string (array of banned user IDs)",
-#         # 유저 소켓 아이디 (소켓 통신용)
-#         "socket_id": "string",
 #     }
 # }
