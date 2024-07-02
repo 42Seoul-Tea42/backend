@@ -23,46 +23,40 @@ application = socketio.WSGIApp(socket_io, application)
 #### connect && disconnect ####
 @socket_io.on("connect")
 def handle_connect(sid, environ, auth=None):
-    with socket_lock:
-        if not auth or not auth["id"]:
-            print("auth error: ", auth)
-            sys.stdout.flush()
-            return False
-        try:
-            int(auth["id"])
-        except:
-            print("auth error: ", auth)
-            sys.stdout.flush()
-            return False
+    if not auth or not auth["id"]:
+        print("auth error: ", auth, flush=True)            
+        return False
+    try:
+        int(auth["id"])
+    except:
+        print("auth error: ", auth, flush=True)
+        return False
 
-        from app.socket import socketService as socketServ
+    from app.socket import socketService as socketServ
 
-        socketServ.handle_connect(int(auth["id"]), sid)
+    socketServ.handle_connect(int(auth["id"]), sid)
 
 
 @socket_io.on("disconnect")
 def handle_disconnect(sid):
-    with socket_lock:
-        from app.socket import socketService as socketServ
+    from app.socket import socketService as socketServ
 
-        socketServ.handle_disconnect(sid)
+    socketServ.handle_disconnect(sid)
 
 
 # #### chat ####
 @socket_io.on("send_message")
 def send_message(sid, data):
-    with socket_lock:
-        from app.socket import socketService as socketServ
+    from app.socket import socketService as socketServ
 
-        socketServ.send_message(data, sid)
+    socketServ.send_message(data, sid)
 
 
 @socket_io.on("read_message")
 def read_message(sid, data):
-    with socket_lock:
-        from app.socket import socketService as socketServ
+    from app.socket import socketService as socketServ
 
-        socketServ.read_message(data, sid)
+    socketServ.read_message(data, sid)
 
 
 if __name__ == "__main__":
