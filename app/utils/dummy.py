@@ -32,6 +32,8 @@ class Dummy:
     def _generate_dummy_data(index):
         login_id = f"dummy{index}"
         name = random.choice(first_names) + random.choice(first_names)
+        gender = random.choice([Gender.FEMALE, Gender.MALE])
+        taste = 6 ^ gender
 
         return {
             "login_id": login_id,
@@ -42,8 +44,8 @@ class Dummy:
             "age": random.randint(20, 35),
             "longitude": random.uniform(126.911, 127.1287),
             "latitude": random.uniform(37.4676, 37.64),
-            "gender": random.choice([Gender.FEMALE, Gender.MALE]),
-            "taste": random.choice([Gender.FEMALE, Gender.MALE, Gender.ALL]),
+            "gender": gender,
+            "taste": random.choice([taste, Gender.ALL]),
             "bio": f"안녕하세요 {name}입니다. {index}번째 더미입니다.",
             "tags": random.sample(
                 list(range(Tags.MIN, Tags.MAX + 1)), random.randint(8, 13)
