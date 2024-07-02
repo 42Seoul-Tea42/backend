@@ -264,7 +264,7 @@ def reset_logout_event(id):
     conn = PostgreSQLFactory.get_connection()
     with conn.cursor(cursor_factory=DictCursor) as cursor:
         sql = 'UPDATE "User" SET "is_fancy" = %s, "is_visitor" = %s, "is_match" = %s WHERE "id" = %s'
-        cursor.execute(sql, (id, False, False, False))
+        cursor.execute(sql, (False, False, False, id))
         conn.commit()
 
 
