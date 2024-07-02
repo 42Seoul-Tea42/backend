@@ -236,7 +236,10 @@ def change_email(id, email):
         }, StatusCode.OK
         
     # send verify email
-    utils.send_email(email, email_key, Key.EMAIL)
+    try:
+        utils.send_email(email, email_key, Key.EMAIL)
+    except Exception:
+        pass
 
     return {
         "email_check": False,
@@ -264,7 +267,11 @@ def resend_email(id):
             "key": email_key,
         }, StatusCode.OK
 
-    utils.send_email(email, email_key, Key.EMAIL)
+    try:
+        utils.send_email(email, email_key, Key.EMAIL)
+    except Exception:
+        pass
+
     return {
         "email_check": False,
         "profile_check": True if redis_user["profile_check"] == RedisSetOpt.SET else False,
@@ -364,7 +371,10 @@ def setting(id, data, images):
 
 
     if "email" in update_fields:
-        utils.send_email(update_fields["email"], update_fields["email_key"], Key.EMAIL)
+        try:
+            utils.send_email(update_fields["email"], update_fields["email_key"], Key.EMAIL)
+        except Exception:
+            pass
         logout(id)
         
     #Redis 업데이트
@@ -495,7 +505,11 @@ def register(data):
             "key": email_key,
         }, StatusCode.OK
         
-    utils.send_email(data["email"], email_key, Key.EMAIL)
+    try:
+        utils.send_email(data["email"], email_key, Key.EMAIL)
+    except Exception:
+        pass
+
     return {
         "msg": "success",
     }, StatusCode.OK
@@ -616,7 +630,11 @@ def request_reset(login_id):
             "key": email_key,
         }, StatusCode.OK
 
-    utils.send_email(user["email"], email_key, Key.PASSWORD)
+    try:
+        utils.send_email(user["email"], email_key, Key.PASSWORD)
+    except Exception:
+        pass
+        
     return {"email_check": True}, StatusCode.OK
 
 
