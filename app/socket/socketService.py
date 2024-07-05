@@ -58,9 +58,6 @@ def handle_disconnect(user_sid):
         return
 
     # match 정보 삭제 및 socket 데이터 삭제
-    if id in id_match:
-        id_match.pop(id)
-
     user_sid_set = id_socket.get(id, set())
     if user_sid in user_sid_set:
         if len(user_sid_set) == 1:
@@ -72,6 +69,9 @@ def handle_disconnect(user_sid):
 
         else:
             user_sid_set.remove(user_sid)
+
+    if id in id_match:
+        id_match.pop(id)
 
 
 def _update_status(socket_io, id, status, id_match):
