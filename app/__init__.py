@@ -55,29 +55,35 @@ def create_app(test=False):
         token_in_redis = redis_jwt_blocklist.get(token)
         return token_in_redis is not None
 
-    # ################ 하기 내용은 DB 세팅 후 블록처리 해주세요 (백앤드 디버깅 모드)
-    # Create a cursor
-    conn = PostgreSQLFactory.get_connection()
-    with conn.cursor() as cursor:
-        # Read the content of db_schema.sql
-        with open("/usr/app/srcs/app/db/db_schema.sql") as f:
-            db_setup_sql = f.read()
-        # Execute the database setup logic from the SQL script
-        cursor.execute(db_setup_sql)
-        # Commit the changes
-        conn.commit()
+    # # [Postgresql 디비 재설정 (지웠다가 다시 세팅)] ##################################
+    # conn = PostgreSQLFactory.get_connection()
+    # with conn.cursor() as cursor:
+    #     # Read the content of db_schema.sql
+    #     with open("/usr/app/srcs/app/db/db_schema.sql") as f:
+    #         db_setup_sql = f.read()
+    #     # Execute the database setup logic from the SQL script
+    #     cursor.execute(db_setup_sql)
+    #     # Commit the changes
+    #     conn.commit()
+    # print("finish setting up DB (Postgresql) ==================", flush=True)
 
-    MongoDBFactory.initialize_collection("tea42", "chat")
-    from .utils.redisServ import redis_client
-
-    redis_client.flushdb()
-    print("finish setting up db ==================", flush=True)
+    # # [DUMMY 만들기] #########################################################
 
     # # TODO [TEST] dummy data delete
     # from .utils.dummy import Dummy
 
     # Dummy.create_dummy_user(100, use_fancy_opt=True)
-    # print("finish setting up dummy data ==================")
+    # print("finish setting up dummy data ==================", flush=True)
+
+    # # [Mongo 디비 재설정 (대화 내용 지우기)] ##################################
+    # MongoDBFactory.initialize_collection("tea42", "chat")
+    # print("finish setting up DB (Mongo) ==================", flush=True)
+
+    # [Redis 디비 재설정 (로그인 내역 지우기)] ##################################
+    from .utils.redisServ import redis_client
+
+    redis_client.flushdb()
+    print("finish setting up DB (Redis) ==================", flush=True)
 
     # ################################################################
 
